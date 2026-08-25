@@ -29,6 +29,14 @@
     return diff >= 0 ? diff + 1 : 1;
   }
 
+  function getItems() {
+    return typeof items !== 'undefined' && Array.isArray(items) ? items : [];
+  }
+
+  function getTemplate() {
+    return typeof template !== 'undefined' && template ? template : {};
+  }
+
   function itemSubtotal(item) {
     const price = Number(item?.harga) || 0;
     const days = duration(item?.mulai, item?.selesai);
@@ -42,7 +50,7 @@
       return perimeter * price * days;
     }
     if (item?.tipe === 'level') {
-      const led = (window.items || []).find(function (row) {
+      const led = getItems().find(function (row) {
         return /led|videotron/i.test(row.item || '');
       });
       const width = led ? Number(led.lebar) || 0 : Number(item.lebar) || 0;
@@ -57,8 +65,8 @@
 
   window.printQuote = function printQuote() {
     const qs = function (selector) { return document.querySelector(selector); };
-    const currentItems = Array.isArray(window.items) ? window.items : [];
-    const currentTemplate = window.template || {};
+    const currentItems = getItems();
+    const currentTemplate = getTemplate();
 
     const client = qs('#qc')?.value?.trim() || '-';
     const perusahaan = qs('#qp')?.value?.trim() || '-';
@@ -84,7 +92,7 @@
 
     const popup = window.open('', '_blank', 'noopener,noreferrer,width=1000,height=900');
     if (!popup) {
-      if (typeof window.msg === 'function') window.msg('Popup diblokir browser. Izinkan popup untuk Preview A4.');
+      if (typeof msg === 'function') msg('Popup diblokir browser. Izinkan popup untuk Preview A4.');
       else alert('Popup diblokir browser. Izinkan popup untuk Preview A4.');
       return;
     }
