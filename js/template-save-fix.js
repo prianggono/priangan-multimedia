@@ -1,4 +1,4 @@
-/* Template save fix: robust Supabase write + clear error handling. */
+/* Template save fix: robust Supabase write + compatibility when older DB schema lacks ttd_url. */
 (function () {
   const TOAST_ID = 'toast';
 
@@ -12,7 +12,7 @@
     window.__pmTemplateToast = setTimeout(() => {
       el.classList.remove('show');
       el.style.background = '';
-    }, 4500);
+    }, 5000);
   }
 
   function cfg() {
@@ -27,19 +27,14 @@
     return document.getElementById(id)?.value?.trim() || '';
   }
 
-  async function saveTemplateFixed() {
-    const button = Array.from(document.querySelectorAll('button')).find(
-      (b) => b.textContent.trim() === 'Simpan Template'
-    );
-    if (button?.dataset.saving === '1') return;
+  function isMissingColumn(error, column) {
+    const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
+    return text.includes(`could not find the '${column.toLowerCase()}' column`) ||
+      (text.includes('schema cache') && text.includes(column.toLowerCase()));
+  }
 
-    const { url, key } = cfg();
-    if (!url || !key || !window.supabase?.createClient) {
-      toast('Supabase belum terhubung. Cek Pengaturan Database.', false);
-      return;
-    }
-
-    const payload = {
+  function basePayload() {
+    return {
       nama_template: val('tn'),
       logo_url: val('tl'),
       kop_text: val('tk'),
@@ -50,9 +45,24 @@
       website: val('tweb'),
       ketentuan: val('tket'),
       nama_penandatangan: val('tp'),
-      jabatan_penandatangan: val('tj'),
-      ttd_url: val('ttd')
+      jabatan_penandatangan: val('tj')
     };
+  }
+
+  async function saveTemplateFixed() {
+    const button = Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent.trim() === 'Simpan Template' || b.dataset.templateSave === '1'
+    );
+    if (button?.dataset.saving === '1') return;
+
+    const { url, key } = cfg();
+    if (!url || !key || !window.supabase?.createClient) {
+      toast('Supabase belum terhubung. Cek Pengaturan Database.', false);
+      return;
+    }
+
+    const ttd = val('ttd');
+    const payload = { ...basePayload(), ttd_url: ttd };
 
     if (button) {
       button.dataset.saving = '1';
@@ -73,20 +83,30 @@
 
       if (latest.error) throw latest.error;
 
-      let result;
-      if (latest.data?.id) {
-        result = await client
+      const write = async (data) => {
+        if (latest.data?.id) {
+          return client
+            .from('template_surat')
+            .update(data)
+            .eq('id', latest.data.id)
+            .select('id')
+            .single();
+        }
+        return client
           .from('template_surat')
-          .update(payload)
-          .eq('id', latest.data.id)
+          .insert([data])
           .select('id')
           .single();
-      } else {
-        result = await client
-          .from('template_surat')
-          .insert([payload])
-          .select('id')
-          .single();
+      };
+
+      let result = await write(payload);
+      let legacySchema = false;
+
+      // Older Supabase databases may not have ttd_url even though the repository schema does.
+      // Save all other template fields instead of making the entire Save button fail.
+      if (result.error && isMissingColumn(result.error, 'ttd_url')) {
+        legacySchema = true;
+        result = await write(basePayload());
       }
 
       if (result.error) throw result.error;
@@ -94,8 +114,13 @@
 
       localStorage.setItem('PRIANGAN_TEMPLATE_BACKUP', JSON.stringify(payload));
 
-      toast('Template berhasil disimpan ke Supabase.', true);
-      setTimeout(() => window.location.reload(), 700);
+      if (legacySchema) {
+        toast('Template tersimpan, tetapi TTD belum tersimpan di database. Jalankan SQL migration ttd_url sekali di Supabase.', true);
+      } else {
+        toast('Template berhasil disimpan ke Supabase.', true);
+      }
+
+      setTimeout(() => window.location.reload(), 900);
     } catch (error) {
       console.error('Template save error:', error);
       const message = error?.message || String(error);
