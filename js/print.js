@@ -1,10 +1,27 @@
 /* Professional A4 quotation preview / print */
 
-function printQuote() {
+async function printQuote() {
   try {
     const qs = (selector) => document.querySelector(selector);
     const currentItems = (typeof items !== 'undefined' && Array.isArray(items)) ? items : [];
-    const currentTemplate = (typeof template !== 'undefined' && template) ? template : {};
+    let currentTemplate = (typeof template !== 'undefined' && template) ? { ...template } : {};
+
+    // Always read the latest template before printing so logo/signature changes
+    // made in Template Surat are immediately reflected in the quotation.
+    try {
+      if (typeof db !== 'undefined' && db) {
+        const latest = await db
+          .from('template_surat')
+          .select('*')
+          .order('id', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!latest.error && latest.data) currentTemplate = latest.data;
+      }
+    } catch (templateError) {
+      console.warn('Template refresh before print failed:', templateError);
+    }
 
     const client = qs('#qc')?.value?.trim() || '';
     const perusahaan = qs('#qp')?.value?.trim() || '';
@@ -104,16 +121,27 @@ function printQuote() {
         </tr>`;
     }).join('');
 
-    const logo = currentTemplate.logo_url
-      ? `<img class="logo" src="${safe(currentTemplate.logo_url)}" alt="Logo" onerror="this.style.display='none'">`
+    const logoUrl = String(currentTemplate.logo_url || '').trim();
+    const signatureUrl = String(currentTemplate.ttd_url || '').trim();
+
+    const logo = logoUrl
+      ? `<img class="logo" src="${safe(logoUrl)}" alt="Logo Priangan Multimedia" onerror="this.closest('.pm-logo-wrap')?.classList.add('logo-error'); this.remove();">`
       : '<div class="logo-fallback">PM</div>';
 
-    const signatureImage = currentTemplate.ttd_url
-      ? `<img class="signature" src="${safe(currentTemplate.ttd_url)}" alt="Tanda tangan" onerror="this.style.display='none'">`
+    const signatureImage = signatureUrl
+      ? `<img class="signature" src="${safe(signatureUrl)}" alt="Tanda tangan ${safe(currentTemplate.nama_penandatangan || '')}" onerror="this.style.display='none'; this.nextElementSibling?.classList.add('signature-missing');">`
       : '';
 
     const signerName = currentTemplate.nama_penandatangan || '____________________________';
     const signerRole = currentTemplate.jabatan_penandatangan || '';
+
+    // Telp + WhatsApp are intentionally shown as one compact contact line.
+    const telp = String(currentTemplate.telepon || '').trim();
+    const wa = String(currentTemplate.whatsapp || '').trim();
+    let contactLine = '';
+    if (telp && wa && telp !== wa) contactLine = `Telp ${safe(telp)}  •  WA ${safe(wa)}`;
+    else if (telp || wa) contactLine = `Telp / WA ${safe(telp || wa)}`;
+    if (currentTemplate.email) contactLine += `${contactLine ? '  •  ' : ''}${safe(currentTemplate.email)}`;
 
     const old = document.getElementById('pmPrintPreview');
     if (old) old.remove();
@@ -142,7 +170,7 @@ function printQuote() {
               <div class="pm-brand-name">${safe(currentTemplate.kop_text || 'PRIANGAN MULTIMEDIA')}</div>
               <div class="pm-brand-sub">SALES & QUOTATION</div>
               ${currentTemplate.alamat ? `<p>${safe(currentTemplate.alamat)}</p>` : ''}
-              <p>${safe(currentTemplate.telepon || '')}${currentTemplate.whatsapp ? '  •  WA ' + safe(currentTemplate.whatsapp) : ''}${currentTemplate.email ? '  •  ' + safe(currentTemplate.email) : ''}</p>
+              ${contactLine ? `<p>${contactLine}</p>` : ''}
               ${currentTemplate.website ? `<p class="website">${safe(currentTemplate.website)}</p>` : ''}
             </div>
             <div class="pm-doc-tag">
