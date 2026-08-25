@@ -1,11 +1,10 @@
-/* Professional A4 preview + print styles */
+/* Professional A4 quotation preview + print styles */
 (function () {
   if (document.getElementById('pmPrintStyles')) return;
 
   const style = document.createElement('style');
   style.id = 'pmPrintStyles';
   style.textContent = `
-    /* Native date picker on dark UI */
     input[type="date"]::-webkit-calendar-picker-indicator {
       opacity: 1;
       filter: invert(1) brightness(1.7);
@@ -13,7 +12,6 @@
     }
     input[type="date"] { color-scheme: dark; }
 
-    /* Preview shell */
     #pmPrintPreview {
       position: fixed;
       inset: 0;
@@ -44,7 +42,6 @@
     .pm-print { background:#10b981; color:#fff; }
     .pm-print-scroll { flex:1 1 auto; overflow:auto; padding:32px; }
 
-    /* A4 document */
     .pm-a4 {
       width:210mm;
       min-height:297mm;
@@ -66,20 +63,20 @@
       background:linear-gradient(90deg,#2563eb 0%,#4f46e5 55%,#06b6d4 100%);
     }
 
-    /* Premium high-contrast letterhead */
+    /* Premium letterhead: larger logo + stronger visual hierarchy */
     .pm-letterhead {
       position:relative;
       display:flex;
       align-items:center;
-      gap:16px;
-      min-height:82px;
-      padding:12px 16px;
+      gap:18px;
+      min-height:100px;
+      padding:12px 18px;
       border:1px solid #163d76;
-      border-radius:9px;
+      border-radius:10px;
       overflow:hidden;
       background:
-        radial-gradient(circle at 82% 12%, rgba(59,130,246,.42) 0, rgba(59,130,246,0) 28%),
-        radial-gradient(circle at 100% 100%, rgba(6,182,212,.25) 0, rgba(6,182,212,0) 34%),
+        radial-gradient(circle at 82% 12%, rgba(59,130,246,.46) 0, rgba(59,130,246,0) 30%),
+        radial-gradient(circle at 100% 100%, rgba(6,182,212,.28) 0, rgba(6,182,212,0) 36%),
         linear-gradient(120deg,#020817 0%,#071a38 48%,#0b2a4a 100%);
       box-shadow:0 7px 22px rgba(15,23,42,.22);
     }
@@ -104,41 +101,43 @@
       background:linear-gradient(90deg,#2563eb,#06b6d4,#60a5fa);
     }
 
-    /* Larger logo with a clean contrast plate */
     .pm-logo-wrap {
-      width:72px;
-      height:72px;
-      flex:0 0 72px;
+      width:92px;
+      height:92px;
+      flex:0 0 92px;
       display:flex;
       align-items:center;
       justify-content:center;
       position:relative;
       z-index:2;
-      background:rgba(255,255,255,.96);
-      border:1px solid rgba(255,255,255,.9);
-      border-radius:14px;
-      box-shadow:0 5px 16px rgba(0,0,0,.30);
+      background:rgba(255,255,255,.98);
+      border:1px solid rgba(255,255,255,.95);
+      border-radius:16px;
+      box-shadow:0 6px 18px rgba(0,0,0,.34);
+      overflow:hidden;
     }
     .pm-letterhead .logo {
-      width:64px;
-      height:64px;
+      width:82px;
+      height:82px;
+      max-width:82px;
+      max-height:82px;
       object-fit:contain;
+      display:block;
       filter:none;
     }
     .logo-fallback {
-      width:58px;
-      height:58px;
-      border-radius:13px;
+      width:70px;
+      height:70px;
+      border-radius:14px;
       display:flex;
       align-items:center;
       justify-content:center;
       background:linear-gradient(135deg,#2563eb,#06b6d4);
       color:#fff;
-      font-size:18px;
+      font-size:20px;
       font-weight:800;
     }
 
-    /* Force high-contrast typography so it remains visible in PDF/print */
     .pm-brand {
       flex:1;
       min-width:0;
@@ -166,7 +165,7 @@
     .pm-brand p {
       margin:3px 0 0;
       color:#f1f5f9 !important;
-      font-size:7.3pt;
+      font-size:7.1pt;
       font-weight:600;
       text-shadow:0 1px 3px rgba(0,0,0,.55);
     }
@@ -242,10 +241,25 @@
     .pm-section-heading strong { font-size:7.5pt; letter-spacing:.5px; }
     .pm-terms-body { padding:8px 10px; color:#475569; font-size:7.4pt; line-height:1.45; }
 
+    /* Signature is loaded from template_surat.ttd_url and given enough space to render. */
     .pm-signature { width:205px; margin:16px 0 0 auto; text-align:center; }
     .pm-signature-label { color:#475569; font-size:7.5pt; font-weight:700; }
-    .pm-signature-box { min-height:93px; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; }
-    .pm-signature .signature { display:block; width:auto; max-width:155px; height:58px; object-fit:contain; margin:1px auto 0; }
+    .pm-signature-box {
+      min-height:105px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-end;
+    }
+    .pm-signature .signature {
+      display:block;
+      width:auto;
+      max-width:175px;
+      height:72px;
+      max-height:72px;
+      object-fit:contain;
+      margin:1px auto 0;
+    }
     .pm-signature-line { width:175px; border-bottom:1px solid #334155; margin:4px auto 4px; }
     .pm-signature-box strong { display:block; font-size:8.2pt; color:#111827; }
     .pm-signature-role { margin-top:1px; color:#64748b; font-size:7.2pt; }
