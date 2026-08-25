@@ -66,32 +66,33 @@
       background:linear-gradient(90deg,#2563eb 0%,#4f46e5 55%,#06b6d4 100%);
     }
 
-    /* Premium letterhead: high contrast + subtle geometric background */
+    /* Premium high-contrast letterhead */
     .pm-letterhead {
       position:relative;
       display:flex;
       align-items:center;
-      gap:11px;
-      min-height:68px;
-      padding:11px 14px;
-      border:1px solid #1e3a8a;
-      border-radius:8px;
+      gap:16px;
+      min-height:82px;
+      padding:12px 16px;
+      border:1px solid #163d76;
+      border-radius:9px;
       overflow:hidden;
       background:
-        radial-gradient(circle at 88% 18%, rgba(37,99,235,.28) 0, rgba(37,99,235,0) 34%),
-        linear-gradient(115deg, #07111f 0%, #0b1830 52%, #101c35 100%);
-      box-shadow:0 5px 16px rgba(15,23,42,.14);
+        radial-gradient(circle at 82% 12%, rgba(59,130,246,.42) 0, rgba(59,130,246,0) 28%),
+        radial-gradient(circle at 100% 100%, rgba(6,182,212,.25) 0, rgba(6,182,212,0) 34%),
+        linear-gradient(120deg,#020817 0%,#071a38 48%,#0b2a4a 100%);
+      box-shadow:0 7px 22px rgba(15,23,42,.22);
     }
     .pm-letterhead::before {
       content:"";
       position:absolute;
       inset:0;
       pointer-events:none;
-      opacity:.22;
+      opacity:.24;
       background-image:
-        linear-gradient(135deg, transparent 0 48%, rgba(255,255,255,.12) 49%, transparent 50%),
-        linear-gradient(45deg, transparent 0 48%, rgba(6,182,212,.16) 49%, transparent 50%);
-      background-size:34px 34px, 42px 42px;
+        linear-gradient(135deg, transparent 0 47%, rgba(255,255,255,.16) 48%, transparent 50%),
+        linear-gradient(45deg, transparent 0 47%, rgba(34,211,238,.18) 48%, transparent 50%);
+      background-size:36px 36px, 48px 48px;
     }
     .pm-letterhead::after {
       content:"";
@@ -99,24 +100,100 @@
       left:0;
       right:0;
       bottom:0;
-      height:3px;
+      height:4px;
       background:linear-gradient(90deg,#2563eb,#06b6d4,#60a5fa);
     }
-    .pm-logo-wrap { width:54px; height:54px; flex:0 0 54px; display:flex; align-items:center; justify-content:center; position:relative; z-index:1; }
-    .pm-letterhead .logo { width:52px; height:52px; object-fit:contain; filter:drop-shadow(0 2px 5px rgba(0,0,0,.35)); }
-    .logo-fallback {
-      width:44px; height:44px; border-radius:12px;
-      display:flex; align-items:center; justify-content:center;
-      background:linear-gradient(135deg,#2563eb,#06b6d4); color:#fff; font-size:15px; font-weight:800;
+
+    /* Larger logo with a clean contrast plate */
+    .pm-logo-wrap {
+      width:72px;
+      height:72px;
+      flex:0 0 72px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+      z-index:2;
+      background:rgba(255,255,255,.96);
+      border:1px solid rgba(255,255,255,.9);
+      border-radius:14px;
+      box-shadow:0 5px 16px rgba(0,0,0,.30);
     }
-    .pm-brand { flex:1; min-width:0; position:relative; z-index:1; }
-    .pm-brand-name { margin:0; font-size:17px; line-height:1.05; font-weight:800; color:#ffffff; letter-spacing:.5px; text-transform:uppercase; text-shadow:0 1px 2px rgba(0,0,0,.35); }
-    .pm-brand-sub { margin-top:3px; font-size:7.3pt; font-weight:800; letter-spacing:1.5px; color:#60a5fa; }
-    .pm-brand p { margin:2px 0 0; color:#cbd5e1; font-size:7.4pt; }
-    .pm-brand .website { color:#7dd3fc; }
-    .pm-doc-tag { min-width:104px; text-align:right; position:relative; z-index:1; }
-    .pm-doc-tag span { display:block; color:#93c5fd; font-size:6.8pt; font-weight:800; letter-spacing:1.2px; }
-    .pm-doc-tag strong { display:block; margin-top:4px; color:#ffffff; font-size:8.5pt; }
+    .pm-letterhead .logo {
+      width:64px;
+      height:64px;
+      object-fit:contain;
+      filter:none;
+    }
+    .logo-fallback {
+      width:58px;
+      height:58px;
+      border-radius:13px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:linear-gradient(135deg,#2563eb,#06b6d4);
+      color:#fff;
+      font-size:18px;
+      font-weight:800;
+    }
+
+    /* Force high-contrast typography so it remains visible in PDF/print */
+    .pm-brand {
+      flex:1;
+      min-width:0;
+      position:relative;
+      z-index:2;
+    }
+    .pm-brand-name {
+      margin:0;
+      font-size:18px;
+      line-height:1.08;
+      font-weight:900;
+      color:#ffffff !important;
+      letter-spacing:.8px;
+      text-transform:uppercase;
+      text-shadow:0 2px 4px rgba(0,0,0,.65);
+    }
+    .pm-brand-sub {
+      margin-top:4px;
+      font-size:8pt;
+      font-weight:900;
+      letter-spacing:1.8px;
+      color:#67e8f9 !important;
+      text-shadow:0 1px 3px rgba(0,0,0,.55);
+    }
+    .pm-brand p {
+      margin:3px 0 0;
+      color:#f1f5f9 !important;
+      font-size:7.3pt;
+      font-weight:600;
+      text-shadow:0 1px 3px rgba(0,0,0,.55);
+    }
+    .pm-brand .website { color:#a5f3fc !important; }
+    .pm-doc-tag {
+      min-width:110px;
+      text-align:right;
+      position:relative;
+      z-index:2;
+      padding-left:10px;
+    }
+    .pm-doc-tag span {
+      display:block;
+      color:#bae6fd !important;
+      font-size:7pt;
+      font-weight:900;
+      letter-spacing:1.4px;
+      text-shadow:0 1px 3px rgba(0,0,0,.55);
+    }
+    .pm-doc-tag strong {
+      display:block;
+      margin-top:5px;
+      color:#ffffff !important;
+      font-size:8.6pt;
+      font-weight:900;
+      text-shadow:0 1px 3px rgba(0,0,0,.55);
+    }
 
     .pm-title-row { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin:15px 0 12px; }
     .pm-eyebrow { color:#2563eb; font-size:6.8pt; font-weight:800; letter-spacing:1.4px; }
@@ -187,7 +264,7 @@
       .pm-print-scroll { overflow:visible !important; padding:0 !important; }
       .pm-a4 { width:210mm !important; min-height:297mm !important; margin:0 !important; padding:13mm 14mm 11mm !important; box-shadow:none !important; }
       .pm-items th { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-      .pm-top-accent,.pm-total td,.pm-info-card,.pm-event-section,.pm-section-heading,.pm-section-heading span,.pm-letterhead { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .pm-top-accent,.pm-total td,.pm-info-card,.pm-event-section,.pm-section-heading,.pm-section-heading span,.pm-letterhead,.pm-logo-wrap { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     }
   `;
 
