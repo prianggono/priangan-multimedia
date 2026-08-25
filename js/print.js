@@ -1,158 +1,225 @@
-/* Print / A4 preview support.
-   Loaded before app.js so printQuote exists when app.js initializes. */
-(function () {
-  function safe(value) {
-    return String(value ?? '').replace(/[&<>"']/g, function (m) {
-      return ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-      })[m];
-    });
-  }
+/* Robust A4 preview / print.
+ * IMPORTANT: this file is loaded BEFORE app.js.
+ * A real function declaration is used so app.js can safely register
+ * window.printQuote = printQuote without throwing ReferenceError.
+ */
 
-  function rupiah(value) {
-    return new Intl.NumberFormat('id-ID', {
+function printQuote() {
+  try {
+    const qs = (selector) => document.querySelector(selector);
+    const currentItems = (typeof items !== 'undefined' && Array.isArray(items)) ? items : [];
+    const currentTemplate = (typeof template !== 'undefined' && template) ? template : {};
+
+    const client = qs('#qc')?.value?.trim() || '';
+    const perusahaan = qs('#qp')?.value?.trim() || '';
+    const whatsapp = qs('#qw')?.value?.trim() || '';
+    const email = qs('#qe')?.value?.trim() || '';
+    const eventName = qs('#qeve')?.value?.trim() || '';
+    const startDate = qs('#qs')?.value || '';
+    const endDate = qs('#qe2')?.value || '';
+
+    if (!client || !perusahaan || !eventName) {
+      if (typeof msg === 'function') msg('Isi Client, Perusahaan, dan Nama Event terlebih dahulu.');
+      return;
+    }
+
+    const validItems = currentItems.filter((item) => item && item.kode && item.item);
+    if (!validItems.length) {
+      if (typeof msg === 'function') msg('Pilih minimal 1 Produk / Jasa terlebih dahulu.');
+      return;
+    }
+
+    const duration = (start, end) => {
+      if (!start || !end) return 1;
+      const a = new Date(start + 'T00:00:00');
+      const b = new Date(end + 'T00:00:00');
+      const diff = Math.round((b - a) / 86400000);
+      return diff >= 0 ? diff + 1 : 1;
+    };
+
+    const itemSubtotal = (item) => {
+      const price = Number(item.harga) || 0;
+      const days = duration(item.mulai, item.selesai);
+      const qty = Number(item.qty) || 1;
+
+      if (item.tipe === 'luas') {
+        return (Number(item.lebar) || 0) * (Number(item.tinggi) || 0) * price * days;
+      }
+
+      if (item.tipe === 'rigging') {
+        const perimeter = ((Number(item.panjang) || 0) * 2) + ((Number(item.tinggi) || 0) * 2);
+        return perimeter * price * days;
+      }
+
+      if (item.tipe === 'level') {
+        const led = validItems.find((row) => /led|videotron/i.test(row.item || ''));
+        const width = led ? Number(led.lebar) || 0 : Number(item.lebar) || 0;
+        return width * (Number(item.tinggi) || 0) * price * days;
+      }
+
+      return qty * price * days;
+    };
+
+    const formatMoney = (value) => new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
       maximumFractionDigits: 0
     }).format(Number(value) || 0);
-  }
 
-  function duration(start, end) {
-    if (!start || !end) return 1;
-    const a = new Date(start);
-    const b = new Date(end);
-    const diff = Math.round((b - a) / 86400000);
-    return diff >= 0 ? diff + 1 : 1;
-  }
+    const safe = (value) => String(value ?? '').replace(/[&<>"']/g, (m) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[m]);
 
-  function getItems() {
-    return typeof items !== 'undefined' && Array.isArray(items) ? items : [];
-  }
-
-  function getTemplate() {
-    return typeof template !== 'undefined' && template ? template : {};
-  }
-
-  function itemSubtotal(item) {
-    const price = Number(item?.harga) || 0;
-    const days = duration(item?.mulai, item?.selesai);
-    const qty = Number(item?.qty) || 1;
-
-    if (item?.tipe === 'luas') {
-      return (Number(item.lebar) || 0) * (Number(item.tinggi) || 0) * price * days;
-    }
-    if (item?.tipe === 'rigging') {
-      const perimeter = ((Number(item.panjang) || 0) * 2) + ((Number(item.tinggi) || 0) * 2);
-      return perimeter * price * days;
-    }
-    if (item?.tipe === 'level') {
-      const led = getItems().find(function (row) {
-        return /led|videotron/i.test(row.item || '');
+    const dateID = (value) => {
+      if (!value) return '-';
+      const d = new Date(value + 'T00:00:00');
+      if (Number.isNaN(d.getTime())) return safe(value);
+      return d.toLocaleDateString('id-ID', {
+        day: '2-digit', month: 'long', year: 'numeric'
       });
-      const width = led ? Number(led.lebar) || 0 : Number(item.lebar) || 0;
-      return width * (Number(item.tinggi) || 0) * price * days;
-    }
-    return qty * price * days;
-  }
+    };
 
-  function multiline(value) {
-    return safe(value).replace(/\r?\n/g, '<br>');
-  }
+    const multiline = (value) => safe(value).replace(/\r?\n/g, '<br>');
 
-  window.printQuote = function printQuote() {
-    const qs = function (selector) { return document.querySelector(selector); };
-    const currentItems = getItems();
-    const currentTemplate = getTemplate();
+    const total = validItems.reduce((sum, item) => sum + itemSubtotal(item), 0);
+    const number = 'PM-' + new Date().getFullYear() + '-' + Date.now().toString().slice(-6);
 
-    const client = qs('#qc')?.value?.trim() || '-';
-    const perusahaan = qs('#qp')?.value?.trim() || '-';
-    const whatsapp = qs('#qw')?.value?.trim() || '';
-    const email = qs('#qe')?.value?.trim() || '';
-    const eventName = qs('#qeve')?.value?.trim() || '-';
-    const startDate = qs('#qs')?.value || '';
-    const endDate = qs('#qe2')?.value || '';
-    const total = currentItems.reduce(function (sum, item) {
-      return sum + itemSubtotal(item);
-    }, 0);
+    const rows = validItems.map((item, index) => {
+      let qtyText = String(item.qty || 1);
+      if (item.tipe === 'luas') qtyText = `${item.lebar || 0} × ${item.tinggi || 0} m²`;
+      else if (item.tipe === 'level') qtyText = `${item.lebar || 0} × ${item.tinggi || 0} m`;
+      else if (item.tipe === 'rigging') qtyText = `${item.panjang || 0} × ${item.tinggi || 0} m`;
 
-    const number = 'PM-' + Date.now().toString().slice(-6);
-    const rows = currentItems.map(function (item, index) {
-      return '<tr>' +
-        '<td class="no">' + (index + 1) + '</td>' +
-        '<td><b>' + safe(item.item || '-') + '</b><br><small>' + safe(item.kode || '') + '</small></td>' +
-        '<td class="center">' + safe(item.qty || 1) + '</td>' +
-        '<td class="right">' + rupiah(item.harga) + '</td>' +
-        '<td class="right">' + rupiah(itemSubtotal(item)) + '</td>' +
-      '</tr>';
+      const schedule = item.mulai || item.selesai
+        ? `${dateID(item.mulai)} - ${dateID(item.selesai)}`
+        : '-';
+
+      return `
+        <tr>
+          <td class="center">${index + 1}</td>
+          <td>
+            <strong>${safe(item.item || '-')}</strong>
+            <div class="code">${safe(item.kode || '')}</div>
+          </td>
+          <td class="center">${safe(qtyText)}</td>
+          <td class="center">${safe(schedule)}</td>
+          <td class="right">${formatMoney(item.harga)}</td>
+          <td class="right">${formatMoney(itemSubtotal(item))}</td>
+        </tr>`;
     }).join('');
 
-    const popup = window.open('', '_blank', 'noopener,noreferrer,width=1000,height=900');
-    if (!popup) {
-      if (typeof msg === 'function') msg('Popup diblokir browser. Izinkan popup untuk Preview A4.');
-      else alert('Popup diblokir browser. Izinkan popup untuk Preview A4.');
-      return;
-    }
-
     const logo = currentTemplate.logo_url
-      ? '<img class="logo" src="' + safe(currentTemplate.logo_url) + '" alt="Logo">'
+      ? `<img class="logo" src="${safe(currentTemplate.logo_url)}" alt="Logo">`
       : '';
 
     const signature = currentTemplate.ttd_url
-      ? '<img class="signature" src="' + safe(currentTemplate.ttd_url) + '" alt="TTD">'
+      ? `<img class="signature" src="${safe(currentTemplate.ttd_url)}" alt="TTD">`
       : '<div class="signature-space"></div>';
 
-    popup.document.open();
-    popup.document.write('<!doctype html><html lang="id"><head><meta charset="utf-8">' +
-      '<meta name="viewport" content="width=device-width,initial-scale=1">' +
-      '<title>Penawaran ' + safe(number) + '</title>' +
-      '<style>' +
-      '*{box-sizing:border-box}body{margin:0;background:#e5e7eb;color:#111827;font-family:Arial,Helvetica,sans-serif;font-size:11px}' +
-      '.page{width:210mm;min-height:297mm;margin:12mm auto;background:#fff;padding:15mm 16mm;box-shadow:0 2px 12px rgba(0,0,0,.15)}' +
-      '.letterhead{display:flex;gap:14px;align-items:center;border-bottom:3px solid #111827;padding-bottom:10px;margin-bottom:18px}' +
-      '.logo{width:70px;height:70px;object-fit:contain}.brand{flex:1}.brand h1{font-size:20px;margin:0 0 4px;text-transform:uppercase}.brand p{margin:2px 0;color:#374151}.title{text-align:center;font-size:16px;font-weight:700;margin:18px 0 16px;text-transform:uppercase;text-decoration:underline}' +
-      '.meta{display:grid;grid-template-columns:105px 1fr;gap:5px 10px;margin-bottom:15px}.meta b{font-weight:700}' +
-      'table{width:100%;border-collapse:collapse;margin-top:12px}th,td{border:1px solid #9ca3af;padding:7px 6px;vertical-align:top}th{background:#f3f4f6;text-align:center}.no{width:32px;text-align:center}.center{text-align:center}.right{text-align:right}.total td{font-weight:700;background:#f9fafb}' +
-      '.terms{margin-top:18px;line-height:1.5}.terms h3{font-size:12px;margin:0 0 6px}.signature-box{width:220px;margin:35px 0 0 auto;text-align:center}.signature{display:block;max-width:170px;max-height:75px;margin:0 auto 5px;object-fit:contain}.signature-space{height:80px}' +
-      '.footer{margin-top:28px;padding-top:8px;border-top:1px solid #d1d5db;font-size:9px;color:#4b5563;text-align:center}' +
-      '.printbar{position:fixed;right:20px;top:20px;display:flex;gap:8px}.printbar button{border:0;border-radius:7px;padding:9px 14px;cursor:pointer;font-weight:700}.print{background:#2563eb;color:#fff}.close{background:#e5e7eb;color:#111827}' +
-      '@page{size:A4;margin:0}@media print{body{background:#fff}.page{margin:0;box-shadow:none;width:210mm;min-height:297mm;padding:15mm 16mm}.printbar{display:none}}' +
-      '</style></head><body>' +
-      '<div class="printbar"><button class="print" onclick="window.print()">Cetak / Simpan PDF</button><button class="close" onclick="window.close()">Tutup</button></div>' +
-      '<main class="page">' +
-      '<section class="letterhead">' + logo + '<div class="brand">' +
-      '<h1>' + safe(currentTemplate.kop_text || 'PRIANGAN MULTIMEDIA') + '</h1>' +
-      '<p>' + safe(currentTemplate.alamat || '') + '</p>' +
-      '<p>' + safe(currentTemplate.telepon || '') + (currentTemplate.whatsapp ? ' | WA ' + safe(currentTemplate.whatsapp) : '') + (currentTemplate.email ? ' | ' + safe(currentTemplate.email) : '') + '</p>' +
-      '</div></section>' +
-      '<div class="title">Surat Penawaran Harga</div>' +
-      '<div class="meta">' +
-      '<b>Nomor</b><span>' + safe(number) + '</span>' +
-      '<b>Kepada</b><span>' + safe(client) + '</span>' +
-      '<b>Perusahaan</b><span>' + safe(perusahaan) + '</span>' +
-      '<b>Event / Project</b><span>' + safe(eventName) + '</span>' +
-      '<b>Periode</b><span>' + safe(startDate || '-') + (endDate ? ' s/d ' + safe(endDate) : '') + '</span>' +
-      (whatsapp ? '<b>WhatsApp</b><span>' + safe(whatsapp) + '</span>' : '') +
-      (email ? '<b>Email</b><span>' + safe(email) + '</span>' : '') +
-      '</div>' +
-      '<p>Dengan hormat, bersama ini kami sampaikan penawaran harga untuk kebutuhan event/project tersebut sebagai berikut:</p>' +
-      '<table><thead><tr><th>No.</th><th>Produk / Jasa</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr></thead><tbody>' +
-      (rows || '<tr><td colspan="5">Belum ada item.</td></tr>') +
-      '<tr class="total"><td colspan="4" class="right">TOTAL</td><td class="right">' + rupiah(total) + '</td></tr>' +
-      '</tbody></table>' +
-      '<div class="terms"><h3>Syarat &amp; Ketentuan</h3>' +
-      multiline(currentTemplate.ketentuan || '1. Downpayment minimum 50%.\n2. Pelunasan 50% wajib dilakukan setelah unit terpasang.\n3. Pembayaran DP yang telah dilakukan tidak dapat dikembalikan. Jika terjadi pembatalan, DP dapat dialihkan untuk acara/event berikutnya.\n4. Apabila pelunasan belum dilakukan, unit tidak akan diaktifkan.\n5. Pembayaran dilakukan melalui rekening Bank BCA sesuai informasi pada template.') +
-      '</div>' +
-      '<div class="signature-box">' +
-      '<p>Hormat kami,</p>' + signature +
-      '<b>' + safe(currentTemplate.nama_penandatangan || '') + '</b><br>' +
-      safe(currentTemplate.jabatan_penandatangan || '') +
-      '</div>' +
-      '<div class="footer">' + safe(currentTemplate.website || '') + '</div>' +
-      '</main></body></html>');
-    popup.document.close();
-  };
-})();
+    const old = document.getElementById('pmPrintPreview');
+    if (old) old.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'pmPrintPreview';
+    overlay.innerHTML = `
+      <div class="pm-print-toolbar">
+        <div>
+          <strong>Preview Surat Penawaran</strong>
+          <span>A4 Portrait • ${safe(number)}</span>
+        </div>
+        <div class="pm-print-actions">
+          <button type="button" class="pm-close" onclick="closePrintPreview()">Tutup</button>
+          <button type="button" class="pm-print" onclick="executePrintPreview()">Cetak / Simpan PDF</button>
+        </div>
+      </div>
+
+      <div class="pm-print-scroll">
+        <main class="pm-a4" id="pmPrintArea">
+          <header class="pm-letterhead">
+            ${logo}
+            <div class="pm-brand">
+              <h1>${safe(currentTemplate.kop_text || 'PRIANGAN MULTIMEDIA')}</h1>
+              <p>${safe(currentTemplate.alamat || '')}</p>
+              <p>${safe(currentTemplate.telepon || '')}${currentTemplate.whatsapp ? ' | WA ' + safe(currentTemplate.whatsapp) : ''}${currentTemplate.email ? ' | ' + safe(currentTemplate.email) : ''}</p>
+            </div>
+          </header>
+
+          <h2 class="pm-title">SURAT PENAWARAN HARGA</h2>
+
+          <table class="pm-meta">
+            <tr><td>Nomor</td><td>${safe(number)}</td></tr>
+            <tr><td>Tanggal</td><td>${dateID(new Date().toISOString().slice(0, 10))}</td></tr>
+            <tr><td>Kepada Yth.</td><td><strong>${safe(client)}</strong></td></tr>
+            <tr><td>Perusahaan</td><td>${safe(perusahaan)}</td></tr>
+            <tr><td>Event / Project</td><td><strong>${safe(eventName)}</strong></td></tr>
+            <tr><td>Periode</td><td>${dateID(startDate)} - ${dateID(endDate)}</td></tr>
+            ${whatsapp ? `<tr><td>WhatsApp</td><td>${safe(whatsapp)}</td></tr>` : ''}
+            ${email ? `<tr><td>Email</td><td>${safe(email)}</td></tr>` : ''}
+          </table>
+
+          <p class="pm-opening">
+            Dengan hormat,<br>
+            Bersama ini kami sampaikan penawaran harga untuk kebutuhan event/project tersebut sebagai berikut:
+          </p>
+
+          <table class="pm-items">
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>Produk / Jasa</th>
+                <th>Qty / Dimensi</th>
+                <th>Jadwal</th>
+                <th>Harga</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+              <tr class="pm-total">
+                <td colspan="5" class="right">GRAND TOTAL</td>
+                <td class="right">${formatMoney(total)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <section class="pm-terms">
+            <strong>Syarat & Ketentuan</strong>
+            <div>${multiline(currentTemplate.ketentuan || '1. Downpayment minimum 50%.\n2. Pelunasan 50% dilakukan setelah unit terpasang.\n3. Pembayaran DP yang telah dilakukan tidak dapat dikembalikan.\n4. Perubahan jumlah atau spesifikasi dapat mempengaruhi nilai penawaran.')}</div>
+          </section>
+
+          <section class="pm-signature">
+            <p>Hormat kami,</p>
+            ${signature}
+            <strong>${safe(currentTemplate.nama_penandatangan || '')}</strong>
+            <div>${safe(currentTemplate.jabatan_penandatangan || '')}</div>
+          </section>
+
+          <footer>${safe(currentTemplate.website || '')}</footer>
+        </main>
+      </div>`;
+
+    document.body.appendChild(overlay);
+    document.body.classList.add('pm-preview-open');
+  } catch (error) {
+    console.error('A4 preview error:', error);
+    if (typeof msg === 'function') msg('Preview A4 gagal: ' + (error.message || error));
+  }
+}
+
+function closePrintPreview() {
+  document.getElementById('pmPrintPreview')?.remove();
+  document.body.classList.remove('pm-preview-open');
+}
+
+function executePrintPreview() {
+  const area = document.getElementById('pmPrintArea');
+  if (!area) {
+    if (typeof msg === 'function') msg('Area A4 tidak ditemukan.');
+    return;
+  }
+  window.print();
+}
+
+window.printQuote = printQuote;
+window.closePrintPreview = closePrintPreview;
+window.executePrintPreview = executePrintPreview;
