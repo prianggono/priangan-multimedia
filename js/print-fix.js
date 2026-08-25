@@ -1,4 +1,4 @@
-/* Final quotation print fixes: larger logo, combined contact, reliable Supabase TTD */
+/* Final quotation print fixes: larger transparent logo, combined contact, reliable Supabase TTD */
 (function () {
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -36,8 +36,6 @@
     const globalTemplate = (typeof template !== 'undefined' && template) ? template : {};
     const backup = getLocalTemplateBackup();
 
-    // DB wins. Local backup is only a fallback for fields that are absent/empty,
-    // including ttd_url when the database schema was temporarily missing that column.
     return {
       ...backup,
       ...globalTemplate,
@@ -88,7 +86,6 @@
     const logoUrl = await resolveStorageUrl(t.logo_url);
     const ttdUrl = await resolveStorageUrl(t.ttd_url);
 
-    // Header: rebuild brand text so phone + WhatsApp are always one combined line.
     const brand = overlay.querySelector('.pm-brand');
     if (brand) {
       const name = clean(t.kop_text) || 'PRIANGAN MULTIMEDIA';
@@ -106,7 +103,11 @@
       `;
     }
 
-    // Logo: enlarge the actual source image too, because many logo files contain whitespace.
+    /*
+     * Logo: keep the same transparent look as the previous good header.
+     * The white square must NOT come from the logo wrapper. The logo is enlarged
+     * only through its image dimensions, while the wrapper remains transparent.
+     */
     const logoWrap = overlay.querySelector('.pm-logo-wrap');
     if (logoWrap && logoUrl) {
       let img = logoWrap.querySelector('img.logo');
@@ -121,7 +122,6 @@
       img.src = logoUrl;
     }
 
-    // Signature: re-inject the saved ttd_url after the preview exists.
     const sigBox = overlay.querySelector('.pm-signature-box');
     if (sigBox) {
       const line = sigBox.querySelector('.pm-signature-line');
@@ -153,9 +153,32 @@
     const style = document.getElementById('pmPrintFixStyles') || document.createElement('style');
     style.id = 'pmPrintFixStyles';
     style.textContent = `
+      /* Header stays transparent; no white logo box */
       #pmPrintPreview .pm-letterhead { min-height:118px !important; padding:10px 16px !important; gap:16px !important; }
-      #pmPrintPreview .pm-logo-wrap { width:108px !important; height:108px !important; flex:0 0 108px !important; border-radius:16px !important; }
-      #pmPrintPreview .pm-letterhead .logo { width:100px !important; height:100px !important; max-width:100px !important; max-height:100px !important; object-fit:contain !important; transform:scale(1.45) !important; }
+      #pmPrintPreview .pm-logo-wrap {
+        width:120px !important;
+        height:108px !important;
+        flex:0 0 120px !important;
+        border-radius:0 !important;
+        background:transparent !important;
+        border:none !important;
+        box-shadow:none !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        overflow:visible !important;
+      }
+      #pmPrintPreview .pm-letterhead .logo {
+        width:112px !important;
+        height:112px !important;
+        max-width:none !important;
+        max-height:none !important;
+        object-fit:contain !important;
+        transform:none !important;
+        background:transparent !important;
+        border:none !important;
+        box-shadow:none !important;
+      }
       #pmPrintPreview .pm-brand-name { font-size:18px !important; }
       #pmPrintPreview .pm-brand p { white-space:nowrap !important; }
       #pmPrintPreview .pm-contact { font-weight:700 !important; }
@@ -165,8 +188,8 @@
       #pmPrintPreview .pm-signature-line { width:190px !important; margin:3px auto 4px !important; }
       @media print {
         #pmPrintPreview .pm-letterhead { min-height:118px !important; }
-        #pmPrintPreview .pm-logo-wrap { width:108px !important; height:108px !important; }
-        #pmPrintPreview .pm-letterhead .logo { width:100px !important; height:100px !important; transform:scale(1.45) !important; }
+        #pmPrintPreview .pm-logo-wrap { width:120px !important; height:108px !important; background:transparent !important; border:none !important; overflow:visible !important; }
+        #pmPrintPreview .pm-letterhead .logo { width:112px !important; height:112px !important; transform:none !important; background:transparent !important; border:none !important; }
       }
     `;
     if (!style.parentNode) document.head.appendChild(style);
