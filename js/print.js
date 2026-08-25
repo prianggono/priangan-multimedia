@@ -1,8 +1,4 @@
-/* Robust A4 preview / print.
- * IMPORTANT: this file is loaded BEFORE app.js.
- * A real function declaration is used so app.js can safely register
- * window.printQuote = printQuote without throwing ReferenceError.
- */
+/* Professional A4 quotation preview / print */
 
 function printQuote() {
   try {
@@ -80,9 +76,9 @@ function printQuote() {
     };
 
     const multiline = (value) => safe(value).replace(/\r?\n/g, '<br>');
-
     const total = validItems.reduce((sum, item) => sum + itemSubtotal(item), 0);
     const number = 'PM-' + new Date().getFullYear() + '-' + Date.now().toString().slice(-6);
+    const today = new Date().toISOString().slice(0, 10);
 
     const rows = validItems.map((item, index) => {
       let qtyText = String(item.qty || 1);
@@ -96,25 +92,28 @@ function printQuote() {
 
       return `
         <tr>
-          <td class="center">${index + 1}</td>
+          <td class="center row-no">${index + 1}</td>
           <td>
             <strong>${safe(item.item || '-')}</strong>
             <div class="code">${safe(item.kode || '')}</div>
           </td>
           <td class="center">${safe(qtyText)}</td>
-          <td class="center">${safe(schedule)}</td>
-          <td class="right">${formatMoney(item.harga)}</td>
-          <td class="right">${formatMoney(itemSubtotal(item))}</td>
+          <td class="center schedule">${safe(schedule)}</td>
+          <td class="right nowrap">${formatMoney(item.harga)}</td>
+          <td class="right nowrap strong-price">${formatMoney(itemSubtotal(item))}</td>
         </tr>`;
     }).join('');
 
     const logo = currentTemplate.logo_url
-      ? `<img class="logo" src="${safe(currentTemplate.logo_url)}" alt="Logo">`
+      ? `<img class="logo" src="${safe(currentTemplate.logo_url)}" alt="Logo" onerror="this.style.display='none'">`
+      : '<div class="logo-fallback">PM</div>';
+
+    const signatureImage = currentTemplate.ttd_url
+      ? `<img class="signature" src="${safe(currentTemplate.ttd_url)}" alt="Tanda tangan" onerror="this.style.display='none'">`
       : '';
 
-    const signature = currentTemplate.ttd_url
-      ? `<img class="signature" src="${safe(currentTemplate.ttd_url)}" alt="TTD">`
-      : '<div class="signature-space"></div>';
+    const signerName = currentTemplate.nama_penandatangan || '____________________________';
+    const signerRole = currentTemplate.jabatan_penandatangan || '';
 
     const old = document.getElementById('pmPrintPreview');
     if (old) old.remove();
@@ -135,37 +134,59 @@ function printQuote() {
 
       <div class="pm-print-scroll">
         <main class="pm-a4" id="pmPrintArea">
+          <div class="pm-top-accent"></div>
+
           <header class="pm-letterhead">
-            ${logo}
+            <div class="pm-logo-wrap">${logo}</div>
             <div class="pm-brand">
-              <h1>${safe(currentTemplate.kop_text || 'PRIANGAN MULTIMEDIA')}</h1>
-              <p>${safe(currentTemplate.alamat || '')}</p>
-              <p>${safe(currentTemplate.telepon || '')}${currentTemplate.whatsapp ? ' | WA ' + safe(currentTemplate.whatsapp) : ''}${currentTemplate.email ? ' | ' + safe(currentTemplate.email) : ''}</p>
+              <div class="pm-brand-name">${safe(currentTemplate.kop_text || 'PRIANGAN MULTIMEDIA')}</div>
+              <div class="pm-brand-sub">SALES & QUOTATION</div>
+              ${currentTemplate.alamat ? `<p>${safe(currentTemplate.alamat)}</p>` : ''}
+              <p>${safe(currentTemplate.telepon || '')}${currentTemplate.whatsapp ? '  •  WA ' + safe(currentTemplate.whatsapp) : ''}${currentTemplate.email ? '  •  ' + safe(currentTemplate.email) : ''}</p>
+              ${currentTemplate.website ? `<p class="website">${safe(currentTemplate.website)}</p>` : ''}
+            </div>
+            <div class="pm-doc-tag">
+              <span>QUOTATION</span>
+              <strong>${safe(number)}</strong>
             </div>
           </header>
 
-          <h2 class="pm-title">SURAT PENAWARAN HARGA</h2>
+          <div class="pm-title-row">
+            <div>
+              <div class="pm-eyebrow">OFFICIAL BUSINESS PROPOSAL</div>
+              <h1>SURAT PENAWARAN HARGA</h1>
+            </div>
+            <div class="pm-date-box">
+              <span>TANGGAL</span>
+              <strong>${dateID(today)}</strong>
+            </div>
+          </div>
 
-          <table class="pm-meta">
-            <tr><td>Nomor</td><td>${safe(number)}</td></tr>
-            <tr><td>Tanggal</td><td>${dateID(new Date().toISOString().slice(0, 10))}</td></tr>
-            <tr><td>Kepada Yth.</td><td><strong>${safe(client)}</strong></td></tr>
-            <tr><td>Perusahaan</td><td>${safe(perusahaan)}</td></tr>
-            <tr><td>Event / Project</td><td><strong>${safe(eventName)}</strong></td></tr>
-            <tr><td>Periode</td><td>${dateID(startDate)} - ${dateID(endDate)}</td></tr>
-            ${whatsapp ? `<tr><td>WhatsApp</td><td>${safe(whatsapp)}</td></tr>` : ''}
-            ${email ? `<tr><td>Email</td><td>${safe(email)}</td></tr>` : ''}
-          </table>
+          <section class="pm-info-card">
+            <div class="pm-info-section">
+              <div class="pm-section-label">DITUJUKAN KEPADA</div>
+              <div class="pm-client-name">${safe(client)}</div>
+              <div>${safe(perusahaan)}</div>
+              ${whatsapp ? `<div>WA / Telp: ${safe(whatsapp)}</div>` : ''}
+              ${email ? `<div>${safe(email)}</div>` : ''}
+            </div>
+            <div class="pm-info-section pm-event-section">
+              <div class="pm-section-label">EVENT / PROJECT</div>
+              <div class="pm-event-name">${safe(eventName)}</div>
+              <div class="pm-period-label">PERIODE</div>
+              <div>${dateID(startDate)} — ${dateID(endDate)}</div>
+            </div>
+          </section>
 
           <p class="pm-opening">
             Dengan hormat,<br>
-            Bersama ini kami sampaikan penawaran harga untuk kebutuhan event/project tersebut sebagai berikut:
+            Bersama ini kami sampaikan penawaran harga untuk kebutuhan event / project tersebut sebagai berikut:
           </p>
 
           <table class="pm-items">
             <thead>
               <tr>
-                <th>No.</th>
+                <th class="col-no">No.</th>
                 <th>Produk / Jasa</th>
                 <th>Qty / Dimensi</th>
                 <th>Jadwal</th>
@@ -183,18 +204,24 @@ function printQuote() {
           </table>
 
           <section class="pm-terms">
-            <strong>Syarat & Ketentuan</strong>
-            <div>${multiline(currentTemplate.ketentuan || '1. Downpayment minimum 50%.\n2. Pelunasan 50% dilakukan setelah unit terpasang.\n3. Pembayaran DP yang telah dilakukan tidak dapat dikembalikan.\n4. Perubahan jumlah atau spesifikasi dapat mempengaruhi nilai penawaran.')}</div>
+            <div class="pm-section-heading"><span>01</span><strong>SYARAT & KETENTUAN</strong></div>
+            <div class="pm-terms-body">${multiline(currentTemplate.ketentuan || '1. Downpayment minimum 50%.\n2. Pelunasan 50% dilakukan setelah unit terpasang.\n3. Pembayaran DP yang telah dilakukan tidak dapat dikembalikan.\n4. Perubahan jumlah atau spesifikasi dapat mempengaruhi nilai penawaran.')}</div>
           </section>
 
           <section class="pm-signature">
-            <p>Hormat kami,</p>
-            ${signature}
-            <strong>${safe(currentTemplate.nama_penandatangan || '')}</strong>
-            <div>${safe(currentTemplate.jabatan_penandatangan || '')}</div>
+            <div class="pm-signature-label">HORMAT KAMI,</div>
+            <div class="pm-signature-box">
+              ${signatureImage}
+              <div class="pm-signature-line"></div>
+              <strong>${safe(signerName)}</strong>
+              ${signerRole ? `<div class="pm-signature-role">${safe(signerRole)}</div>` : ''}
+            </div>
           </section>
 
-          <footer>${safe(currentTemplate.website || '')}</footer>
+          <footer class="pm-footer">
+            <div>Terima kasih atas kepercayaan dan kesempatan yang diberikan kepada Priangan Multimedia.</div>
+            <strong>${safe(currentTemplate.kop_text || 'PRIANGAN MULTIMEDIA')}</strong>
+          </footer>
         </main>
       </div>`;
 
