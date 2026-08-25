@@ -1,210 +1,50 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Priangan Multimedia — Sales & Quotation</title>
   <link rel="stylesheet" href="css/style.css">
-  <!-- Supabase JS v2 -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-
-  <div class="app-container">
-    <!-- SIDEBAR -->
+  <div id="app">
     <aside class="sidebar">
       <div class="brand">
-        <h2>PRIANGAN</h2>
-        <span>MULTIMEDIA</span>
+        <div class="mark">PM</div>
+        <div>
+          <b>PRIANGAN MULTIMEDIA</b>
+          <small>SALES & QUOTATION</small>
+        </div>
       </div>
-      <nav class="nav-menu">
-        <a href="#dashboard" class="nav-link active" onclick="switchMenu('dashboard')">Dashboard</a>
-        <a href="#master-harga" class="nav-link" onclick="switchMenu('master-harga')">Master Harga</a>
-        <a href="#client" class="nav-link" onclick="switchMenu('client')">Client</a>
-        <a href="#buat-penawaran" class="nav-link" onclick="switchMenu('buat-penawaran')">Buat Penawaran</a>
-        <a href="#riwayat-penawaran" class="nav-link" onclick="switchMenu('riwayat-penawaran')">Riwayat Penawaran</a>
-        <a href="#template-surat" class="nav-link" onclick="switchMenu('template-surat')">Template Surat</a>
-        <a href="#pengaturan" class="nav-link" onclick="switchMenu('pengaturan')">Pengaturan</a>
+      <nav>
+        <button class="nav active" data-p="dashboard">▦ Dashboard</button>
+        <button class="nav" data-p="master">◇ Master Harga</button>
+        <button class="nav" data-p="clients">♙ Client</button>
+        <button class="nav" data-p="quotation">▣ Buat Penawaran</button>
+        <button class="nav" data-p="history">▤ Riwayat Penawaran</button>
+        <button class="nav" data-p="template">▧ Template Surat</button>
       </nav>
+      <button class="nav bottom" data-p="settings">⚙ Pengaturan</button>
     </aside>
-
-    <!-- MAIN CONTENT -->
-    <main class="main-content">
-      
-      <!-- DASHBOARD (Default Aktif) -->
-      <section id="page-dashboard" class="page-section active">
-        <div class="page-header">
-          <div>
-            <h1>Dashboard</h1>
-            <p>Selamat Datang di Priangan Multimedia Sales & Quotation System.</p>
-          </div>
+    <main>
+      <header>
+        <button id="menu">☰</button>
+        <div>
+          <b id="title">Dashboard</b>
+          <small>Priangan Multimedia</small>
         </div>
-      </section>
-
-      <!-- HALAMAN MASTER HARGA -->
-      <section id="page-master-harga" class="page-section">
-        <div class="page-header">
-          <div>
-            <h1>Master Harga</h1>
-            <p>Produk dan jasa multimedia.</p>
-          </div>
-          <div class="header-actions">
-            <button class="btn btn-primary" onclick="openModalTambahHarga()">+ Tambah Item</button>
-            <button class="btn btn-secondary" onclick="openModalImportCSV()">Import CSV</button>
-          </div>
-        </div>
-
-        <div class="table-responsive">
-          <table class="data-table" id="table-master-harga">
-            <thead>
-              <tr>
-                <th>Kode</th>
-                <th>Item</th>
-                <th>Kategori</th>
-                <th>Satuan</th>
-                <th>Harga Jual</th>
-                <th>Status</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-master-harga">
-              <!-- Data dimuat via app.js -->
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- CLIENT -->
-      <section id="page-client" class="page-section">
-        <div class="page-header">
-          <div>
-            <h1>Client</h1>
-            <p>Data pelanggan dan perusahaan.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- BUAT PENAWARAN -->
-      <section id="page-buat-penawaran" class="page-section">
-        <div class="page-header">
-          <div>
-            <h1>Buat Penawaran</h1>
-            <p>Buat quotation baru untuk client.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- RIWAYAT PENAWARAN -->
-      <section id="page-riwayat-penawaran" class="page-section">
-        <div class="page-header">
-          <div>
-            <h1>Riwayat Penawaran</h1>
-            <p>Daftar penawaran yang pernah dibuat.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- TEMPLATE SURAT -->
-      <section id="page-template-surat" class="page-section">
-        <div class="page-header">
-          <div>
-            <h1>Template Surat</h1>
-            <p>Pengaturan kop, logo, dan syarat ketentuan surat.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- PENGATURAN -->
-      <section id="page-pengaturan" class="page-section">
-        <div class="page-header">
-          <div>
-            <h1>Pengaturan</h1>
-            <p>Pengaturan aplikasi dan koneksi.</p>
-          </div>
-        </div>
-      </section>
-
+        <span id="status" class="badge warn">Belum terhubung</span>
+      </header>
+      <section id="content"></section>
     </main>
   </div>
 
-  <!-- MODAL TAMBAH HARGA MANUAL -->
-  <div id="modal-harga" class="modal">
-    <div class="modal-content">
-      <span class="close-btn" onclick="closeModalHarga()">&times;</span>
-      <h3>Tambah / Edit Master Harga</h3>
-      <form id="form-master-harga" onsubmit="saveMasterHarga(event)">
-        <input type="hidden" id="harga-id">
-        <div class="form-group">
-          <label>Kode Item</label>
-          <input type="text" id="harga-kode" required>
-        </div>
-        <div class="form-group">
-          <label>Nama Item</label>
-          <input type="text" id="harga-item" required>
-        </div>
-        <div class="form-group">
-          <label>Kategori</label>
-          <input type="text" id="harga-kategori" required>
-        </div>
-        <div class="form-group">
-          <label>Satuan</label>
-          <input type="text" id="harga-satuan" required>
-        </div>
-        <div class="form-group">
-          <label>Harga Jual (Rp)</label>
-          <input type="number" id="harga-jual" required>
-        </div>
-        <div class="form-group">
-          <label>Status Aktif</label>
-          <select id="harga-aktif">
-            <option value="YA">YA</option>
-            <option value="TIDAK">TIDAK</option>
-          </select>
-        </div>
-        <button type="submit" class="btn btn-primary">Simpan</button>
-      </form>
-    </div>
-  </div>
+  <!-- Input File Tersembunyi untuk Import CSV -->
+  <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="handleCSVFile(event)">
 
-  <!-- MODAL IMPORT CSV MASTER HARGA -->
-  <div id="modal-import-csv" class="modal">
-    <div class="modal-content modal-lg">
-      <span class="close-btn" onclick="closeModalImportCSV()">&times;</span>
-      <h3>Import Master Harga dari CSV</h3>
-      <p class="text-sm">Format Header CSV WAJIB: <code>kode,item,kategori,satuan,harga_jual,aktif</code></p>
-      
-      <div class="form-group" style="margin-top: 15px;">
-        <input type="file" id="csv-file-input" accept=".csv" onchange="handleCSVFileSelect(event)">
-      </div>
+  <div id="toast"></div>
 
-      <!-- Container Preview CSV -->
-      <div id="csv-preview-container" style="display:none; margin-top: 15px;">
-        <h4>Preview & Validasi Data (<span id="csv-count">0</span> baris)</h4>
-        <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Kode</th>
-                <th>Item</th>
-                <th>Kategori</th>
-                <th>Satuan</th>
-                <th>Harga Jual</th>
-                <th>Aktif</th>
-                <th>Status Validasi</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-csv-preview"></tbody>
-          </table>
-        </div>
-        <div class="modal-actions" style="margin-top: 15px; text-align: right;">
-          <button class="btn btn-secondary" onclick="closeModalImportCSV()">Batal</button>
-          <button id="btn-submit-import" class="btn btn-primary" onclick="processImportCSV()">Proses Import ke Supabase</button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/app.js"></script>
 </body>
