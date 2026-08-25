@@ -64,6 +64,15 @@ function csvPrice(value) {
   return Number(digits) || 0;
 }
 
+// Supabase column master_harga.aktif bertipe boolean.
+// CSV boleh menggunakan YA/TIDAK, YES/NO, TRUE/FALSE, 1/0, AKTIF/NONAKTIF.
+function csvBoolean(value) {
+  const s = String(value ?? '').trim().toUpperCase();
+  if (['TIDAK', 'NO', 'FALSE', '0', 'NONAKTIF', 'INACTIVE', 'OFF'].includes(s)) return false;
+  if (['YA', 'YES', 'TRUE', '1', 'AKTIF', 'ACTIVE', 'ON'].includes(s)) return true;
+  return true;
+}
+
 async function handleCSVImport(e) {
   const input = e?.target;
   const file = input?.files?.[0];
@@ -114,19 +123,20 @@ async function handleCSVImport(e) {
       if (seen.has(key)) { errors.push(`Baris ${i + 1}: kode ${kode} duplikat`); continue; }
       seen.add(key);
 
-      const aktifRaw = csvValue(obj, ['aktif', 'status', 'active']).toUpperCase();
+      const aktifRaw = csvValue(obj, ['aktif', 'status', 'active']);
       payload.push({
         kode,
         item,
         kategori: csvValue(obj, ['kategori', 'category']),
         satuan: csvValue(obj, ['satuan', 'unit']),
         harga_jual: csvPrice(csvValue(obj, ['harga_jual', 'harga', 'price'])),
-        aktif: ['TIDAK', 'NO', 'FALSE', 'NONAKTIF', 'INACTIVE'].includes(aktifRaw) ? 'TIDAK' : 'YA'
+        aktif: csvBoolean(aktifRaw)
       });
     }
 
     if (!payload.length) { msg('Tidak ada data valid untuk di-import.'); return; }
 
+    console.log('CSV payload:', payload);
     msg(`Mengunggah ${payload.length} item...`);
     const batchSize = 100;
 
