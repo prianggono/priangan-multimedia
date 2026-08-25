@@ -16,7 +16,6 @@ async function printQuote() {
           .order('id', { ascending: false })
           .limit(1)
           .maybeSingle();
-
         if (!latest.error && latest.data) currentTemplate = latest.data;
       }
     } catch (templateError) {
@@ -54,29 +53,21 @@ async function printQuote() {
       const price = Number(item.harga) || 0;
       const days = duration(item.mulai, item.selesai);
       const qty = Number(item.qty) || 1;
-
-      if (item.tipe === 'luas') {
-        return (Number(item.lebar) || 0) * (Number(item.tinggi) || 0) * price * days;
-      }
-
+      if (item.tipe === 'luas') return (Number(item.lebar) || 0) * (Number(item.tinggi) || 0) * price * days;
       if (item.tipe === 'rigging') {
         const perimeter = ((Number(item.panjang) || 0) * 2) + ((Number(item.tinggi) || 0) * 2);
         return perimeter * price * days;
       }
-
       if (item.tipe === 'level') {
         const led = validItems.find((row) => /led|videotron/i.test(row.item || ''));
         const width = led ? Number(led.lebar) || 0 : Number(item.lebar) || 0;
         return width * (Number(item.tinggi) || 0) * price * days;
       }
-
       return qty * price * days;
     };
 
     const formatMoney = (value) => new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      maximumFractionDigits: 0
+      style: 'currency', currency: 'IDR', maximumFractionDigits: 0
     }).format(Number(value) || 0);
 
     const safe = (value) => String(value ?? '').replace(/[&<>"']/g, (m) => ({
@@ -87,9 +78,7 @@ async function printQuote() {
       if (!value) return '-';
       const d = new Date(value + 'T00:00:00');
       if (Number.isNaN(d.getTime())) return safe(value);
-      return d.toLocaleDateString('id-ID', {
-        day: '2-digit', month: 'long', year: 'numeric'
-      });
+      return d.toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
     };
 
     const multiline = (value) => safe(value).replace(/\r?\n/g, '<br>');
@@ -102,40 +91,30 @@ async function printQuote() {
       if (item.tipe === 'luas') qtyText = `${item.lebar || 0} × ${item.tinggi || 0} m²`;
       else if (item.tipe === 'level') qtyText = `${item.lebar || 0} × ${item.tinggi || 0} m`;
       else if (item.tipe === 'rigging') qtyText = `${item.panjang || 0} × ${item.tinggi || 0} m`;
-
-      const schedule = item.mulai || item.selesai
-        ? `${dateID(item.mulai)} - ${dateID(item.selesai)}`
-        : '-';
-
-      return `
-        <tr>
-          <td class="center row-no">${index + 1}</td>
-          <td>
-            <strong>${safe(item.item || '-')}</strong>
-            <div class="code">${safe(item.kode || '')}</div>
-          </td>
-          <td class="center">${safe(qtyText)}</td>
-          <td class="center schedule">${safe(schedule)}</td>
-          <td class="right nowrap">${formatMoney(item.harga)}</td>
-          <td class="right nowrap strong-price">${formatMoney(itemSubtotal(item))}</td>
-        </tr>`;
+      const schedule = item.mulai || item.selesai ? `${dateID(item.mulai)} - ${dateID(item.selesai)}` : '-';
+      return `<tr>
+        <td class="center row-no">${index + 1}</td>
+        <td><strong>${safe(item.item || '-')}</strong><div class="code">${safe(item.kode || '')}</div></td>
+        <td class="center">${safe(qtyText)}</td>
+        <td class="center schedule">${safe(schedule)}</td>
+        <td class="right nowrap">${formatMoney(item.harga)}</td>
+        <td class="right nowrap strong-price">${formatMoney(itemSubtotal(item))}</td>
+      </tr>`;
     }).join('');
 
     const logoUrl = String(currentTemplate.logo_url || '').trim();
     const signatureUrl = String(currentTemplate.ttd_url || '').trim();
-
     const logo = logoUrl
       ? `<img class="logo" src="${safe(logoUrl)}" alt="Logo Priangan Multimedia" onerror="this.closest('.pm-logo-wrap')?.classList.add('logo-error'); this.remove();">`
       : '<div class="logo-fallback">PM</div>';
-
     const signatureImage = signatureUrl
-      ? `<img class="signature" src="${safe(signatureUrl)}" alt="Tanda tangan ${safe(currentTemplate.nama_penandatangan || '')}" onerror="this.style.display='none'; this.nextElementSibling?.classList.add('signature-missing');">`
+      ? `<img class="signature" src="${safe(signatureUrl)}" alt="Tanda tangan ${safe(currentTemplate.nama_penandatangan || '')}" onerror="this.style.display='none'">`
       : '';
 
     const signerName = currentTemplate.nama_penandatangan || '____________________________';
     const signerRole = currentTemplate.jabatan_penandatangan || '';
 
-    // Telp + WhatsApp are intentionally shown as one compact contact line.
+    // Telephone and WhatsApp are intentionally combined into one compact line.
     const telp = String(currentTemplate.telepon || '').trim();
     const wa = String(currentTemplate.whatsapp || '').trim();
     let contactLine = '';
@@ -150,20 +129,15 @@ async function printQuote() {
     overlay.id = 'pmPrintPreview';
     overlay.innerHTML = `
       <div class="pm-print-toolbar">
-        <div>
-          <strong>Preview Surat Penawaran</strong>
-          <span>A4 Portrait • ${safe(number)}</span>
-        </div>
+        <div><strong>Preview Surat Penawaran</strong><span>A4 Portrait • ${safe(number)}</span></div>
         <div class="pm-print-actions">
           <button type="button" class="pm-close" onclick="closePrintPreview()">Tutup</button>
           <button type="button" class="pm-print" onclick="executePrintPreview()">Cetak / Simpan PDF</button>
         </div>
       </div>
-
       <div class="pm-print-scroll">
         <main class="pm-a4" id="pmPrintArea">
           <div class="pm-top-accent"></div>
-
           <header class="pm-letterhead">
             <div class="pm-logo-wrap">${logo}</div>
             <div class="pm-brand">
@@ -173,21 +147,12 @@ async function printQuote() {
               ${contactLine ? `<p>${contactLine}</p>` : ''}
               ${currentTemplate.website ? `<p class="website">${safe(currentTemplate.website)}</p>` : ''}
             </div>
-            <div class="pm-doc-tag">
-              <span>QUOTATION</span>
-              <strong>${safe(number)}</strong>
-            </div>
+            <div class="pm-doc-tag"><span>QUOTATION</span><strong>${safe(number)}</strong></div>
           </header>
 
           <div class="pm-title-row">
-            <div>
-              <div class="pm-eyebrow">OFFICIAL BUSINESS PROPOSAL</div>
-              <h1>SURAT PENAWARAN HARGA</h1>
-            </div>
-            <div class="pm-date-box">
-              <span>TANGGAL</span>
-              <strong>${dateID(today)}</strong>
-            </div>
+            <div><div class="pm-eyebrow">OFFICIAL BUSINESS PROPOSAL</div><h1>SURAT PENAWARAN HARGA</h1></div>
+            <div class="pm-date-box"><span>TANGGAL</span><strong>${dateID(today)}</strong></div>
           </div>
 
           <section class="pm-info-card">
@@ -206,28 +171,13 @@ async function printQuote() {
             </div>
           </section>
 
-          <p class="pm-opening">
-            Dengan hormat,<br>
-            Bersama ini kami sampaikan penawaran harga untuk kebutuhan event / project tersebut sebagai berikut:
-          </p>
+          <p class="pm-opening">Dengan hormat,<br>Bersama ini kami sampaikan penawaran harga untuk kebutuhan event / project tersebut sebagai berikut:</p>
 
           <table class="pm-items">
-            <thead>
-              <tr>
-                <th class="col-no">No.</th>
-                <th>Produk / Jasa</th>
-                <th>Qty / Dimensi</th>
-                <th>Jadwal</th>
-                <th>Harga</th>
-                <th>Subtotal</th>
-              </tr>
-            </thead>
+            <thead><tr><th class="col-no">No.</th><th>Produk / Jasa</th><th>Qty / Dimensi</th><th>Jadwal</th><th>Harga</th><th>Subtotal</th></tr></thead>
             <tbody>
               ${rows}
-              <tr class="pm-total">
-                <td colspan="5" class="right">GRAND TOTAL</td>
-                <td class="right">${formatMoney(total)}</td>
-              </tr>
+              <tr class="pm-total"><td colspan="5" class="right">GRAND TOTAL</td><td class="right">${formatMoney(total)}</td></tr>
             </tbody>
           </table>
 
@@ -246,10 +196,7 @@ async function printQuote() {
             </div>
           </section>
 
-          <footer class="pm-footer">
-            <div>Terima kasih atas kepercayaan dan kesempatan yang diberikan kepada Priangan Multimedia.</div>
-            <strong>${safe(currentTemplate.kop_text || 'PRIANGAN MULTIMEDIA')}</strong>
-          </footer>
+          <footer class="pm-footer"><div>Terima kasih atas kepercayaan dan kesempatan yang diberikan kepada Priangan Multimedia.</div><strong>${safe(currentTemplate.kop_text || 'PRIANGAN MULTIMEDIA')}</strong></footer>
         </main>
       </div>`;
 
@@ -266,12 +213,26 @@ function closePrintPreview() {
   document.body.classList.remove('pm-preview-open');
 }
 
-function executePrintPreview() {
+async function executePrintPreview() {
   const area = document.getElementById('pmPrintArea');
   if (!area) {
     if (typeof msg === 'function') msg('Area A4 tidak ditemukan.');
     return;
   }
+
+  // Wait for logo/signature images before opening the browser print dialog.
+  const images = Array.from(area.querySelectorAll('img'));
+  await Promise.all(images.map((img) => {
+    if (img.complete) return Promise.resolve();
+    return new Promise((resolve) => {
+      const done = () => { img.removeEventListener('load', done); img.removeEventListener('error', done); resolve(); };
+      img.addEventListener('load', done);
+      img.addEventListener('error', done);
+    });
+  }));
+
+  // Give the browser one frame to lay out the loaded images.
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   window.print();
 }
 
