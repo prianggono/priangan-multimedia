@@ -1,8 +1,12 @@
-/* PRIANGAN MULTIMEDIA — compact history actions/layout */
+/* PRIANGAN MULTIMEDIA — history actions below quotation data */
 (function(){
   'use strict';
   const S=v=>String(v??'').trim();
-  const idFrom=el=>{const m=S(el?.getAttribute('onclick')).match(/(?:editQuotation|publishQuotation|deleteQuotation|inputDP|inputPelunasan)\s*\(\s*(\d+)\s*\)/);return m?Number(m[1]):null};
+  const getId=el=>{
+    const m=S(el?.getAttribute('onclick')).match(/(?:editQuotation|publishQuotation|deleteQuotation|inputDP|inputPelunasan)\s*\(\s*(\d+)\s*\)/);
+    return m?Number(m[1]):null;
+  };
+
   function normalizePaymentColumns(table){
     const head=table.querySelector('thead tr');
     if(!head)return;
@@ -21,43 +25,125 @@
       table.querySelectorAll('tbody tr').forEach(tr=>tr.children[i]?.remove());
     });
   }
+
+  function findOriginalActionCell(tr){
+    return [...tr.children].find(td=>td.querySelector(
+      '[onclick*="editQuotation"],[onclick*="publishQuotation"],[onclick*="deleteQuotation"],[onclick*="inputDP"],[onclick*="inputPelunasan"]'
+    ));
+  }
+
+  function buildButton(className,label,handler){
+    const b=document.createElement('button');
+    b.type='button';
+    b.className=className;
+    b.textContent=label;
+    if(handler)b.addEventListener('click',handler);
+    return b;
+  }
+
   function normalizeActions(table){
-    table.querySelectorAll('tbody tr').forEach(tr=>{
-      const cells=[...tr.children];
-      const actionCell=cells.find(td=>td.querySelector('[onclick*="editQuotation"],[onclick*="publishQuotation"],[onclick*="deleteQuotation"],button'));
+    const tbody=table.querySelector('tbody');
+    if(!tbody)return;
+
+    [...tbody.querySelectorAll('tr')].forEach(tr=>{
+      if(tr.dataset.pmActionRow==='1')return;
+
+      const actionCell=findOriginalActionCell(tr);
       if(!actionCell)return;
-      const edit=[...actionCell.querySelectorAll('button')].find(b=>/edit/i.test(b.textContent));
-      const publish=[...actionCell.querySelectorAll('button')].find(b=>/publish/i.test(b.textContent));
-      const del=[...actionCell.querySelectorAll('button')].find(b=>/hapus/i.test(b.textContent));
-      const id=idFrom(edit)||idFrom(publish)||idFrom(del);
+
+      const buttons=[...actionCell.querySelectorAll('button')];
+      const edit=buttons.find(b=>/edit/i.test(b.textContent));
+      const publish=buttons.find(b=>/publish/i.test(b.textContent));
+      const del=buttons.find(b=>/hapus/i.test(b.textContent));
+      const dp=buttons.find(b=>/^dp$/i.test(b.textContent));
+      const paid=buttons.find(b=>/bayar/i.test(b.textContent));
+
+      const id=getId(edit)||getId(publish)||getId(del)||getId(dp)||getId(paid);
       if(!id)return;
-      actionCell.innerHTML=`<div class="pmCompactActions"><div class="pmCompactRow pmCompactTop"><button type="button" class="btn sm" data-action="edit">Edit</button>${publish?'<button type="button" class="btn green sm" data-action="publish">Publish</button>':'<span class="pmAlreadySent">Sudah diberikan</span>'}<button type="button" class="btn red sm" data-action="delete">Hapus</button></div><div class="pmCompactRow pmCompactBottom"><button type="button" class="btn secondary sm" data-action="dp">DP</button><button type="button" class="btn green sm" data-action="paid">Bayar</button></div></div>`;
-      actionCell.querySelector('[data-action="edit"]').onclick=()=>window.editQuotation?.(id);
-      actionCell.querySelector('[data-action="publish"]')?.addEventListener('click',()=>window.publishQuotation?.(id));
-      actionCell.querySelector('[data-action="delete"]').onclick=()=>window.deleteQuotation?.(id);
-      actionCell.querySelector('[data-action="dp"]').onclick=()=>window.inputDP?.(id);
-      actionCell.querySelector('[data-action="paid"]').onclick=()=>window.inputPelunasan?.(id);
+
+      // Remove the old Aksi column cell from the quotation data row.
+      actionCell.remove();
+
+      // Prevent duplicate action rows when MutationObserver runs again.
+      const next=tr.nextElementSibling;
+      if(next?.dataset.pmActionRow==='1')return;
+
+      const actionRow=document.createElement('tr');
+      actionRow.dataset.pmActionRow='1';
+      actionRow.className='pmHistoryActionRow';
+
+      const actionTd=document.createElement('td');
+      actionTd.colSpan=Math.max(1,tr.children.length);
+      actionTd.className='pmHistoryActionCell';
+
+      const wrap=document.createElement('div');
+      wrap.className='pmHistoryActions';
+
+      if(edit)wrap.appendChild(buildButton('btn sm','Edit',()=>window.editQuotation?.(id)));
+      if(publish)wrap.appendChild(buildButton('btn green sm','Publish',()=>window.publishQuotation?.(id)));
+      else{
+        const sent=document.createElement('span');
+        sent.className='pmAlreadySent';
+        sent.textContent='Sudah diberikan';
+        wrap.appendChild(sent);
+      }
+      if(dp)wrap.appendChild(buildButton('btn secondary sm','DP',()=>window.inputDP?.(id)));
+      if(paid)wrap.appendChild(buildButton('btn green sm','Bayar',()=>window.inputPelunasan?.(id)));
+      if(del)wrap.appendChild(buildButton('btn red sm','Hapus',()=>window.deleteQuotation?.(id)));
+
+      actionTd.appendChild(wrap);
+      actionRow.appendChild(actionTd);
+      tr.insertAdjacentElement('afterend',actionRow);
     });
   }
+
   function apply(){
     if(!/^Riwayat Penawaran$/i.test(S(document.querySelector('#title')?.textContent)))return;
-    const tables=[...document.querySelectorAll('#content table')];
-    tables.forEach(t=>{normalizePaymentColumns(t);normalizeActions(t);t.classList.add('pm-compact-history');});
+    document.querySelectorAll('#content table').forEach(table=>{
+      normalizePaymentColumns(table);
+      normalizeActions(table);
+      table.classList.add('pm-history-below-actions');
+    });
   }
+
   const style=document.createElement('style');
   style.textContent=`
-    .pm-compact-history{width:100%;table-layout:auto}
-    .pm-compact-history th,.pm-compact-history td{vertical-align:middle}
-    .pm-compact-history th:last-child,.pm-compact-history td:last-child{min-width:150px;width:150px}
-    .pmCompactActions{display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:5px!important;width:max-content!important;min-width:145px!important}
-    .pmCompactRow{display:flex!important;align-items:center!important;gap:5px!important;flex-wrap:nowrap!important;height:30px!important}
-    .pmCompactRow .btn{white-space:nowrap!important;margin:0!important}
-    .pmCompactTop .btn.sm,.pmCompactBottom .btn.sm{padding:6px 9px!important;font-size:12px!important;line-height:1!important}
-    .pmAlreadySent{font-size:11px!important;color:#7dd3fc!important;white-space:nowrap!important;padding:0 4px!important}
-    @media(max-width:1050px){.pm-compact-history{min-width:1000px!important}.pm-compact-history th:last-child,.pm-compact-history td:last-child{min-width:145px!important;width:145px!important}}
+    .pm-history-below-actions{width:100%;table-layout:auto}
+    .pm-history-below-actions th,.pm-history-below-actions td{vertical-align:middle}
+    .pmHistoryActionRow td.pmHistoryActionCell{
+      padding:8px 10px!important;
+      border-top:0!important;
+      background:rgba(30,41,59,.32)!important;
+    }
+    .pmHistoryActions{
+      display:flex!important;
+      flex-direction:row!important;
+      align-items:center!important;
+      justify-content:flex-start!important;
+      gap:6px!important;
+      flex-wrap:wrap!important;
+      width:100%!important;
+    }
+    .pmHistoryActions .btn.sm{
+      padding:6px 10px!important;
+      font-size:12px!important;
+      line-height:1!important;
+      margin:0!important;
+      white-space:nowrap!important;
+    }
+    .pmAlreadySent{
+      font-size:11px!important;
+      color:#7dd3fc!important;
+      padding:6px 4px!important;
+      white-space:nowrap!important;
+    }
+    @media(max-width:800px){
+      .pmHistoryActions{gap:5px!important}
+    }
   `;
   document.head.appendChild(style);
-  const observer=new MutationObserver(apply);
+
+  const observer=new MutationObserver(()=>apply());
   observer.observe(document.body,{childList:true,subtree:true});
   setTimeout(apply,150);
   setTimeout(apply,600);
