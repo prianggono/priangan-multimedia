@@ -6,8 +6,7 @@ async function printQuote() {
     const currentItems = (typeof items !== 'undefined' && Array.isArray(items)) ? items : [];
     let currentTemplate = (typeof template !== 'undefined' && template) ? { ...template } : {};
 
-    // Always read the latest template before printing so logo/signature changes
-    // made in Template Surat are immediately reflected in the quotation.
+    // Always read the latest template before printing.
     try {
       if (typeof db !== 'undefined' && db) {
         const latest = await db
@@ -20,6 +19,14 @@ async function printQuote() {
       }
     } catch (templateError) {
       console.warn('Template refresh before print failed:', templateError);
+    }
+
+    // If the DB read is temporarily unavailable, use the saved template backup.
+    if (!currentTemplate.ttd_url) {
+      try {
+        const backup = JSON.parse(localStorage.getItem('PRIANGAN_TEMPLATE_BACKUP') || '{}');
+        if (backup && backup.ttd_url) currentTemplate = { ...currentTemplate, ...backup };
+      } catch (_) {}
     }
 
     const client = qs('#qc')?.value?.trim() || '';
@@ -49,21 +56,46 @@ async function printQuote() {
       return diff >= 0 ? diff + 1 : 1;
     };
 
+    const level120200 = (item) => {
+      const code = String(item?.kode || '').trim().toUpperCase();
+      const text = String(item?.item || '').toLowerCase();
+      return code === 'LED-LVL-120-200' || /level\s*120\s*[-–—]\s*200/.test(text);
+    };
+
+    const findLedWidth = () => {
+      const led = validItems.find((row) => {
+        const text = `${row?.item || ''} ${row?.kode || ''}`.toLowerCase();
+        return /led|videotron/.test(text) && Number(row?.lebar) > 0;
+      });
+      return led ? Number(led.lebar) || 0 : 0;
+    };
+
+    // Keep the Level width synchronized with the actual LED width used in this quote.
+    const ledWidth = findLedWidth();
+    validItems.forEach((item) => {
+      if (level120200(item) && ledWidth > 0) item.lebar = ledWidth;
+    });
+
     const itemSubtotal = (item) => {
       const price = Number(item.harga) || 0;
-      const days = duration(item.mulai, item.selesai);
+      const dayCount = duration(item.mulai, item.selesai);
       const qty = Number(item.qty) || 1;
-      if (item.tipe === 'luas') return (Number(item.lebar) || 0) * (Number(item.tinggi) || 0) * price * days;
+
+      if (level120200(item)) {
+        // LEVEL 120–200: price/m x LED width x days. Height is display-only.
+        return (Number(item.lebar) || ledWidth || 0) * price * dayCount;
+      }
+
+      if (item.tipe === 'luas') {
+        return (Number(item.lebar) || 0) * (Number(item.tinggi) || 0) * price * dayCount;
+      }
+
       if (item.tipe === 'rigging') {
         const perimeter = ((Number(item.panjang) || 0) * 2) + ((Number(item.tinggi) || 0) * 2);
-        return perimeter * price * days;
+        return perimeter * price * dayCount;
       }
-      if (item.tipe === 'level') {
-        const led = validItems.find((row) => /led|videotron/i.test(row.item || ''));
-        const width = led ? Number(led.lebar) || 0 : Number(item.lebar) || 0;
-        return width * (Number(item.tinggi) || 0) * price * days;
-      }
-      return qty * price * days;
+
+      return qty * price * dayCount;
     };
 
     const formatMoney = (value) => new Intl.NumberFormat('id-ID', {
@@ -89,7 +121,7 @@ async function printQuote() {
     const rows = validItems.map((item, index) => {
       let qtyText = String(item.qty || 1);
       if (item.tipe === 'luas') qtyText = `${item.lebar || 0} × ${item.tinggi || 0} m²`;
-      else if (item.tipe === 'level') qtyText = `${item.lebar || 0} × ${item.tinggi || 0} m`;
+      else if (level120200(item)) qtyText = `${item.lebar || ledWidth || 0} m`;
       else if (item.tipe === 'rigging') qtyText = `${item.panjang || 0} × ${item.tinggi || 0} m`;
       const schedule = item.mulai || item.selesai ? `${dateID(item.mulai)} - ${dateID(item.selesai)}` : '-';
       return `<tr>
@@ -102,19 +134,50 @@ async function printQuote() {
       </tr>`;
     }).join('');
 
+    async function resolveSignatureUrl(rawValue) {
+      const raw = String(rawValue || '').trim();
+      if (!raw) return '';
+      if (/^(data:|blob:)/i.test(raw)) return raw;
+
+      // A complete HTTP URL can be used directly.
+      if (/^https?:\/\//i.test(raw)) return raw;
+
+      if (typeof db === 'undefined' || !db) return raw;
+
+      // Accept either "bucket/path" or just "path".
+      const parts = raw.split('/').filter(Boolean);
+      const candidates = [];
+      if (parts.length > 1) candidates.push([parts[0], parts.slice(1).join('/')]);
+      ['surat-assets', 'templates', 'assets'].forEach((bucket) => candidates.push([bucket, raw]));
+
+      for (const [bucket, path] of candidates) {
+        try {
+          const publicResult = db.storage.from(bucket).getPublicUrl(path);
+          const publicUrl = publicResult?.data?.publicUrl;
+          if (publicUrl) return publicUrl;
+        } catch (_) {}
+        try {
+          const signedResult = await db.storage.from(bucket).createSignedUrl(path, 3600);
+          if (!signedResult.error && signedResult.data?.signedUrl) return signedResult.data.signedUrl;
+        } catch (_) {}
+      }
+      return raw;
+    }
+
     const logoUrl = String(currentTemplate.logo_url || '').trim();
-    const signatureUrl = String(currentTemplate.ttd_url || '').trim();
+    const signatureUrl = await resolveSignatureUrl(currentTemplate.ttd_url);
+
     const logo = logoUrl
       ? `<img class="logo" src="${safe(logoUrl)}" alt="Logo Priangan Multimedia" onerror="this.closest('.pm-logo-wrap')?.classList.add('logo-error'); this.remove();">`
       : '<div class="logo-fallback">PM</div>';
+
     const signatureImage = signatureUrl
-      ? `<img class="signature" src="${safe(signatureUrl)}" alt="Tanda tangan ${safe(currentTemplate.nama_penandatangan || '')}" onerror="this.style.display='none'">`
+      ? `<img class="signature" src="${safe(signatureUrl)}" alt="Tanda tangan ${safe(currentTemplate.nama_penandatangan || '')}" onerror="this.dataset.failed='1';this.style.display='none';">`
       : '';
 
     const signerName = currentTemplate.nama_penandatangan || '____________________________';
     const signerRole = currentTemplate.jabatan_penandatangan || '';
 
-    // Telephone and WhatsApp are intentionally combined into one compact line.
     const telp = String(currentTemplate.telepon || '').trim();
     const wa = String(currentTemplate.whatsapp || '').trim();
     let contactLine = '';
@@ -202,6 +265,21 @@ async function printQuote() {
 
     document.body.appendChild(overlay);
     document.body.classList.add('pm-preview-open');
+
+    // Wait for the signature to finish loading, then retry through the existing
+    // storage resolver if the first URL cannot be displayed.
+    const signature = overlay.querySelector('.signature');
+    if (signature) {
+      await new Promise((resolve) => {
+        if (signature.complete) return resolve();
+        signature.addEventListener('load', resolve, { once: true });
+        signature.addEventListener('error', resolve, { once: true });
+        setTimeout(resolve, 2500);
+      });
+      if (signature.naturalWidth === 0 && typeof window.pmRetryTTD === 'function') {
+        try { await window.pmRetryTTD(); } catch (_) {}
+      }
+    }
   } catch (error) {
     console.error('A4 preview error:', error);
     if (typeof msg === 'function') msg('Preview A4 gagal: ' + (error.message || error));
@@ -220,7 +298,6 @@ async function executePrintPreview() {
     return;
   }
 
-  // Wait for logo/signature images before opening the browser print dialog.
   const images = Array.from(area.querySelectorAll('img'));
   await Promise.all(images.map((img) => {
     if (img.complete) return Promise.resolve();
@@ -228,10 +305,10 @@ async function executePrintPreview() {
       const done = () => { img.removeEventListener('load', done); img.removeEventListener('error', done); resolve(); };
       img.addEventListener('load', done);
       img.addEventListener('error', done);
+      setTimeout(done, 3000);
     });
   }));
 
-  // Give the browser one frame to lay out the loaded images.
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   window.print();
 }
