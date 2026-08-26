@@ -1,10 +1,7 @@
 /* Final quotation print fixes: larger transparent logo, combined contact, reliable Supabase TTD */
 (function () {
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-  function clean(value) {
-    return String(value ?? '').trim();
-  }
+  const clean = (value) => String(value ?? '').trim();
 
   function escHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, (m) => ({
@@ -16,9 +13,7 @@
     try {
       const raw = localStorage.getItem('PRIANGAN_TEMPLATE_BACKUP');
       return raw ? JSON.parse(raw) : {};
-    } catch (_) {
-      return {};
-    }
+    } catch (_) { return {}; }
   }
 
   async function getLatestTemplate() {
@@ -26,8 +21,7 @@
     try {
       if (typeof db !== 'undefined' && db) {
         const result = await db.from('template_surat').select('*').order('id', { ascending: false }).limit(1);
-        if (!result.error && result.data && result.data[0]) latest = result.data[0];
-        else console.warn('Template print refresh:', result.error || 'template kosong');
+        if (!result.error && result.data?.[0]) latest = result.data[0];
       }
     } catch (error) {
       console.warn('Template print refresh failed:', error);
@@ -35,7 +29,6 @@
 
     const globalTemplate = (typeof template !== 'undefined' && template) ? template : {};
     const backup = getLocalTemplateBackup();
-
     return {
       ...backup,
       ...globalTemplate,
@@ -47,25 +40,38 @@
     };
   }
 
+  function storageCandidates(raw) {
+    const value = clean(raw);
+    if (!value) return [];
+    const out = [];
+    const parts = value.split('/').filter(Boolean);
+    if (parts.length > 1) out.push([parts[0], parts.slice(1).join('/')]);
+
+    const match = value.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+?)(?:\?.*)?$/i);
+    if (match) out.push([decodeURIComponent(match[1]), decodeURIComponent(match[2])]);
+
+    ['surat-assets', 'templates', 'assets'].forEach((bucket) => out.push([bucket, value]));
+    return out.filter((pair, index, self) => index === self.findIndex((x) => x[0] === pair[0] && x[1] === pair[1]));
+  }
+
   async function resolveStorageUrl(value) {
     const raw = clean(value);
     if (!raw) return '';
-    if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
+    if (/^(data:|blob:)/i.test(raw)) return raw;
+    if (typeof db === 'undefined' || !db?.storage) return raw;
 
-    try {
-      if (typeof db !== 'undefined' && db?.storage) {
-        const parts = raw.split('/').filter(Boolean);
-        const knownBucket = parts[0] || 'surat-assets';
-        const path = parts.length > 1 ? parts.slice(1).join('/') : raw;
-        const publicResult = db.storage.from(knownBucket).getPublicUrl(path);
-        if (publicResult?.data?.publicUrl) return publicResult.data.publicUrl;
-
-        const fallback = db.storage.from('surat-assets').getPublicUrl(raw);
-        if (fallback?.data?.publicUrl) return fallback.data.publicUrl;
-      }
-    } catch (error) {
-      console.warn('Storage URL resolve failed:', error);
+    for (const [bucket, path] of storageCandidates(raw)) {
+      try {
+        const signed = await db.storage.from(bucket).createSignedUrl(path, 3600);
+        if (!signed.error && signed.data?.signedUrl) return signed.data.signedUrl;
+      } catch (_) {}
+      try {
+        const pub = db.storage.from(bucket).getPublicUrl(path);
+        if (pub?.data?.publicUrl) return pub.data.publicUrl;
+      } catch (_) {}
     }
+
+    // Keep complete URLs as the final fallback.
     return raw;
   }
 
@@ -93,21 +99,14 @@
       const contact = buildContact(t);
       const email = clean(t.email);
       const website = clean(t.website);
-
       brand.innerHTML = `
         <div class="pm-brand-name">${escHtml(name)}</div>
         <div class="pm-brand-sub">SALES &amp; QUOTATION</div>
         ${address ? `<p class="pm-address">${escHtml(address)}</p>` : ''}
         ${contact || email ? `<p class="pm-contact">${escHtml(contact)}${contact && email ? '  •  ' : ''}${escHtml(email)}</p>` : ''}
-        ${website ? `<p class="website">${escHtml(website)}</p>` : ''}
-      `;
+        ${website ? `<p class="website">${escHtml(website)}</p>` : ''}`;
     }
 
-    /*
-     * Logo: keep the same transparent look as the previous good header.
-     * The white square must NOT come from the logo wrapper. The logo is enlarged
-     * only through its image dimensions, while the wrapper remains transparent.
-     */
     const logoWrap = overlay.querySelector('.pm-logo-wrap');
     if (logoWrap && logoUrl) {
       let img = logoWrap.querySelector('img.logo');
@@ -137,11 +136,10 @@
           sigBox.insertBefore(img, line || nameEl || null);
         }
         img.style.display = 'block';
+        img.style.visibility = 'visible';
+        img.style.opacity = '1';
         img.src = ttdUrl;
-        img.onerror = () => {
-          console.warn('TTD gagal dimuat:', img.src);
-          img.style.display = 'none';
-        };
+        img.onerror = () => console.warn('TTD gagal dimuat:', img.src);
       } else if (img) {
         img.remove();
       }
@@ -153,38 +151,15 @@
     const style = document.getElementById('pmPrintFixStyles') || document.createElement('style');
     style.id = 'pmPrintFixStyles';
     style.textContent = `
-      /* Header stays transparent; no white logo box */
       #pmPrintPreview .pm-letterhead { min-height:118px !important; padding:10px 16px !important; gap:16px !important; }
-      #pmPrintPreview .pm-logo-wrap {
-        width:120px !important;
-        height:108px !important;
-        flex:0 0 120px !important;
-        border-radius:0 !important;
-        background:transparent !important;
-        border:none !important;
-        box-shadow:none !important;
-        display:flex !important;
-        align-items:center !important;
-        justify-content:center !important;
-        overflow:visible !important;
-      }
-      #pmPrintPreview .pm-letterhead .logo {
-        width:112px !important;
-        height:112px !important;
-        max-width:none !important;
-        max-height:none !important;
-        object-fit:contain !important;
-        transform:none !important;
-        background:transparent !important;
-        border:none !important;
-        box-shadow:none !important;
-      }
+      #pmPrintPreview .pm-logo-wrap { width:120px !important; height:108px !important; flex:0 0 120px !important; border-radius:0 !important; background:transparent !important; border:none !important; box-shadow:none !important; display:flex !important; align-items:center !important; justify-content:center !important; overflow:visible !important; }
+      #pmPrintPreview .pm-letterhead .logo { width:112px !important; height:112px !important; max-width:none !important; max-height:none !important; object-fit:contain !important; transform:none !important; background:transparent !important; border:none !important; box-shadow:none !important; }
       #pmPrintPreview .pm-brand-name { font-size:18px !important; }
       #pmPrintPreview .pm-brand p { white-space:nowrap !important; }
       #pmPrintPreview .pm-contact { font-weight:700 !important; }
       #pmPrintPreview .pm-signature { width:220px !important; }
       #pmPrintPreview .pm-signature-box { min-height:125px !important; }
-      #pmPrintPreview .pm-signature .signature { width:auto !important; max-width:190px !important; height:82px !important; max-height:82px !important; object-fit:contain !important; margin:0 auto 2px !important; }
+      #pmPrintPreview .pm-signature .signature { width:auto !important; max-width:190px !important; height:82px !important; max-height:82px !important; object-fit:contain !important; margin:0 auto 2px !important; display:block !important; }
       #pmPrintPreview .pm-signature-line { width:190px !important; margin:3px auto 4px !important; }
       @media print {
         #pmPrintPreview .pm-letterhead { min-height:118px !important; }
@@ -201,6 +176,7 @@
         const done = () => { img.removeEventListener('load', done); img.removeEventListener('error', done); resolve(); };
         img.addEventListener('load', done);
         img.addEventListener('error', done);
+        setTimeout(done, 3000);
       });
     }));
     await sleep(50);
