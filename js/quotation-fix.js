@@ -148,6 +148,10 @@
       nomor_telepon: context.whatsapp,
       phone: context.whatsapp,
       email: context.email,
+      alamat: context.alamat,
+      tanggal: context.today,
+      tanggal_penawaran: context.today,
+      tgl_penawaran: context.today,
       tanggal_mulai: context.startDate,
       tanggal_selesai: context.endDate,
       start_date: context.startDate,
@@ -161,12 +165,12 @@
     return undefined;
   }
 
-  async function findClientId(db, clientName) {
+  async function findClient(db, clientName) {
     const name = clean(clientName);
     if (!name) return null;
     try {
       const result = await db.from('clients').select('*').ilike('nama_client', name).limit(1);
-      if (!result.error && result.data?.[0]) return result.data[0].id ?? null;
+      if (!result.error && result.data?.[0]) return result.data[0];
     } catch (e) {
       console.warn('Client lookup skipped:', e);
     }
@@ -262,8 +266,11 @@
 
       const total = rows.reduce((sum, row) => sum + num(row.subtotal), 0);
       const nomor = 'PM-' + new Date().getFullYear() + '-' + String(Date.now()).slice(-6);
-      const clientId = await findClientId(db, client);
-      const context = { nomor, client, perusahaan, eventName, whatsapp, email, startDate, endDate, total };
+      const clientRecord = await findClient(db, client);
+      const clientId = clientRecord?.id ?? null;
+      const today = new Date().toISOString().slice(0, 10);
+      const clientAddress = clean(clientRecord?.alamat || clientRecord?.address);
+      const context = { nomor, client, perusahaan, eventName, whatsapp, email, startDate, endDate, total, today, alamat: clientAddress };
 
       const quotePayload = {
         nomor_penawaran: nomor,
@@ -280,7 +287,11 @@
         tanggal_selesai: endDate,
         total,
         grand_total: total,
-        status: 'DRAFT'
+        status: 'DRAFT',
+        tanggal: today,
+        tanggal_penawaran: today,
+        tgl_penawaran: today,
+        alamat: clientAddress
       };
       if (clientId !== null) {
         quotePayload.client_id = clientId;
