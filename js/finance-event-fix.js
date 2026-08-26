@@ -10,7 +10,8 @@ function DB(){if(typeof db!=='undefined'&&db)return db;const c=window.PRIANGAN_C
 function month(){const d=new Date(),y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),last=new Date(y,d.getMonth()+1,0).getDate();return [`${y}-${m}-01`,`${y}-${m}-${last}`];}
 function date(r){return S(r.tanggal_penawaran||r.tanggal||r.created_at||r.tanggal_mulai).slice(0,10);}
 function event(r){return S(r.nama_event||r.event_name||r.event||r.project||'Tanpa Nama Event')||'Tanpa Nama Event';}
-function cost(item,master){const c=N(item.harga_modal??item.modal);const rate=c>0?c:N(master?.harga_modal);if(rate<=0)return 0;const t=S(item.tipe_perhitungan||item.tipe).toLowerCase();const q=Math.max(1,N(item.qty??item.jumlah??1)),w=N(item.lebar),h=N(item.tinggi),p=N(item.panjang),d=Math.max(1,N(item.durasi||1));if(t==='luas'||t==='level')return w*h*rate*d;if(t==='rigging')return ((p*2)+(h*2))*rate*d;return q*rate*d;}
+function isUnit(item,master){const text=S(`${item?.item||''} ${master?.item||''} ${master?.kategori||''}`).toLowerCase();const satuan=S(master?.satuan).toLowerCase();return /led\s*tv|televisi|tv\s*[- ]?\d{2,3}\b/.test(text)||/unit|pcs|buah|set|hari|trip|orang|lot/.test(satuan);}
+function cost(item,master){const c=N(item.harga_modal??item.modal);const rate=c>0?c:N(master?.harga_modal);if(rate<=0)return 0;if(isUnit(item,master))return Math.max(1,N(item.qty??item.jumlah??1))*rate*Math.max(1,N(item.durasi||1));const t=S(item.tipe_perhitungan||item.tipe).toLowerCase();const q=Math.max(1,N(item.qty??item.jumlah??1)),w=N(item.lebar),h=N(item.tinggi),p=N(item.panjang),d=Math.max(1,N(item.durasi||1));if(t==='level')return w*rate*d;if(t==='luas')return w*h*rate*d;if(t==='rigging')return ((p*2)+(h*2))*rate*d;return q*rate*d;}
 async function loadEventFinance(from,to){
  const d=DB();if(!d)return;
  try{
@@ -26,6 +27,5 @@ async function loadEventFinance(from,to){
  }catch(e){console.error(e);document.querySelector('#content').innerHTML=`<div class="card"><b>Gagal memuat laporan event</b><p>${E(e?.message||e)}</p></div>`;}
 }
 window.eventFinancePage=()=>{const [a,b]=month();loadEventFinance(a,b);};window.applyEventFinance=()=>loadEventFinance(document.querySelector('#efFrom')?.value||'',document.querySelector('#efTo')?.value||'');window.eventFinanceMonth=()=>{const[a,b]=month();loadEventFinance(a,b);};
-// Override the generic finance route so the sidebar opens the event-level report directly.
 window.financePage=window.eventFinancePage;
 })();
