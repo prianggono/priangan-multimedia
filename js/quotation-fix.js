@@ -64,7 +64,8 @@
     const durasi = days(tanggal_mulai, tanggal_selesai);
     let subtotal = num(q('.sum b', card)?.textContent);
     if (!subtotal) {
-      if (tipe === 'luas' || tipe === 'level') subtotal = lebar * tinggi * harga * durasi;
+      if (tipe === 'luas') subtotal = lebar * tinggi * harga * durasi;
+      else if (tipe === 'level') subtotal = lebar * harga * durasi;
       else if (tipe === 'rigging') subtotal = ((panjang * 2) + (tinggi * 2)) * harga * durasi;
       else subtotal = qty * harga * durasi;
     }
@@ -87,16 +88,26 @@
     else { button.dataset.busy = '0'; button.disabled = false; button.textContent = button.dataset.originalText || 'Simpan Penawaran'; }
   }
 
+  function clientKey(client) {
+    const norm = (value) => clean(value).toLowerCase().replace(/\s+/g, '');
+    return [norm(client.nama_client), norm(client.perusahaan), norm(client.telepon || client.whatsapp), norm(client.email)].join('|');
+  }
+
   async function saveClient(client) {
-    const result = await db().from(DB.clients).insert({ nama_client: client.nama_client, perusahaan: client.perusahaan, telepon: client.whatsapp, whatsapp: client.whatsapp, email: client.email, alamat: '' }).select('id,nama_client,perusahaan,telepon,whatsapp,email,alamat').single();
+    const database = db();
+    const list = await database.from(DB.clients).select('id,nama_client,perusahaan,telepon,whatsapp,email,alamat').order('id', { ascending: true });
+    if (list.error) throw new Error(`Client: ${list.error.message}`);
+    const wanted = clientKey(client);
+    const existing = (list.data || []).find((row) => clientKey(row) === wanted);
+    if (existing) return existing;
+
+    const result = await database.from(DB.clients).insert({ nama_client: client.nama_client, perusahaan: client.perusahaan, telepon: client.whatsapp, whatsapp: client.whatsapp, email: client.email, alamat: '' }).select('id,nama_client,perusahaan,telepon,whatsapp,email,alamat').single();
     if (result.error) throw new Error(`Client: ${result.error.message}`);
     return result.data;
   }
 
   async function saveHeader(database, form, client, total) {
     const today = new Date().toISOString().slice(0, 10), nomor = quotationNumber();
-    // IMPORTANT: the live schema uses tanggal_penawaran, not tgl_penawaran.
-    // Do not dynamically remove core fields when Supabase reports an error.
     const payload = {
       nomor_penawaran: nomor, nama_client: client.nama_client, perusahaan: client.perusahaan,
       telepon: client.telepon || client.whatsapp || '', whatsapp: client.whatsapp || '', email: client.email || '',
@@ -110,7 +121,6 @@
   }
 
   async function saveItem(database, quotationId, item) {
-    // harga_modal is intentionally excluded from quotation data.
     const result = await database.from(DB.items).insert({ penawaran_id: quotationId, kode: item.kode, item: item.item, harga_jual: item.harga_jual, tipe_perhitungan: item.tipe_perhitungan, qty: item.qty, lebar: item.lebar, tinggi: item.tinggi, panjang: item.panjang, tanggal_mulai: item.tanggal_mulai, tanggal_selesai: item.tanggal_selesai, durasi: item.durasi, subtotal: item.subtotal }).select('id,penawaran_id,kode,item,harga_jual,tipe_perhitungan,qty,lebar,tinggi,panjang,tanggal_mulai,tanggal_selesai,durasi,subtotal').single();
     if (result.error) throw new Error(`Item ${item.kode || item.item}: ${result.error.message}`);
     return result.data;
@@ -142,7 +152,6 @@
       const items = qa('#items .item').map(readItem).filter((item) => item.kode && item.item);
       if (!items.length) throw new Error('Pilih minimal satu Produk / Jasa.');
       const total = items.reduce((sum, item) => sum + num(item.subtotal), 0);
-      // Client is saved first so every DRAFT is available for follow-up.
       const client = await saveClient(form);
       const quotation = await saveHeader(database, form, client, total);
       quotationId = quotation.id;
