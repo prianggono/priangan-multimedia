@@ -84,5 +84,6 @@ function installNavCapture(){
 }
 
 window.__pmRuntimeFix={history,clients,saveClientUnique,itemMode,renderItems};
+window.saveClient=saveClientUnique;
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{installNavCapture();installItemCapture()});else{installNavCapture();installItemCapture();}
 })();
