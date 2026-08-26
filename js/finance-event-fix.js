@@ -26,4 +26,6 @@ async function loadEventFinance(from,to){
  }catch(e){console.error(e);document.querySelector('#content').innerHTML=`<div class="card"><b>Gagal memuat laporan event</b><p>${E(e?.message||e)}</p></div>`;}
 }
 window.eventFinancePage=()=>{const [a,b]=month();loadEventFinance(a,b);};window.applyEventFinance=()=>loadEventFinance(document.querySelector('#efFrom')?.value||'',document.querySelector('#efTo')?.value||'');window.eventFinanceMonth=()=>{const[a,b]=month();loadEventFinance(a,b);};
+// Override the generic finance route so the sidebar opens the event-level report directly.
+window.financePage=window.eventFinancePage;
 })();
