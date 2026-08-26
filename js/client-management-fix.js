@@ -1,4 +1,4 @@
-/* Client master: persist immediately + edit/delete + auto-save from quotation draft */
+/* Client master: every contact is an independent record; persist immediately + edit/delete + auto-save from quotation draft */
 (function () {
   'use strict';
   const clean = (v) => String(v ?? '').trim();
@@ -27,8 +27,13 @@
     };
     if (!payload.nama_client) throw new Error('Nama Client wajib diisi.');
     let result;
-    if (id) result = await db.from('clients').update(payload).eq('id', id).select('*').single();
-    else result = await db.from('clients').insert(payload).select('*').single();
+    if (id) {
+      result = await db.from('clients').update(payload).eq('id', id).select('*').single();
+    } else {
+      // IMPORTANT: do not deduplicate by company or contact name.
+      // The same company may have multiple contacts.
+      result = await db.from('clients').insert(payload).select('*').single();
+    }
     if (result.error) throw result.error;
     return result.data;
   }
@@ -36,13 +41,6 @@
   window.pmSaveClientFromQuotation = async function () {
     const name = clean(document.querySelector('#qc')?.value);
     if (!name) return null;
-    const db = dbRef();
-    if (!db) return null;
-    let existing = null;
-    try {
-      const r = await db.from('clients').select('*').ilike('nama_client', name).limit(1);
-      if (!r.error) existing = r.data?.[0] || null;
-    } catch (_) {}
     const data = {
       nama_client: name,
       perusahaan: clean(document.querySelector('#qp')?.value),
@@ -51,12 +49,8 @@
       email: clean(document.querySelector('#qe')?.value),
       alamat: clean(document.querySelector('#qalamat')?.value)
     };
-    if (existing) {
-      // Keep the master client current with any new contact details entered in the draft.
-      const changed = ['perusahaan','telepon','whatsapp','email','alamat'].some(k => clean(existing[k]) !== clean(data[k]));
-      if (changed) await saveOrUpdateClient(data, existing.id);
-      return existing.id;
-    }
+    // Every quotation contact is allowed to become a separate master client record.
+    // No lookup by company/name is performed here.
     const created = await saveOrUpdateClient(data);
     return created?.id || null;
   };
@@ -64,7 +58,7 @@
   window.clientsPage = function () {
     const list = Array.isArray(window.clients) ? window.clients : (typeof clients !== 'undefined' ? clients : []);
     document.querySelector('#content').innerHTML = `
-      <div class="head"><div><h1>Client</h1><p>Data client tersimpan langsung untuk kebutuhan follow-up.</p></div><button class="btn" type="button" onclick="clientForm()">+ Tambah Client</button></div>
+      <div class="head"><div><h1>Client</h1><p>Setiap contact disimpan sebagai data client tersendiri untuk kebutuhan follow-up.</p></div><button class="btn" type="button" onclick="clientForm()">+ Tambah Client</button></div>
       <div class="card"><div class="scroll"><table class="table"><thead><tr><th>Nama</th><th>Perusahaan</th><th>Telepon / WA</th><th>Email</th><th>Aksi</th></tr></thead><tbody>
       ${list.map(c => `<tr><td>${esc(c.nama_client)}</td><td>${esc(c.perusahaan)}</td><td>${esc(c.whatsapp || c.telepon)}</td><td>${esc(c.email)}</td><td><div class="actions"><button class="btn secondary" type="button" onclick="clientEdit(${Number(c.id)})">Edit</button><button class="btn danger" type="button" onclick="clientDelete(${Number(c.id)})">Hapus</button></div></td></tr>`).join('') || '<tr><td colspan="5" class="empty">Belum ada data client.</td></tr>'}
       </tbody></table></div></div>`;
@@ -92,24 +86,24 @@
   };
 
   window.clientDelete = async function (id) {
-    if (!confirm('Hapus client ini dari Master Client? Data penawaran yang sudah ada tidak ikut dihapus.')) return;
+    if (!confirm('Hapus contact ini dari Master Client? Data penawaran yang sudah ada tidak ikut dihapus.')) return;
     const db = dbRef();
     if (!db) return show('Supabase belum terhubung.');
     const r = await db.from('clients').delete().eq('id', id);
     if (r.error) { console.error(r.error); return show('Client tidak dapat dihapus: ' + r.error.message); }
     if (typeof load === 'function') await load();
     if (typeof render === 'function') render();
-    show('Client dihapus dari Master Client.');
+    show('Contact dihapus dari Master Client.');
   };
 
-  // Hook the quotation save flow without replacing its database logic.
+  // Hook the quotation save flow: save the selected contact immediately, even for DRAFT.
   const waitForSave = setInterval(() => {
     if (typeof window.saveQuote !== 'function' || window.__pmClientSaveHook) return;
     const original = window.saveQuote;
     window.__pmClientSaveHook = true;
     window.saveQuote = async function () {
       try { await window.pmSaveClientFromQuotation(); }
-      catch (e) { console.warn('Client auto-save skipped:', e); }
+      catch (e) { console.warn('Client auto-save failed:', e); }
       return original.apply(this, arguments);
     };
     clearInterval(waitForSave);
