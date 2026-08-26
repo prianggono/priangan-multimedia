@@ -1,16 +1,12 @@
--- Canonical live quotation date column used by quotation-fix.js.
--- Safe to run more than once.
+-- DEPRECATED compatibility migration.
+-- The canonical quotation date column is tanggal_penawaran.
+-- This migration intentionally does NOT create or reference tgl_penawaran.
 
 alter table public.penawaran
-  add column if not exists tgl_penawaran date;
+  add column if not exists tanggal_penawaran date;
 
 update public.penawaran
-set tgl_penawaran = coalesce(
-  tgl_penawaran,
-  tanggal_penawaran,
-  tanggal,
-  created_at::date
-)
-where tgl_penawaran is null;
+set tanggal_penawaran = coalesce(tanggal_penawaran, tanggal, created_at::date)
+where tanggal_penawaran is null;
 
 notify pgrst, 'reload schema';
