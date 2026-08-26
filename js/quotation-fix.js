@@ -1,7 +1,8 @@
 /*
  * Priangan Multimedia - Quotation persistence
  * Database-safe quotation flow.
- * IMPORTANT: penawaran_jadwal uses item_id in the live Supabase schema.
+ * LIVE CONTRACT: penawaran_jadwal uses item_id, qty, tanggal_mulai,
+ * tanggal_selesai, durasi and subtotal.
  * harga_modal is never written into client quotation output.
  */
 (function () {
@@ -220,15 +221,15 @@
 
   /*
    * LIVE DATABASE CONTRACT:
-   * public.penawaran_jadwal.item_id is the required FK in the current project.
-   * The previous code inserted penawaran_item_id, leaving item_id NULL.
-   * That caused: null value in column "item_id" of relation "penawaran_jadwal".
+   * public.penawaran_jadwal requires item_id and does NOT have a jumlah column.
+   * Keep this payload restricted to the columns used by the live schema.
    */
   async function saveSchedule(database, itemId, item) {
+    if (!itemId) throw new Error(`Jadwal ${item.kode || item.item}: item_id tidak tersedia.`);
+
     const payload = {
       item_id: itemId,
       qty: item.qty,
-      jumlah: item.qty,
       tanggal_mulai: item.tanggal_mulai,
       tanggal_selesai: item.tanggal_selesai,
       durasi: item.durasi,
