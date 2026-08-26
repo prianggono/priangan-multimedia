@@ -1,6 +1,5 @@
-/* Reliable quotation save flow.
- * This file intentionally sits after app.js so it can replace the fragile
- * saveQuote handler without touching the rest of the UI.
+/* Reliable quotation save flow — schema tolerant.
+ * Sits after app.js and replaces the fragile saveQuote handler.
  */
 (function () {
   'use strict';
@@ -8,13 +7,14 @@
   const q = (s, root = document) => root.querySelector(s);
   const qa = (s, root = document) => Array.from(root.querySelectorAll(s));
 
-  function clean(v) {
-    return String(v ?? '').trim();
-  }
+  function clean(v) { return String(v ?? '').trim(); }
 
   function num(v) {
     if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
-    const s = clean(v).replace(/[^0-9,.-]/g, '').replace(/\.(?=\d{3}(?:\D|$))/g, '').replace(',', '.');
+    const s = clean(v)
+      .replace(/[^0-9,.-]/g, '')
+      .replace(/\.(?=\d{3}(?:\D|$))/g, '')
+      .replace(',', '.');
     const n = Number(s);
     return Number.isFinite(n) ? n : 0;
   }
@@ -44,9 +44,8 @@
   }
 
   function getFieldByLabel(root, labelText) {
-    const fields = qa('.field', root);
     const wanted = labelText.toLowerCase();
-    for (const field of fields) {
+    for (const field of qa('.field', root)) {
       const label = clean(q('label', field)?.textContent).toLowerCase();
       if (label === wanted || label.includes(wanted)) return q('input, select, textarea', field);
     }
@@ -54,8 +53,7 @@
   }
 
   function readQuotationItems() {
-    const cards = qa('#items .item');
-    return cards.map((card) => {
+    return qa('#items .item').map((card) => {
       const select = q('select', card);
       const option = select?.selectedOptions?.[0];
       const selectedValue = clean(select?.value);
@@ -63,6 +61,7 @@
       const match = optionText.match(/^\[([^\]]+)\]\s*(.*)$/);
       const kode = selectedValue || (match ? clean(match[1]) : '');
       const itemName = match ? clean(match[2]) : optionText.replace(/^--.*?--$/, '');
+
       const hargaInput = getFieldByLabel(card, 'Harga Jual');
       const tipeInput = getFieldByLabel(card, 'Tipe Perhitungan');
       const qtyInput = getFieldByLabel(card, 'Jumlah (Qty)');
@@ -86,7 +85,7 @@
       let subtotal = num(subtotalText);
       if (!subtotal) {
         if (tipe === 'luas') subtotal = lebar * tinggi * harga * durasi;
-        else if (tipe === 'rigging') subtotal = (((panjang * 2) + (tinggi * 2)) * harga * durasi);
+        else if (tipe === 'rigging') subtotal = ((panjang * 2) + (tinggi * 2)) * harga * durasi;
         else if (tipe === 'level') subtotal = lebar * tinggi * harga * durasi;
         else subtotal = qty * harga * durasi;
       }
@@ -106,6 +105,57 @@
         subtotal
       };
     });
+  }
+
+  /*
+   * Supabase/PostgREST caches the table schema. If a payload contains a column
+   * that does not actually exist (for example `email` in the current `penawaran`
+   * table), PostgREST returns the column name. Remove only that offending field
+   * and retry. This lets the app work with the database that is already present
+   * without forcing a destructive schema change.
+   */
+  function missingColumn(message) {
+    const text = clean(message);
+    let m = text.match(/Could not find the '([^']+)' column/i);
+    if (m) return m[1];
+    m = text.match(/column ['\"]([^'\"]+)['\"] does not exist/i);
+    if (m) return m[1];
+    return '';
+  }
+
+  async function insertCompatible(db, table, payload, options = {}) {
+    let working = Array.isArray(payload) ? payload.map((x) => ({ ...x })) : { ...payload };
+    const removed = [];
+    const maxRetries = 12;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const result = await db.from(table).insert(working).select(options.select || '*');
+      if (!result.error) return { ...result, removed };
+
+      const column = missingColumn(result.error.message);
+      if (!column) return { ...result, removed };
+
+      let existed = false;
+      if (Array.isArray(working)) {
+        existed = working.some((row) => Object.prototype.hasOwnProperty.call(row, column));
+        if (existed) working = working.map((row) => {
+          const copy = { ...row };
+          delete copy[column];
+          return copy;
+        });
+      } else {
+        existed = Object.prototype.hasOwnProperty.call(working, column);
+        if (existed) {
+          delete working[column];
+        }
+      }
+
+      if (!existed) return { ...result, removed };
+      removed.push(column);
+      console.warn(`Kolom ${table}.${column} tidak ada — diabaikan saat simpan.`);
+    }
+
+    return { error: { message: `Terlalu banyak percobaan schema fallback pada tabel ${table}.` } };
   }
 
   async function reliableSaveQuote() {
@@ -166,9 +216,10 @@
         status: 'DRAFT'
       };
 
-      const quoteResult = await db.from('penawaran').insert(quotePayload).select('id').single();
+      const quoteResult = await insertCompatible(db, 'penawaran', quotePayload, { select: 'id' });
       if (quoteResult.error) throw new Error('Penawaran: ' + quoteResult.error.message);
-      const quoteId = quoteResult.data?.id;
+
+      const quoteId = quoteResult.data?.[0]?.id;
       if (!quoteId) throw new Error('ID penawaran tidak dikembalikan oleh Supabase.');
 
       const itemPayload = items.map((row) => ({
@@ -184,11 +235,8 @@
         subtotal: row.subtotal
       }));
 
-      const itemResult = await db.from('penawaran_items').insert(itemPayload).select('id');
-      if (itemResult.error) {
-        console.error('penawaran_items error:', itemResult.error);
-        throw new Error('Item penawaran: ' + itemResult.error.message);
-      }
+      const itemResult = await insertCompatible(db, 'penawaran_items', itemPayload, { select: 'id' });
+      if (itemResult.error) throw new Error('Item penawaran: ' + itemResult.error.message);
 
       const itemRows = itemResult.data || [];
       if (itemRows.length !== items.length) {
@@ -204,14 +252,28 @@
         subtotal: row.subtotal
       }));
 
-      const scheduleResult = await db.from('penawaran_jadwal').insert(schedulePayload);
-      if (scheduleResult.error) {
-        console.error('penawaran_jadwal error:', scheduleResult.error);
-        throw new Error('Jadwal penawaran: ' + scheduleResult.error.message);
+      if (schedulePayload.length) {
+        const scheduleResult = await insertCompatible(db, 'penawaran_jadwal', schedulePayload, { select: 'id' });
+        if (scheduleResult.error) {
+          // The quotation and items are already valid. Do not hide the saved
+          // quotation just because an optional schedule column/table differs.
+          console.error('Schedule save error:', scheduleResult.error);
+          show('Penawaran tersimpan, tetapi jadwal belum tersimpan: ' + scheduleResult.error.message);
+        }
       }
 
-      show('Penawaran berhasil disimpan: ' + nomor);
-      if (typeof window.go === 'function') window.go('history');
+      if (typeof window.msg === 'function') {
+        const note = quoteResult.removed?.length ? ` (kolom tidak tersedia: ${quoteResult.removed.join(', ')})` : '';
+        show('Penawaran berhasil disimpan: ' + nomor + note);
+      } else {
+        show('Penawaran berhasil disimpan: ' + nomor);
+      }
+
+      if (typeof window.go === 'function') {
+        window.go('history');
+      } else {
+        window.location.hash = 'history';
+      }
     } catch (error) {
       console.error('Reliable save quotation error:', error);
       show('Gagal menyimpan penawaran: ' + (error?.message || error));
@@ -228,7 +290,6 @@
     window.saveQuote = reliableSaveQuote;
     window.__PRIANGAN_QUOTE_SAVE_FIXED = true;
 
-    // Keep the button reliable even if another script re-renders the quotation UI.
     document.addEventListener('click', (event) => {
       const target = event.target.closest?.('button[onclick="saveQuote()"]');
       if (!target) return;
