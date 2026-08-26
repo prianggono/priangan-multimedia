@@ -2,13 +2,8 @@
  * Priangan Multimedia - Level 120-200 pricing fix
  *
  * KHUSUS Level 120-200 cm:
- *   subtotal = harga per meter x lebar LED/level x jumlah hari
+ * subtotal = harga per meter x lebar LED/Videotron x jumlah hari.
  * Tinggi level hanya informasi visual dan TIDAK ikut mengalikan harga.
- *
- * Penting:
- * - Lebar Level selalu mengikuti lebar item LED/Videotron yang dipakai.
- * - Nilai lebar disinkronkan ke item level supaya subtotal, preview A4,
- *   dan penyimpanan penawaran memakai angka yang sama.
  */
 (function () {
   'use strict';
@@ -20,8 +15,8 @@
   }
 
   function getLedWidth() {
-    if (!Array.isArray(window.items)) return 0;
-    const led = window.items.find((row) => {
+    if (typeof items === 'undefined' || !Array.isArray(items)) return 0;
+    const led = items.find((row) => {
       const text = `${row?.item || ''} ${row?.kode || ''} ${row?.tipe || ''}`.toLowerCase();
       return /led|videotron/.test(text) && Number(row?.lebar) > 0;
     });
@@ -29,15 +24,14 @@
   }
 
   function syncLevelWidths() {
-    if (!Array.isArray(window.items)) return;
+    if (typeof items === 'undefined' || !Array.isArray(items)) return;
     const width = getLedWidth();
     if (!width) return;
-    window.items.forEach((item) => {
+    items.forEach((item) => {
       if (isLevel120200(item)) item.lebar = width;
     });
   }
 
-  // app.js declares `items`, so expose the helper without replacing the array.
   window.syncLevelWidths = syncLevelWidths;
 
   if (typeof subtotal === 'function') {
@@ -69,7 +63,7 @@
             <div class="field">
               <label>Tinggi Level (m)</label>
               <input type="number" min="0" step="0.01" value="${item.tinggi || 0}" onchange="upd(${item.id},'tinggi',this.value)">
-              <small class="calc-note">Level 120–200 cm dihitung berdasarkan lebar LED × harga/m × jumlah hari. Tinggi tidak ikut dihitung.</small>
+              <small class="calc-note">Level 120–200 cm = lebar LED × harga/m × jumlah hari. Tinggi tidak ikut dihitung.</small>
             </div>
           </div>`;
       }
@@ -95,7 +89,6 @@
   `;
   document.head.appendChild(style);
 
-  // app.js is loaded immediately before this file. Recalculate once after patching.
-  if (typeof window.syncLevelWidths === 'function') window.syncLevelWidths();
+  syncLevelWidths();
   if (typeof drawItems === 'function' && document.getElementById('items')) drawItems();
 })();
