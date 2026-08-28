@@ -1,4 +1,4 @@
-/* Template save fix: robust Supabase write + compatibility when older DB schema lacks ttd_url. */
+/* Template save fix: TTD is a core field and must never be silently dropped. */
 (function () {
   const TOAST_ID = 'toast';
 
@@ -27,12 +27,6 @@
     return document.getElementById(id)?.value?.trim() || '';
   }
 
-  function isMissingColumn(error, column) {
-    const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`.toLowerCase();
-    return text.includes(`could not find the '${column.toLowerCase()}' column`) ||
-      (text.includes('schema cache') && text.includes(column.toLowerCase()));
-  }
-
   function basePayload() {
     return {
       nama_template: val('tn'),
@@ -45,7 +39,8 @@
       website: val('tweb'),
       ketentuan: val('tket'),
       nama_penandatangan: val('tp'),
-      jabatan_penandatangan: val('tj')
+      jabatan_penandatangan: val('tj'),
+      ttd_url: val('ttd')
     };
   }
 
@@ -61,8 +56,7 @@
       return;
     }
 
-    const ttd = val('ttd');
-    const payload = { ...basePayload(), ttd_url: ttd };
+    const payload = basePayload();
 
     if (button) {
       button.dataset.saving = '1';
@@ -83,43 +77,34 @@
 
       if (latest.error) throw latest.error;
 
-      const write = async (data) => {
-        if (latest.data?.id) {
-          return client
-            .from('template_surat')
-            .update(data)
-            .eq('id', latest.data.id)
-            .select('id')
-            .single();
-        }
-        return client
+      let result;
+      if (latest.data?.id) {
+        result = await client
           .from('template_surat')
-          .insert([data])
+          .update(payload)
+          .eq('id', latest.data.id)
           .select('id')
           .single();
-      };
-
-      let result = await write(payload);
-      let legacySchema = false;
-
-      // Older Supabase databases may not have ttd_url even though the repository schema does.
-      // Save all other template fields instead of making the entire Save button fail.
-      if (result.error && isMissingColumn(result.error, 'ttd_url')) {
-        legacySchema = true;
-        result = await write(basePayload());
+      } else {
+        result = await client
+          .from('template_surat')
+          .insert([payload])
+          .select('id')
+          .single();
       }
 
-      if (result.error) throw result.error;
+      if (result.error) {
+        const text = `${result.error.message || ''} ${result.error.details || ''}`.toLowerCase();
+        if (text.includes('ttd_url') && text.includes('schema cache')) {
+          throw new Error('Kolom ttd_url belum ada di tabel template_surat. Jalankan migration database ttd_url terlebih dahulu. Data TTD sengaja tidak dihilangkan.');
+        }
+        throw result.error;
+      }
+
       if (!result.data?.id) throw new Error('Database tidak mengembalikan ID template.');
 
       localStorage.setItem('PRIANGAN_TEMPLATE_BACKUP', JSON.stringify(payload));
-
-      if (legacySchema) {
-        toast('Template tersimpan, tetapi TTD belum tersimpan di database. Jalankan SQL migration ttd_url sekali di Supabase.', true);
-      } else {
-        toast('Template berhasil disimpan ke Supabase.', true);
-      }
-
+      toast('Template + TTD berhasil disimpan ke Supabase.', true);
       setTimeout(() => window.location.reload(), 900);
     } catch (error) {
       console.error('Template save error:', error);
