@@ -14,23 +14,21 @@ async function editQuotationFixed(id){
   const r=await d.from('penawaran_items').select('*').eq('penawaran_id',id).order('id',{ascending:true});if(r.error)throw r.error;
   const row=q.data||{},saved=r.data||[];if(!saved.length)throw new Error('Penawaran ini belum memiliki item.');
   if(typeof window.go!=='function')throw new Error('Navigasi penawaran tidak tersedia.');
+  window.__pmEditingQuotationId=id;
   window.go('quotation');await wait(120);
   setVal('#qc',row.nama_client);setVal('#qp',row.perusahaan);setVal('#qw',row.whatsapp||row.telepon);setVal('#qe',row.email);setVal('#qeve',row.nama_event||row.event_name||row.event||row.project);setVal('#qs',row.tanggal_mulai);setVal('#qe2',row.tanggal_selesai);
-  /* Remove only the initial blank item from the actual app state. */
   const blankId=itemId(document.querySelector('#items .item'));if(blankId&&typeof window.removeItem==='function')window.removeItem(blankId);
   for(const s of saved){
    if(typeof window.addItem!=='function'||typeof window.pick!=='function'||typeof window.upd!=='function')throw new Error('Fungsi item penawaran tidak tersedia.');
    window.addItem();await wait(0);
-   let card=[...document.querySelectorAll('#items .item')].at(-1),code=S(s.kode),idNow=itemId(card);
-   if(!idNow)throw new Error('ID item form tidak tersedia.');
+   let card=[...document.querySelectorAll('#items .item')].at(-1),code=S(s.kode),idNow=itemId(card);if(!idNow)throw new Error('ID item form tidak tersedia.');
    if(code)window.pick(idNow,code);await wait(0);
-   /* pick() redraws. Re-read the newest card and use upd(), which updates the real lexical item. */
    card=[...document.querySelectorAll('#items .item')].at(-1);idNow=itemId(card);if(!idNow)continue;
    const upd=(key,val)=>{if(val!==undefined&&val!==null&&val!=='')window.upd(idNow,key,val)};
    upd('lebar',N(s.lebar));upd('tinggi',N(s.tinggi));upd('panjang',N(s.panjang));upd('qty',N(s.qty)||1);upd('mulai',S(s.tanggal_mulai));upd('selesai',S(s.tanggal_selesai));
   }
   toast(`Mode edit aktif: ${S(row.nomor_penawaran||row.nomor||id)} — ${saved.length} item berhasil dimuat.`);
- }catch(e){console.error('Edit quotation fix:',e);toast('Gagal membuka penawaran: '+(e.message||e))}
+ }catch(e){window.__pmEditingQuotationId=null;console.error('Edit quotation fix:',e);toast('Gagal membuka penawaran: '+(e.message||e))}
 }
 window.editQuotation=editQuotationFixed;window.__PRIANGAN_EDIT_QUOTATION_FIXED=true;
 })();
