@@ -1,7 +1,9 @@
-/* Priangan Multimedia - Compact quotation item UI
- * IMPORTANT: app.js keeps `items` as a lexical variable, not window.items.
- * Therefore this fix intentionally reads the rendered item card DOM instead of
- * relying on window.items. It runs after every drawItems() render.
+/* Priangan Multimedia - Compact quotation item UI v4
+ * Behavior:
+ * - New/incomplete item stays fully open for data entry.
+ * - Once required fields are complete, the detail form automatically collapses.
+ * - The compact summary remains at the top and can be tapped to open/close.
+ * - Changes to inputs/selects immediately refresh the summary and completion state.
  */
 (function () {
   'use strict';
@@ -101,6 +103,28 @@
     return Number(fieldInput(card, 'Jumlah (Qty)')?.value || 1) > 0;
   }
 
+  function refreshSummary(card, toggle) {
+    const product = selectedProduct(card);
+    const type = getType(card, product.name);
+    const price = parseMoney(fieldInput(card, 'Harga Jual')?.value);
+    const sizeQty = dimension(card, type, product.name);
+    const subtotalValue = subtotal(card);
+
+    const codeEl = toggle.querySelector('.pm-item-code');
+    const nameEl = toggle.querySelector('.pm-item-name');
+    const priceEl = toggle.querySelector('.pm-item-price');
+    const sizeEl = toggle.querySelector('.pm-item-size');
+    const subtotalEl = toggle.querySelector('.pm-item-subtotal');
+
+    if (codeEl) codeEl.textContent = product.code;
+    if (nameEl) nameEl.textContent = product.name;
+    if (priceEl) priceEl.textContent = money(price);
+    if (sizeEl) sizeEl.textContent = sizeQty;
+    if (subtotalEl) subtotalEl.textContent = money(subtotalValue);
+
+    return { product, type };
+  }
+
   function enhance() {
     if (enhancing) return;
     const container = document.querySelector('#items');
@@ -111,24 +135,36 @@
       const cards = Array.from(container.querySelectorAll(':scope > .item'));
 
       cards.forEach((card, index) => {
-        if (card.dataset.compactReady === '1') return;
-
         const head = card.querySelector(':scope > .itemhead');
         if (!head) return;
 
+        // Already enhanced: refresh summary and completion state only.
+        if (card.dataset.compactReady === '1') {
+          const toggle = head.querySelector('.pm-item-summary');
+          if (!toggle) return;
+          const { product, type } = refreshSummary(card, toggle);
+          const complete = isComplete(card, product.name, type);
+          const key = card.dataset.compactKey || `${index}|${product.code}`;
+          card.dataset.compactKey = key;
+
+          // Auto-collapse only when the user has just completed the item.
+          // Never force an already-open completed item closed while editing it.
+          if (complete && card.dataset.pmWasComplete !== '1') {
+            card.dataset.pmWasComplete = '1';
+            setCollapsed(card, toggle, true, key);
+          } else if (!complete) {
+            card.dataset.pmWasComplete = '0';
+          }
+          return;
+        }
+
         const product = selectedProduct(card);
         const type = getType(card, product.name);
-        const priceInput = fieldInput(card, 'Harga Jual');
-        const price = parseMoney(priceInput?.value);
-        const subtotalValue = subtotal(card);
-        const sizeQty = dimension(card, type, product.name);
         const key = `${index}|${product.code}`;
 
-        // Keep the original full form intact inside one body wrapper.
         const body = document.createElement('div');
         body.className = 'pm-item-details';
-        const originalChildren = Array.from(card.children);
-        originalChildren.forEach((child) => {
+        Array.from(card.children).forEach((child) => {
           if (child !== head) body.appendChild(child);
         });
         card.appendChild(body);
@@ -139,41 +175,67 @@
         toggle.setAttribute('aria-label', 'Buka atau tutup detail item');
         toggle.innerHTML = `
           <span class="pm-item-summary-line">
-            <b class="pm-item-code">${esc(product.code)}</b>
-            <strong class="pm-item-name">${esc(product.name)}</strong>
-            <span class="pm-item-price">${money(price)}</span>
-            <span class="pm-item-size">${esc(sizeQty)}</span>
-            <span class="pm-item-subtotal">${money(subtotalValue)}</span>
+            <b class="pm-item-code"></b>
+            <strong class="pm-item-name"></strong>
+            <span class="pm-item-price"></span>
+            <span class="pm-item-size"></span>
+            <span class="pm-item-subtotal"></span>
           </span>
           <span class="pm-item-arrow" aria-hidden="true">⌄</span>`;
 
-        // Summary is placed immediately after ITEM # and before Hapus.
         head.insertBefore(toggle, head.querySelector('.btn'));
         card.dataset.compactReady = '1';
         card.dataset.compactKey = key;
+        card.dataset.pmWasComplete = '0';
 
-        const setCollapsed = (collapsed) => {
-          collapsedState.set(key, collapsed);
-          body.hidden = collapsed;
-          toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-          toggle.querySelector('.pm-item-arrow').textContent = collapsed ? '⌄' : '⌃';
-          card.classList.toggle('pm-item-collapsed', collapsed);
-        };
+        refreshSummary(card, toggle);
 
         toggle.addEventListener('click', (event) => {
           event.preventDefault();
           event.stopPropagation();
-          setCollapsed(!body.hidden);
+          setCollapsed(card, toggle, !body.hidden, key);
         });
 
-        // Completed item = collapsed by default. New/incomplete item = open.
+        // Input/change events are delegated to the card so the summary updates
+        // even when app.js does not redraw immediately.
+        card.addEventListener('input', () => {
+          refreshSummary(card, toggle);
+        });
+        card.addEventListener('change', () => {
+          requestAnimationFrame(() => {
+            const { product: latestProduct, type: latestType } = refreshSummary(card, toggle);
+            const complete = isComplete(card, latestProduct.name, latestType);
+            if (complete && card.dataset.pmWasComplete !== '1') {
+              card.dataset.pmWasComplete = '1';
+              setCollapsed(card, toggle, true, card.dataset.compactKey);
+            } else if (!complete) {
+              card.dataset.pmWasComplete = '0';
+            }
+          });
+        });
+
         const complete = isComplete(card, product.name, type);
-        const initialCollapsed = collapsedState.has(key) ? collapsedState.get(key) : complete;
-        setCollapsed(initialCollapsed);
+        if (complete) {
+          card.dataset.pmWasComplete = '1';
+          setCollapsed(card, toggle, true, key);
+        } else {
+          setCollapsed(card, toggle, false, key);
+        }
       });
     } finally {
       enhancing = false;
     }
+  }
+
+  function setCollapsed(card, toggle, collapsed, key) {
+    const body = card.querySelector(':scope > .pm-item-details');
+    if (!body) return;
+    collapsedState.set(key, collapsed);
+    body.hidden = collapsed;
+    toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    const arrow = toggle.querySelector('.pm-item-arrow');
+    if (arrow) arrow.textContent = collapsed ? '⌄' : '⌃';
+    card.classList.toggle('pm-item-collapsed', collapsed);
   }
 
   window.drawItems = function () {
@@ -181,131 +243,55 @@
     requestAnimationFrame(enhance);
   };
 
+  const oldStyle = document.getElementById('pm-item-compact-style-v3');
+  if (oldStyle) oldStyle.remove();
+
   const style = document.createElement('style');
-  style.id = 'pm-item-compact-style-v3';
+  style.id = 'pm-item-compact-style-v4';
   style.textContent = `
-    #items > .item.pm-item-collapsed {
-      padding-bottom: 12px !important;
-    }
+    #items > .item.pm-item-collapsed { padding-bottom: 12px !important; }
 
     #items > .item .pm-item-summary {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex: 1 1 auto;
-      min-width: 0;
-      margin: 0;
-      padding: 5px 0;
-      border: 0;
-      background: transparent;
-      color: inherit;
-      text-align: left;
-      cursor: pointer;
-      font: inherit;
+      display: flex; align-items: center; gap: 10px; flex: 1 1 auto;
+      min-width: 0; margin: 0; padding: 5px 0; border: 0;
+      background: transparent; color: inherit; text-align: left;
+      cursor: pointer; font: inherit;
     }
 
     #items > .item .pm-item-summary-line {
       display: grid;
       grid-template-columns: auto minmax(120px, 1.6fr) auto minmax(90px, 1fr) auto;
-      align-items: center;
-      gap: 10px;
-      min-width: 0;
-      width: 100%;
+      align-items: center; gap: 10px; min-width: 0; width: 100%;
     }
 
-    #items > .item .pm-item-code {
-      color: var(--blue);
-      white-space: nowrap;
-      font-size: 13px;
-    }
-
-    #items > .item .pm-item-name {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-size: 15px;
-    }
-
-    #items > .item .pm-item-price,
-    #items > .item .pm-item-size,
-    #items > .item .pm-item-subtotal {
-      white-space: nowrap;
-      font-size: 12px;
-    }
-
+    #items > .item .pm-item-code { color: var(--blue); white-space: nowrap; font-size: 13px; }
+    #items > .item .pm-item-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+    #items > .item .pm-item-price, #items > .item .pm-item-size, #items > .item .pm-item-subtotal { white-space: nowrap; font-size: 12px; }
     #items > .item .pm-item-price { font-weight: 700; }
     #items > .item .pm-item-size { color: var(--muted); }
     #items > .item .pm-item-subtotal { color: var(--green); font-weight: 800; }
-
-    #items > .item .pm-item-arrow {
-      flex: 0 0 auto;
-      color: var(--blue);
-      font-size: 20px;
-      line-height: 1;
-    }
-
-    #items > .item .pm-item-details[hidden] {
-      display: none !important;
-    }
-
-    #items > .item .itemhead {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: nowrap;
-    }
-
-    #items > .item .itemhead > .blue {
-      flex: 0 0 auto;
-      white-space: nowrap;
-    }
-
-    #items > .item .itemhead > .btn {
-      flex: 0 0 auto;
-      margin-left: 0;
-    }
+    #items > .item .pm-item-arrow { flex: 0 0 auto; color: var(--blue); font-size: 20px; line-height: 1; }
+    #items > .item .pm-item-details[hidden] { display: none !important; }
+    #items > .item .itemhead { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
+    #items > .item .itemhead > .blue { flex: 0 0 auto; white-space: nowrap; }
+    #items > .item .itemhead > .btn { flex: 0 0 auto; margin-left: 0; }
 
     @media (max-width: 700px) {
-      #items > .item .itemhead {
-        flex-wrap: wrap;
-      }
-
-      #items > .item .pm-item-summary {
-        order: 2;
-        flex-basis: 100%;
-        width: 100%;
-        padding: 6px 0 2px;
-      }
-
-      #items > .item .itemhead > .btn {
-        order: 1;
-        margin-left: auto;
-      }
-
-      #items > .item .pm-item-summary-line {
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 4px 10px;
-      }
-
+      #items > .item .itemhead { flex-wrap: wrap; }
+      #items > .item .pm-item-summary { order: 2; flex-basis: 100%; width: 100%; padding: 6px 0 2px; }
+      #items > .item .itemhead > .btn { order: 1; margin-left: auto; }
+      #items > .item .pm-item-summary-line { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; }
       #items > .item .pm-item-code { grid-column: 1; grid-row: 1; }
       #items > .item .pm-item-name { grid-column: 1 / -1; grid-row: 2; }
       #items > .item .pm-item-price { grid-column: 1; grid-row: 3; }
       #items > .item .pm-item-size { grid-column: 2; grid-row: 3; text-align: right; }
       #items > .item .pm-item-subtotal { grid-column: 1 / -1; grid-row: 4; }
-
-      #items > .item .pm-item-arrow {
-        position: absolute;
-        right: 16px;
-        bottom: 16px;
-      }
+      #items > .item .pm-item-arrow { position: absolute; right: 16px; bottom: 16px; }
     }
   `;
   document.head.appendChild(style);
 
-  // Also enhance after navigation/rendering, because quotationPage may call
-  // drawItems before this observer sees the new #items element.
   const observer = new MutationObserver(() => requestAnimationFrame(enhance));
   observer.observe(document.body, { childList: true, subtree: true });
-
   requestAnimationFrame(enhance);
 })();
