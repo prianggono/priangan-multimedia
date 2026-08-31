@@ -8,311 +8,36 @@
 (function () {
   'use strict';
 
-  const DB = Object.freeze({
-    clients: 'clients',
-    quotations: 'penawaran',
-    items: 'penawaran_items',
-    schedules: 'penawaran_jadwal'
-  });
-
+  const DB = Object.freeze({ clients:'clients', quotations:'penawaran', items:'penawaran_items', schedules:'penawaran_jadwal' });
   const $ = (selector, root = document) => root.querySelector(selector);
   const qa = (selector, root = document) => Array.from(root.querySelectorAll(selector));
   const clean = (value) => String(value ?? '').trim();
+  function num(value){if(typeof value==='number')return Number.isFinite(value)?value:0;const raw=clean(value).replace(/[^0-9,.-]/g,'');if(!raw)return 0;const normalized=raw.replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.');const n=Number(normalized);return Number.isFinite(n)?n:0}
+  function notify(message){if(typeof window.msg==='function')window.msg(message);else window.alert(message)}
+  function getDb(){if(typeof window.db!=='undefined'&&window.db)return window.db;const config=window.PRIANGAN_CONFIG||{};const url=clean(localStorage.getItem('SUPABASE_URL')||config.SUPABASE_URL),key=clean(localStorage.getItem('SUPABASE_ANON_KEY')||config.SUPABASE_ANON_KEY);if(!url||!key||!window.supabase?.createClient)return null;if(!window.__PRIANGAN_QUOTE_DB)window.__PRIANGAN_QUOTE_DB=window.supabase.createClient(url,key);return window.__PRIANGAN_QUOTE_DB}
+  function days(start,end){if(!start||!end)return 1;const a=new Date(`${start}T00:00:00`),b=new Date(`${end}T00:00:00`),d=Math.round((b-a)/86400000);return d>=0?d+1:1}
+  function inputByLabel(root,text){const wanted=clean(text).toLowerCase();for(const field of qa('.field',root)){const label=clean($('label',field)?.textContent).toLowerCase();if(label===wanted||label.includes(wanted))return $('input,select,textarea',field)}return null}
+  function readItem(card){const select=$('select',card),option=select?.selectedOptions?.[0],optionText=clean(option?.textContent),match=optionText.match(/^\[([^\]]+)\]\s*(.*)$/),kode=clean(select?.value)||clean(match?.[1]),item=clean(match?.[2]||optionText),harga=num(inputByLabel(card,'Harga Jual')?.value),tipe=clean(inputByLabel(card,'Tipe Perhitungan')?.value)||'qty',qty=Math.max(1,num(inputByLabel(card,'Jumlah (Qty)')?.value||1)),lebar=num(inputByLabel(card,'Lebar Videotron')?.value||inputByLabel(card,'Lebar Level')?.value),tinggi=num(inputByLabel(card,'Tinggi')?.value),panjang=num(inputByLabel(card,'Panjang Rigging')?.value),tanggal_mulai=clean(inputByLabel(card,'Tanggal Mulai')?.value)||null,tanggal_selesai=clean(inputByLabel(card,'Tanggal Selesai')?.value)||null,durasi=days(tanggal_mulai,tanggal_selesai);let subtotal=num($('.sum b',card)?.textContent);if(!subtotal){if(tipe==='luas')subtotal=lebar*tinggi*harga*durasi;else if(tipe==='level')subtotal=lebar*harga*durasi;else if(tipe==='rigging')subtotal=((panjang*2)+(tinggi*2))*harga*durasi;else subtotal=qty*harga*durasi}return{kode,item,harga_jual:harga,tipe_perhitungan:tipe,qty,lebar:lebar||null,tinggi:tinggi||null,panjang:panjang||null,tanggal_mulai,tanggal_selesai,durasi,subtotal}}
+  function readForm(){return{nama_client:clean($('#qc')?.value),perusahaan:clean($('#qp')?.value),whatsapp:clean($('#qw')?.value),email:clean($('#qe')?.value),nama_event:clean($('#qeve')?.value),tanggal_mulai:clean($('#qs')?.value)||null,tanggal_selesai:clean($('#qe2')?.value)||null}}
+  function quotationNumber(){return `PM-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`}
+  function setBusy(busy){const button=document.querySelector('button[onclick="saveQuote()"]');if(!button)return;if(busy){button.dataset.originalText=button.textContent;button.dataset.busy='1';button.disabled=true;button.textContent='Menyimpan...'}else{button.dataset.busy='0';button.disabled=false;button.textContent=button.dataset.originalText||'Simpan Penawaran'}}
+  function clientKey(client){const norm=(value)=>clean(value).toLowerCase().replace(/\s+/g,'');const phone=norm(client.telepon||client.whatsapp);return[norm(client.nama_client),norm(client.perusahaan),phone,norm(client.email)].join('|')}
+  async function saveClient(client){const database=getDb();const list=await database.from(DB.clients).select('id,nama_client,perusahaan,telepon,whatsapp,email,alamat').order('id',{ascending:true});if(list.error)throw new Error(`Client: ${list.error.message}`);const existing=(list.data||[]).find((row)=>clientKey(row)===clientKey(client));if(existing)return existing;const result=await database.from(DB.clients).insert({nama_client:client.nama_client,perusahaan:client.perusahaan,telepon:client.whatsapp,whatsapp:client.whatsapp,email:client.email,alamat:''}).select('id,nama_client,perusahaan,telepon,whatsapp,email,alamat').single();if(result.error)throw new Error(`Client: ${result.error.message}`);return result.data}
+  async function saveHeader(database,form,client,total){const today=new Date().toISOString().slice(0,10),nomor=quotationNumber(),payload={nomor_penawaran:nomor,nama_client:client.nama_client,perusahaan:client.perusahaan,telepon:client.telepon||client.whatsapp||'',whatsapp:client.whatsapp||'',email:client.email||'',nama_event:form.nama_event,event_name:form.nama_event,tanggal_mulai:form.tanggal_mulai,tanggal_selesai:form.tanggal_selesai,tanggal_penawaran:today,total,subtotal:total,grand_total:total,status:'DRAFT'},result=await database.from(DB.quotations).insert(payload).select('*').single();if(result.error)throw new Error(`Penawaran: ${result.error.message}`);if(!result.data?.id)throw new Error('Penawaran tersimpan tetapi ID tidak dikembalikan.');return result.data}
+  async function saveItem(database,quotationId,item){const result=await database.from(DB.items).insert({penawaran_id:quotationId,kode:item.kode,item:item.item,nama_item:item.item,harga_jual:item.harga_jual,harga:item.harga_jual,tipe_perhitungan:item.tipe_perhitungan,tipe:item.tipe_perhitungan,qty:item.qty,jumlah:item.qty,lebar:item.lebar,tinggi:item.tinggi,panjang:item.panjang,tanggal_mulai:item.tanggal_mulai,tanggal_selesai:item.tanggal_selesai,durasi:item.durasi,subtotal:item.subtotal}).select('*').single();if(result.error)throw new Error(`Item ${item.kode||item.item}: ${result.error.message}`);return result.data}
+  async function saveSchedule(database,itemId,item){if(!itemId)throw new Error(`Jadwal ${item.kode||item.item}: item_id tidak tersedia.`);const result=await database.from(DB.schedules).insert({item_id:itemId,qty:item.qty,tanggal_mulai:item.tanggal_mulai,tanggal_selesai:item.tanggal_selesai,durasi:item.durasi,subtotal:item.subtotal}).select('*').single();if(result.error)throw new Error(`Jadwal ${item.kode||item.item}: ${result.error.message}`);return result.data}
+  async function rollback(database,quotationId){if(!quotationId)return;const itemsResult=await database.from(DB.items).select('id').eq('penawaran_id',quotationId);if(!itemsResult.error){for(const row of itemsResult.data||[])await database.from(DB.schedules).delete().eq('item_id',row.id)}await database.from(DB.items).delete().eq('penawaran_id',quotationId);const result=await database.from(DB.quotations).delete().eq('id',quotationId);if(result.error)console.error('Rollback penawaran gagal:',result.error)}
 
-  function num(value) {
-    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-    const raw = clean(value).replace(/[^0-9,.-]/g, '');
-    if (!raw) return 0;
-    const normalized = raw.replace(/\.(?=\d{3}(?:\D|$))/g, '').replace(',', '.');
-    const n = Number(normalized);
-    return Number.isFinite(n) ? n : 0;
-  }
-
-  function notify(message) {
-    if (typeof window.msg === 'function') window.msg(message);
-    else window.alert(message);
-  }
-
-  function getDb() {
-    if (typeof window.db !== 'undefined' && window.db) return window.db;
-    const config = window.PRIANGAN_CONFIG || {};
-    const url = clean(localStorage.getItem('SUPABASE_URL') || config.SUPABASE_URL);
-    const key = clean(localStorage.getItem('SUPABASE_ANON_KEY') || config.SUPABASE_ANON_KEY);
-    if (!url || !key || !window.supabase?.createClient) return null;
-    if (!window.__PRIANGAN_QUOTE_DB) {
-      window.__PRIANGAN_QUOTE_DB = window.supabase.createClient(url, key);
-    }
-    return window.__PRIANGAN_QUOTE_DB;
-  }
-
-  function days(start, end) {
-    if (!start || !end) return 1;
-    const a = new Date(`${start}T00:00:00`);
-    const b = new Date(`${end}T00:00:00`);
-    const d = Math.round((b - a) / 86400000);
-    return d >= 0 ? d + 1 : 1;
-  }
-
-  function inputByLabel(root, text) {
-    const wanted = clean(text).toLowerCase();
-    for (const field of qa('.field', root)) {
-      const label = clean($('label', field)?.textContent).toLowerCase();
-      if (label === wanted || label.includes(wanted)) {
-        return $('input,select,textarea', field);
-      }
-    }
-    return null;
-  }
-
-  function readItem(card) {
-    const select = $('select', card);
-    const option = select?.selectedOptions?.[0];
-    const optionText = clean(option?.textContent);
-    const match = optionText.match(/^\[([^\]]+)\]\s*(.*)$/);
-    const kode = clean(select?.value) || clean(match?.[1]);
-    const item = clean(match?.[2] || optionText);
-    const harga = num(inputByLabel(card, 'Harga Jual')?.value);
-    const tipe = clean(inputByLabel(card, 'Tipe Perhitungan')?.value) || 'qty';
-    const qty = Math.max(1, num(inputByLabel(card, 'Jumlah (Qty)')?.value || 1));
-    const lebar = num(inputByLabel(card, 'Lebar Videotron')?.value || inputByLabel(card, 'Lebar Level')?.value);
-    const tinggi = num(inputByLabel(card, 'Tinggi')?.value);
-    const panjang = num(inputByLabel(card, 'Panjang Rigging')?.value);
-    const tanggal_mulai = clean(inputByLabel(card, 'Tanggal Mulai')?.value) || null;
-    const tanggal_selesai = clean(inputByLabel(card, 'Tanggal Selesai')?.value) || null;
-    const durasi = days(tanggal_mulai, tanggal_selesai);
-
-    let subtotal = num($('.sum b', card)?.textContent);
-    if (!subtotal) {
-      if (tipe === 'luas') subtotal = lebar * tinggi * harga * durasi;
-      else if (tipe === 'level') subtotal = lebar * harga * durasi;
-      else if (tipe === 'rigging') subtotal = ((panjang * 2) + (tinggi * 2)) * harga * durasi;
-      else subtotal = qty * harga * durasi;
+  async function saveQuoteFixed(){
+    /* CRITICAL: this function's click listener runs before the final-safe patch.
+       If an existing quotation is being edited, route directly to the UPDATE path. */
+    if((window.__pmEditingQuotationId||window.__PM_EDIT_QUOTATION_ID) && typeof window.__saveEditedQuotation==='function'){
+      window.__pmEditingQuotationId=String(window.__pmEditingQuotationId||window.__PM_EDIT_QUOTATION_ID);
+      return window.__saveEditedQuotation();
     }
 
-    return {
-      kode,
-      item,
-      harga_jual: harga,
-      tipe_perhitungan: tipe,
-      qty,
-      lebar: lebar || null,
-      tinggi: tinggi || null,
-      panjang: panjang || null,
-      tanggal_mulai,
-      tanggal_selesai,
-      durasi,
-      subtotal
-    };
-  }
-
-  function readForm() {
-    return {
-      nama_client: clean($('#qc')?.value),
-      perusahaan: clean($('#qp')?.value),
-      whatsapp: clean($('#qw')?.value),
-      email: clean($('#qe')?.value),
-      nama_event: clean($('#qeve')?.value),
-      tanggal_mulai: clean($('#qs')?.value) || null,
-      tanggal_selesai: clean($('#qe2')?.value) || null
-    };
-  }
-
-  function quotationNumber() {
-    return `PM-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
-  }
-
-  function setBusy(busy) {
-    const button = document.querySelector('button[onclick="saveQuote()"]');
-    if (!button) return;
-    if (busy) {
-      button.dataset.originalText = button.textContent;
-      button.dataset.busy = '1';
-      button.disabled = true;
-      button.textContent = 'Menyimpan...';
-    } else {
-      button.dataset.busy = '0';
-      button.disabled = false;
-      button.textContent = button.dataset.originalText || 'Simpan Penawaran';
-    }
-  }
-
-  function clientKey(client) {
-    const norm = (value) => clean(value).toLowerCase().replace(/\s+/g, '');
-    const phone = norm(client.telepon || client.whatsapp);
-    return [norm(client.nama_client), norm(client.perusahaan), phone, norm(client.email)].join('|');
-  }
-
-  async function saveClient(client) {
-    const database = getDb();
-    const list = await database
-      .from(DB.clients)
-      .select('id,nama_client,perusahaan,telepon,whatsapp,email,alamat')
-      .order('id', { ascending: true });
-
-    if (list.error) throw new Error(`Client: ${list.error.message}`);
-
-    const existing = (list.data || []).find((row) => clientKey(row) === clientKey(client));
-    if (existing) return existing;
-
-    const result = await database.from(DB.clients).insert({
-      nama_client: client.nama_client,
-      perusahaan: client.perusahaan,
-      telepon: client.whatsapp,
-      whatsapp: client.whatsapp,
-      email: client.email,
-      alamat: ''
-    }).select('id,nama_client,perusahaan,telepon,whatsapp,email,alamat').single();
-
-    if (result.error) throw new Error(`Client: ${result.error.message}`);
-    return result.data;
-  }
-
-  async function saveHeader(database, form, client, total) {
-    const today = new Date().toISOString().slice(0, 10);
-    const nomor = quotationNumber();
-    const payload = {
-      nomor_penawaran: nomor,
-      nama_client: client.nama_client,
-      perusahaan: client.perusahaan,
-      telepon: client.telepon || client.whatsapp || '',
-      whatsapp: client.whatsapp || '',
-      email: client.email || '',
-      nama_event: form.nama_event,
-      event_name: form.nama_event,
-      tanggal_mulai: form.tanggal_mulai,
-      tanggal_selesai: form.tanggal_selesai,
-      tanggal_penawaran: today,
-      total,
-      subtotal: total,
-      grand_total: total,
-      status: 'DRAFT'
-    };
-
-    const result = await database.from(DB.quotations).insert(payload).select('*').single();
-    if (result.error) throw new Error(`Penawaran: ${result.error.message}`);
-    if (!result.data?.id) throw new Error('Penawaran tersimpan tetapi ID tidak dikembalikan.');
-    return result.data;
-  }
-
-  async function saveItem(database, quotationId, item) {
-    const result = await database.from(DB.items).insert({
-      penawaran_id: quotationId,
-      kode: item.kode,
-      item: item.item,
-      nama_item: item.item,
-      harga_jual: item.harga_jual,
-      harga: item.harga_jual,
-      tipe_perhitungan: item.tipe_perhitungan,
-      tipe: item.tipe_perhitungan,
-      qty: item.qty,
-      jumlah: item.qty,
-      lebar: item.lebar,
-      tinggi: item.tinggi,
-      panjang: item.panjang,
-      tanggal_mulai: item.tanggal_mulai,
-      tanggal_selesai: item.tanggal_selesai,
-      durasi: item.durasi,
-      subtotal: item.subtotal
-    }).select('*').single();
-
-    if (result.error) throw new Error(`Item ${item.kode || item.item}: ${result.error.message}`);
-    return result.data;
-  }
-
-  /*
-   * LIVE DATABASE CONTRACT:
-   * public.penawaran_jadwal requires item_id and does NOT have a jumlah column.
-   * Keep this payload restricted to the columns used by the live schema.
-   */
-  async function saveSchedule(database, itemId, item) {
-    if (!itemId) throw new Error(`Jadwal ${item.kode || item.item}: item_id tidak tersedia.`);
-
-    const payload = {
-      item_id: itemId,
-      qty: item.qty,
-      tanggal_mulai: item.tanggal_mulai,
-      tanggal_selesai: item.tanggal_selesai,
-      durasi: item.durasi,
-      subtotal: item.subtotal
-    };
-
-    const result = await database.from(DB.schedules).insert(payload).select('*').single();
-    if (result.error) {
-      throw new Error(`Jadwal ${item.kode || item.item}: ${result.error.message}`);
-    }
-    return result.data;
-  }
-
-  async function rollback(database, quotationId) {
-    if (!quotationId) return;
-    const itemsResult = await database.from(DB.items).select('id').eq('penawaran_id', quotationId);
-    if (!itemsResult.error) {
-      for (const row of itemsResult.data || []) {
-        await database.from(DB.schedules).delete().eq('item_id', row.id);
-      }
-    }
-    await database.from(DB.items).delete().eq('penawaran_id', quotationId);
-    const result = await database.from(DB.quotations).delete().eq('id', quotationId);
-    if (result.error) console.error('Rollback penawaran gagal:', result.error);
-  }
-
-  async function saveQuoteFixed() {
-    const button = document.querySelector('button[onclick="saveQuote()"]');
-    if (button?.dataset.busy === '1') return;
-
-    const database = getDb();
-    if (!database) {
-      notify('Supabase belum terhubung. Periksa URL dan Anon Key di Pengaturan.');
-      return;
-    }
-
-    setBusy(true);
-    let quotationId = null;
-
-    try {
-      const form = readForm();
-      if (!form.nama_client || !form.perusahaan || !form.nama_event) {
-        throw new Error('Nama client, perusahaan, dan event wajib diisi.');
-      }
-      if (form.tanggal_mulai && form.tanggal_selesai && form.tanggal_selesai < form.tanggal_mulai) {
-        throw new Error('Tanggal selesai tidak boleh lebih awal dari tanggal mulai.');
-      }
-
-      const itemCards = qa('#items .item');
-      const quoteItems = itemCards.map(readItem).filter((item) => item.kode && item.item);
-      if (!quoteItems.length) throw new Error('Pilih minimal satu Produk / Jasa.');
-
-      const total = quoteItems.reduce((sum, item) => sum + num(item.subtotal), 0);
-      const client = await saveClient(form);
-      const quotation = await saveHeader(database, form, client, total);
-      quotationId = quotation.id;
-
-      for (const item of quoteItems) {
-        const savedItem = await saveItem(database, quotationId, item);
-        if (!savedItem?.id) throw new Error(`Item ${item.kode || item.item} tidak mengembalikan ID.`);
-        await saveSchedule(database, savedItem.id, item);
-      }
-
-      notify(`Penawaran ${quotation.nomor_penawaran} berhasil disimpan sebagai DRAFT.`);
-      if (typeof window.go === 'function') window.go('history');
-    } catch (error) {
-      console.error('Quotation save error:', error);
-      if (quotationId) await rollback(database, quotationId);
-      notify(`Gagal menyimpan penawaran: ${error?.message || error}`);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  window.saveQuote = saveQuoteFixed;
-  window.__PRIANGAN_QUOTE_SAVE_FIXED = true;
-  window.__PRIANGAN_QUOTE_SCHEMA = DB;
-
-  document.addEventListener('click', (event) => {
-    const button = event.target.closest?.('button[onclick="saveQuote()"]');
-    if (!button) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    saveQuoteFixed();
-  }, true);
+    const button=document.querySelector('button[onclick="saveQuote()"]');if(button?.dataset.busy==='1')return;const database=getDb();if(!database){notify('Supabase belum terhubung. Periksa URL dan Anon Key di Pengaturan.');return}setBusy(true);let quotationId=null;
+    try{const form=readForm();if(!form.nama_client||!form.perusahaan||!form.nama_event)throw new Error('Nama client, perusahaan, dan event wajib diisi.');if(form.tanggal_mulai&&form.tanggal_selesai&&form.tanggal_selesai<form.tanggal_mulai)throw new Error('Tanggal selesai tidak boleh lebih awal dari tanggal mulai.');const itemCards=qa('#items .item'),quoteItems=itemCards.map(readItem).filter((item)=>item.kode&&item.item);if(!quoteItems.length)throw new Error('Pilih minimal satu Produk / Jasa.');const total=quoteItems.reduce((sum,item)=>sum+num(item.subtotal),0),client=await saveClient(form),quotation=await saveHeader(database,form,client,total);quotationId=quotation.id;for(const item of quoteItems){const savedItem=await saveItem(database,quotationId,item);if(!savedItem?.id)throw new Error(`Item ${item.kode||item.item} tidak mengembalikan ID.`);await saveSchedule(database,savedItem.id,item)}notify(`Penawaran ${quotation.nomor_penawaran} berhasil disimpan sebagai DRAFT.`);if(typeof window.go==='function')window.go('history')}catch(error){console.error('Quotation save error:',error);if(quotationId)await rollback(database,quotationId);notify(`Gagal menyimpan penawaran: ${error?.message||error}`)}finally{setBusy(false)}}
+  window.saveQuote=saveQuoteFixed;window.__PRIANGAN_QUOTE_SAVE_FIXED=true;window.__PRIANGAN_QUOTE_SCHEMA=DB;
+  document.addEventListener('click',(event)=>{const button=event.target.closest?.('button[onclick="saveQuote()"]');if(!button)return;event.preventDefault();event.stopImmediatePropagation();saveQuoteFixed()},true);
 })();
