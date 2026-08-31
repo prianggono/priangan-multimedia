@@ -1,10 +1,15 @@
-/* Priangan Multimedia — keep Invoice action buttons only at the bottom.
- * Removes the duplicate + Tambah Item / + Overtime controls rendered inside
- * the invoice item card. The bottom action bar remains untouched.
+/* Priangan Multimedia — Invoice top action cleanup.
+ * Keep ONLY the existing bottom + TAMBAH ITEM / + OVERTIME buttons.
+ * Do not touch invoice data, item calculations, or the bottom action bar.
  */
 (function(){
   'use strict';
   function clean(){
+    // invoice-ui-final.js creates this toolbar directly after #invoiceItems.
+    // It is the duplicate TOP toolbar; the existing bottom toolbar must remain.
+    document.getElementById('pmInvoiceActions')?.remove();
+
+    // Safety fallback for any duplicate controls rendered inside invoiceItems.
     const target=document.getElementById('invoiceItems');
     if(!target)return;
     target.querySelectorAll('button').forEach(btn=>{
@@ -16,8 +21,10 @@
       }
     });
   }
-  new MutationObserver(clean).observe(document.body,{childList:true,subtree:true});
-  setTimeout(clean,100);
-  setTimeout(clean,500);
-  setTimeout(clean,1200);
+  const run=()=>clean();
+  new MutationObserver(run).observe(document.body,{childList:true,subtree:true});
+  setTimeout(run,50);
+  setTimeout(run,200);
+  setTimeout(run,500);
+  setTimeout(run,1200);
 })();
