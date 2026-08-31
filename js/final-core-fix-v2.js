@@ -1,21 +1,133 @@
-(function(){'use strict';
-const S=v=>String(v??'').trim(),N=v=>{if(typeof v==='number')return Number.isFinite(v)?v:0;const r=S(v).replace(/[^0-9,.-]/g,'');if(!r)return 0;const n=Number(r.replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.'));return Number.isFinite(n)?n:0},M=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(N(v)),E=v=>S(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])),toast=t=>window.msg?window.msg(t):alert(t),DB=()=>{try{return typeof db!=='undefined'&&db?db:window.db||null}catch(_){return window.db||null}},mastersList=()=>{try{return typeof masters!=='undefined'&&Array.isArray(masters)?masters:window.masters||[]}catch(_){return window.masters||[]}},itemsList=()=>{try{return typeof items!=='undefined'&&Array.isArray(items)?items:window.items||[]}catch(_){return window.items||[]}},setItems=a=>{try{items=a}catch(_){}window.items=a},active=v=>v===true||v===1||!['FALSE','0','NO','TIDAK','NONAKTIF','INACTIVE','OFF'].includes(S(v).toUpperCase()),units=new Set(['unit','units','pcs','pc','buah','set']);
-function typeOf(m){const sat=S(m?.satuan).toLowerCase().replace(/\s+/g,'');if(units.has(sat))return'qty';if(['m2','m²','meter2','meterpersegi','luas'].includes(sat))return'luas';const t=(S(m?.item)+' '+S(m?.kategori)+' '+S(m?.kode)).toLowerCase();if(/rigging|rig/.test(t))return'rigging';if(/level/.test(t))return'level';if(/led|videotron/.test(t))return'luas';return'qty'}
-function days(a,b){if(!a||!b)return 1;const d=Math.round((new Date(S(b)+'T00:00:00')-new Date(S(a)+'T00:00:00'))/86400000);return d>=0?d+1:1}
-function sub(i){const t=S(i.tipe).toLowerCase(),p=N(i.harga),d=days(i.mulai,i.selesai);if(t==='luas')return N(i.lebar)*N(i.tinggi)*p*d;if(t==='rigging')return((N(i.panjang)*2)+(N(i.tinggi)*2))*p*d;if(t==='level'){const led=itemsList().find(x=>x.id!==i.id&&/led|videotron/i.test(S(x.item)));return(led?N(led.lebar):N(i.lebar))*N(i.tinggi)*p*d}return(N(i.qty)||1)*p*d}
-function pick(id,k){const m=mastersList().find(x=>S(x.kode)===S(k)),a=itemsList(),i=a.find(x=>x.id===id);if(!m||!i)return;i.kode=m.kode;i.item=m.item;i.harga=N(m.harga_jual);i.tipe=typeOf(m);if(i.tipe==='qty'){i.lebar=0;i.tinggi=0;i.panjang=0;i.qty=N(i.qty)||1}setItems(a);draw()}
-function upd(id,k,v){const a=itemsList(),i=a.find(x=>x.id===id);if(!i)return;i[k]=k==='mulai'||k==='selesai'?v:N(v);setItems(a);draw()}
-function removeItem(id){setItems(itemsList().filter(x=>x.id!==id));draw()}
-function addItem(){const a=itemsList();a.push({id:Date.now()+Math.random(),kode:'',item:'',harga:0,qty:1,lebar:0,tinggi:0,panjang:0,mulai:'',selesai:'',tipe:'qty'});setItems(a);draw()}
-function dims(i){const t=S(i.tipe).toLowerCase();if(t==='rigging')return`<div class="dim"><div class="field"><label>Panjang Rigging (m)</label><input type="number" min="0" step="0.01" value="${N(i.panjang)}" onchange="upd(${i.id},'panjang',this.value)"></div><div class="field"><label>Tinggi Rigging (m)</label><input type="number" min="0" step="0.01" value="${N(i.tinggi)}" onchange="upd(${i.id},'tinggi',this.value)"></div></div>`;if(t==='level'){const led=itemsList().find(x=>x.id!==i.id&&/led|videotron/i.test(S(x.item))),w=led?N(led.lebar):N(i.lebar);return`<div class="dim"><div class="field"><label>Lebar Level (otomatis)</label><input value="${w?w+' m':'-'}" readonly></div><div class="field"><label>Tinggi Level (m)</label><input type="number" min="0" step="0.01" value="${N(i.tinggi)}" onchange="upd(${i.id},'tinggi',this.value)"></div></div>`}if(t==='luas')return`<div class="dim"><div class="field"><label>Lebar Videotron (m)</label><input type="number" min="0" step="0.01" value="${N(i.lebar)}" onchange="upd(${i.id},'lebar',this.value)"></div><div class="field"><label>Tinggi Videotron (m)</label><input type="number" min="0" step="0.01" value="${N(i.tinggi)}" onchange="upd(${i.id},'tinggi',this.value)"></div></div>`;return`<div class="field"><label>Jumlah (Qty)</label><input type="number" min="1" step="1" value="${N(i.qty)||1}" onchange="upd(${i.id},'qty',this.value)"></div>`}
-function draw(){const c=document.querySelector('#items');if(!c)return;const a=itemsList(),ms=mastersList().filter(x=>active(x.aktif));c.innerHTML=a.map((i,n)=>`<div class="item"><div class="itemhead"><span class="blue">ITEM #${n+1}</span><button class="btn red sm" type="button" onclick="removeItem(${i.id})">Hapus</button></div><div class="field"><label>Produk / Jasa</label><select onchange="pick(${i.id},this.value)"><option value="">-- Pilih dari Master Harga --</option>${ms.map(m=>`<option value="${E(m.kode)}" ${S(i.kode)===S(m.kode)?'selected':''}>[${E(m.kode)}] ${E(m.item)}</option>`).join('')}</select></div><div class="grid g2"><div class="field"><label>Harga Jual</label><input value="${M(i.harga)}" readonly></div><div class="field"><label>Tipe Perhitungan</label><input value="${E(i.tipe==='qty'?'Qty':i.tipe)}" readonly></div></div>${dims(i)}<div class="sched"><b>Jadwal Pemakaian</b><div class="grid g2" style="margin-top:12px"><div class="field"><label>Tanggal Mulai</label><input type="date" value="${E(i.mulai)}" onchange="upd(${i.id},'mulai',this.value)"></div><div class="field"><label>Tanggal Selesai</label><input type="date" value="${E(i.selesai)}" onchange="upd(${i.id},'selesai',this.value)"></div></div></div><div class="sum"><span>Subtotal</span><b>${M(sub(i))}</b></div></div>`).join('');const total=a.reduce((s,i)=>s+sub(i),0),te=document.querySelector('#total');if(te)te.textContent=M(total);discount()}
-window.pick=pick;window.upd=upd;window.removeItem=removeItem;window.addItem=addItem;window.drawItems=draw;
-function base(){return[...document.querySelectorAll('#items>.item')].reduce((s,x)=>s+N(x.querySelector('.sum b')?.textContent),0)}
-function discount(){const total=document.querySelector('#total');if(!total)return;let box=document.querySelector('#pmDiscount');document.querySelectorAll('body>#pmDiscountBox,.card>#pmDiscountBox').forEach(x=>x.remove());if(!box){const card=total.closest('.card');if(!card)return;box=document.createElement('div');box.id='pmDiscount';box.style.cssText='margin-top:14px;padding-top:14px;border-top:1px solid var(--border)';card.insertBefore(box,total.closest('.sum'))}let pct=N(box.querySelector('#pmDiscPct')?.value),rp=N(box.querySelector('#pmDisc')?.value);if(!box.querySelector('#pmDiscPct')){box.innerHTML=`<div class="grid g2"><div class="field"><label>Diskon (%)</label><input id="pmDiscPct" type="number" min="0" max="100" step="0.01" value="${pct}"></div><div class="field"><label>Diskon (Rp)</label><input id="pmDisc" type="number" min="0" step="1" value="${rp}"></div></div><div class="sum" style="margin-top:10px"><span>Grand Total</span><b id="pmGrand">Rp 0</b></div><span id="pmDiscountBox" style="display:none!important"></span>`;const p=box.querySelector('#pmDiscPct'),r=box.querySelector('#pmDisc'),sync=mode=>{const b=base();if(mode==='p'){p.value=Math.max(0,Math.min(100,N(p.value)));r.value=Math.round(b*N(p.value)/100)}else{r.value=Math.max(0,Math.min(b,N(r.value)));p.value=b?(N(r.value)/b*100).toFixed(2):'0'}const net=Math.max(0,b-N(r.value));box.querySelector('#pmGrand').textContent=M(net);total.textContent=M(net);window.__pmDiscountValue=N(r.value);window.__pmDiscountPct=N(p.value);window.__pmNetTotal=net};p.oninput=()=>sync('p');r.oninput=()=>sync('r')}const b=base(),net=Math.max(0,b-N(box.querySelector('#pmDisc')?.value));if(box.querySelector('#pmGrand'))box.querySelector('#pmGrand').textContent=M(net);total.textContent=M(net)}
-const ob=new MutationObserver(()=>{if(document.querySelector('#items'))discount()});ob.observe(document.body,{childList:true,subtree:true});
-function invoiceButtons(){const target=document.querySelector('#invoiceItems');if(!target)return;const old=document.querySelector('#pmInvoiceActions');if(old)old.style.setProperty('display','none','important');target.querySelectorAll('[data-pm-add-main]').forEach(x=>x.style.setProperty('display','none','important'));const table=target.querySelector('table');if(table){const top=table.getBoundingClientRect().top;document.querySelectorAll('button').forEach(b=>{const t=S(b.textContent).toLowerCase();if((t.includes('tambah item')||t.includes('overtime'))&&!b.closest('#pmInvoiceBottomActions')&&b.getBoundingClientRect().top<top)b.style.setProperty('display','none','important')})}let bar=document.querySelector('#pmInvoiceBottomActions');if(!bar){bar=document.createElement('div');bar.id='pmInvoiceBottomActions';bar.style.cssText='display:flex;justify-content:flex-end;gap:8px;margin:12px 0';bar.innerHTML='<button class="btn" type="button">+ Tambah Item</button><button class="btn" type="button">+ Overtime</button>';target.parentNode.insertBefore(bar,target.nextSibling);bar.children[0].onclick=()=>window.invoiceAddItem&&window.invoiceAddItem();bar.children[1].onclick=()=>window.__PM_OPEN_INVOICE_OVERTIME&&window.__PM_OPEN_INVOICE_OVERTIME()}}
-function invoiceExtras(id){try{return(JSON.parse(localStorage.getItem('PM_INVOICE_EXTRA_ITEMS')||'{}')[String(id)]||[])}catch(_){return[]}}
-function settlementButton(){const target=document.querySelector('#invoiceItems');if(!target)return;const a=target.parentElement?.querySelector('.card + .card .actions');const id=Number(window.__PM_INVOICE_ADD_STATE?.id);if(!a||!id||a.querySelector('#pmDirectSettlement'))return;const b=document.createElement('button');b.id='pmDirectSettlement';b.className='btn';b.type='button';b.textContent='Pelunasan';b.onclick=()=>window.inputPelunasan&&window.inputPelunasan(id);a.insertBefore(b,a.querySelector('[onclick="previewInvoice()"]')||null)}
-function previewPatch(){if(window.__PM_PREVIEW_WORD_PATCH)return;const old=window.previewInvoice;if(typeof old!=='function')return;window.previewInvoice=function(){const r=old.apply(this,arguments);setTimeout(()=>{const o=document.querySelector('#pmInvoicePreview');if(!o)return;const row=[...o.querySelectorAll('.pm-inv-payrow')];if(row[1]?.querySelector('span'))row[1].querySelector('span').textContent='Downpayment';const id=Number(window.__PM_INVOICE_ADD_STATE?.id),ex=invoiceExtras(id),t=N(document.querySelector('#invTotal')?.textContent)+ex.reduce((s,x)=>s+N(x.subtotal),0);const tc=o.querySelector('.pm-inv-total td:last-child');if(tc)tc.textContent=M(t);if(row[0]?.querySelector('strong'))row[0].querySelector('strong').textContent=M(t);if(row[2]?.querySelector('strong')){const paid=N(document.querySelector('#invPaid')?.textContent);row[2].querySelector('strong').textContent=M(Math.max(0,t-paid))}},100);return r};window.__PM_PREVIEW_WORD_PATCH=true}
-const io=new MutationObserver(()=>{invoiceButtons();settlementButton();previewPatch()});io.observe(document.body,{childList:true,subtree:true});setTimeout(()=>{invoiceButtons();settlementButton();previewPatch()},300);setTimeout(()=>{invoiceButtons();settlementButton();previewPatch()},1000);window.__PM_FINAL_CORE=true;
+/* Priangan Multimedia — stable quotation core
+ * This file intentionally contains NO global MutationObserver.
+ * Previous versions watched the whole document and could repeatedly mutate the
+ * discount DOM, freezing the browser. All quotation recalculation is explicit.
+ */
+(function(){
+  'use strict';
+
+  const S=v=>String(v??'').trim();
+  const N=v=>{
+    if(typeof v==='number') return Number.isFinite(v)?v:0;
+    const r=S(v).replace(/[^0-9,.-]/g,'');
+    if(!r) return 0;
+    const n=Number(r.replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.'));
+    return Number.isFinite(n)?n:0;
+  };
+  const M=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(N(v));
+  const E=v=>S(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const units=new Set(['unit','units','pcs','pc','buah','set']);
+
+  function masterList(){try{return Array.isArray(window.masters)?window.masters:(typeof masters!=='undefined'&&Array.isArray(masters)?masters:[])}catch(_){return[]}}
+  function itemList(){try{return Array.isArray(window.items)?window.items:(typeof items!=='undefined'&&Array.isArray(items)?items:[])}catch(_){return[]}}
+  function setList(a){try{items=a}catch(_){} window.items=a;}
+
+  function typeOf(m){
+    const sat=S(m?.satuan).toLowerCase().replace(/\s+/g,'');
+    if(units.has(sat)) return 'qty';
+    if(['m2','m²','meter2','meterpersegi','luas'].includes(sat)) return 'luas';
+    const t=(S(m?.item)+' '+S(m?.kategori)+' '+S(m?.kode)).toLowerCase();
+    if(/rigging|rig/.test(t)) return 'rigging';
+    if(/level/.test(t)) return 'level';
+    if(/led|videotron/.test(t)) return 'luas';
+    return 'qty';
+  }
+
+  function days(a,b){
+    if(!a||!b) return 1;
+    const d=Math.round((new Date(S(b)+'T00:00:00')-new Date(S(a)+'T00:00:00'))/86400000);
+    return d>=0?d+1:1;
+  }
+
+  function subtotal(i){
+    const t=S(i.tipe).toLowerCase(), p=N(i.harga), d=days(i.mulai,i.selesai);
+    if(t==='luas') return N(i.lebar)*N(i.tinggi)*p*d;
+    if(t==='rigging') return ((N(i.panjang)*2)+(N(i.tinggi)*2))*p*d;
+    if(t==='level'){
+      const led=itemList().find(x=>x.id!==i.id&&/led|videotron/i.test(S(x.item)));
+      return (led?N(led.lebar):N(i.lebar))*N(i.tinggi)*p*d;
+    }
+    return (N(i.qty)||1)*p*d;
+  }
+
+  function pick(id,kode){
+    const m=masterList().find(x=>S(x.kode)===S(kode));
+    const a=itemList(), i=a.find(x=>x.id===id);
+    if(!m||!i) return;
+    i.kode=m.kode; i.item=m.item; i.harga=N(m.harga_jual); i.tipe=typeOf(m);
+    if(i.tipe==='qty'){
+      i.lebar=0; i.tinggi=0; i.panjang=0; i.qty=N(i.qty)||1;
+    }
+    setList(a); draw();
+  }
+
+  function upd(id,k,v){
+    const a=itemList(),i=a.find(x=>x.id===id); if(!i)return;
+    i[k]=(k==='mulai'||k==='selesai')?S(v):N(v);
+    setList(a); draw();
+  }
+
+  function removeItem(id){setList(itemList().filter(x=>x.id!==id));draw();}
+  function addItem(){
+    const a=itemList();
+    a.push({id:Date.now()+Math.random(),kode:'',item:'',harga:0,qty:1,lebar:0,tinggi:0,panjang:0,mulai:'',selesai:'',tipe:'qty'});
+    setList(a); draw();
+  }
+
+  function dims(i){
+    const t=S(i.tipe).toLowerCase();
+    if(t==='rigging') return `<div class="dim"><div class="field"><label>Panjang Rigging (m)</label><input type="number" min="0" step="0.01" value="${N(i.panjang)}" onchange="upd(${i.id},'panjang',this.value)"></div><div class="field"><label>Tinggi Rigging (m)</label><input type="number" min="0" step="0.01" value="${N(i.tinggi)}" onchange="upd(${i.id},'tinggi',this.value)"></div></div>`;
+    if(t==='level'){
+      const led=itemList().find(x=>x.id!==i.id&&/led|videotron/i.test(S(x.item))),w=led?N(led.lebar):N(i.lebar);
+      return `<div class="dim"><div class="field"><label>Lebar Level (otomatis)</label><input value="${w?w+' m':'-'}" readonly></div><div class="field"><label>Tinggi Level (m)</label><input type="number" min="0" step="0.01" value="${N(i.tinggi)}" onchange="upd(${i.id},'tinggi',this.value)"></div></div>`;
+    }
+    if(t==='luas') return `<div class="dim"><div class="field"><label>Lebar Videotron (m)</label><input type="number" min="0" step="0.01" value="${N(i.lebar)}" onchange="upd(${i.id},'lebar',this.value)"></div><div class="field"><label>Tinggi Videotron (m)</label><input type="number" min="0" step="0.01" value="${N(i.tinggi)}" onchange="upd(${i.id},'tinggi',this.value)"></div></div>`;
+    return `<div class="field"><label>Jumlah (Qty)</label><input type="number" min="1" step="1" value="${N(i.qty)||1}" onchange="upd(${i.id},'qty',this.value)"></div>`;
+  }
+
+  function base(){return itemList().reduce((s,i)=>s+subtotal(i),0)}
+
+  function ensureDiscount(){
+    const total=document.querySelector('#total'); if(!total)return;
+    const card=total.closest('.card'); if(!card)return;
+    let box=document.querySelector('#pmDiscount');
+    if(!box){
+      box=document.createElement('div'); box.id='pmDiscount';
+      box.style.cssText='margin-top:14px;padding-top:14px;border-top:1px solid var(--border)';
+      box.innerHTML=`<div class="grid g2"><div class="field"><label>Diskon (%)</label><input id="pmDiscPct" type="number" min="0" max="100" step="0.01" value="0"></div><div class="field"><label>Diskon (Rp)</label><input id="pmDisc" type="number" min="0" step="1" value="0"></div></div><div class="sum" style="margin-top:10px"><span>Grand Total</span><b id="pmGrand">Rp 0</b></div>`;
+      card.insertBefore(box,total.closest('.sum'));
+      const p=box.querySelector('#pmDiscPct'),r=box.querySelector('#pmDisc');
+      p.addEventListener('input',()=>applyDiscount('pct'));
+      r.addEventListener('input',()=>applyDiscount('rp'));
+    }
+    applyDiscount();
+  }
+
+  function applyDiscount(mode){
+    const box=document.querySelector('#pmDiscount'); if(!box)return;
+    const p=box.querySelector('#pmDiscPct'),r=box.querySelector('#pmDisc'),b=base();
+    let pct=N(p.value),rp=N(r.value);
+    if(mode==='pct'){
+      pct=Math.max(0,Math.min(100,pct)); rp=Math.round(b*pct/100); r.value=rp;
+    }else if(mode==='rp'){
+      rp=Math.max(0,Math.min(b,rp)); pct=b?rp/b*100:0; p.value=pct.toFixed(2);
+    }else{
+      pct=Math.max(0,Math.min(100,pct)); rp=Math.max(0,Math.min(b,rp));
+      if(rp>0 && pct===0) pct=b?rp/b*100:0;
+    }
+    const net=Math.max(0,b-rp);
+    box.querySelector('#pmGrand').textContent=M(net);
+    const total=document.querySelector('#total'); if(total)total.textContent=M(net);
+    window.__pmDiscountValue=rp; window.__pmDiscountPct=pct; window.__pmDiscountBase=b; window.__pmNetTotal=net;
+  }
+
+  function draw(){
+    const c=document.querySelector('#items'); if(!c)return;
+    const a=itemList(),ms=masterList().filter(x=>x.aktif!==false&&String(x.aktif).toUpperCase()!=='FALSE');
+    c.innerHTML=a.map((i,n)=>`<div class="item"><div class="itemhead"><span class="blue">ITEM #${n+1}</span><button class="btn red sm" type="button" onclick="removeItem(${i.id})">Hapus</button></div><div class="field"><label>Produk / Jasa</label><select onchange="pick(${i.id},this.value)"><option value="">-- Pilih dari Master Harga --</option>${ms.map(m=>`<option value="${E(m.kode)}" ${S(i.kode)===S(m.kode)?'selected':''}>[${E(m.kode)}] ${E(m.item)}</option>`).join('')}</select></div><div class="grid g2"><div class="field"><label>Harga Jual</label><input value="${M(i.harga)}" readonly></div><div class="field"><label>Tipe Perhitungan</label><input value="${E(i.tipe==='qty'?'Qty':i.tipe)}" readonly></div></div>${dims(i)}<div class="sched"><b>Jadwal Pemakaian</b><div class="grid g2" style="margin-top:12px"><div class="field"><label>Tanggal Mulai</label><input type="date" value="${E(i.mulai)}" onchange="upd(${i.id},'mulai',this.value)"></div><div class="field"><label>Tanggal Selesai</label><input type="date" value="${E(i.selesai)}" onchange="upd(${i.id},'selesai',this.value)"></div></div></div><div class="sum"><span>Subtotal</span><b>${M(subtotal(i))}</b></div></div>`).join('');
+    ensureDiscount();
+  }
+
+  window.pick=pick; window.upd=upd; window.removeItem=removeItem; window.addItem=addItem; window.drawItems=draw;
+  window.__PM_STABLE_QUOTATION_CORE=true;
 })();
