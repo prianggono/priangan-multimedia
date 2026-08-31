@@ -1,50 +1,47 @@
-/* Priangan Multimedia — Master Harga satuan is the source of truth for quotation billing.
- * IMPORTANT: this patch does not alter existing non-unit rules. It only forces Qty
- * when the selected Master Harga explicitly has satuan = unit/unit(s).
+/* Priangan Multimedia — Master Harga satuan is the source of truth for unit billing.
+ * Only an explicit Master Harga satuan of unit/pcs/buah/set forces Qty.
+ * Other calculation rules are left untouched.
  */
 (function(){
   'use strict';
   const S=v=>String(v??'').trim().toLowerCase();
-  const isUnit=v=>['unit','units','buah','pcs','pc','set'].includes(S(v));
+  const isUnit=v=>['unit','units','pcs','pc','buah','set'].includes(S(v));
+  let busy=false;
 
-  function applyUnitRule(card){
-    if(!card) return;
+  function getDb(){
+    if(window.db) return window.db;
+    const c=window.PRIANGAN_CONFIG||{};
+    const url=(localStorage.getItem('SUPABASE_URL')||c.SUPABASE_URL||'').trim();
+    const key=(localStorage.getItem('SUPABASE_ANON_KEY')||c.SUPABASE_ANON_KEY||'').trim();
+    if(!url||!key||!window.supabase?.createClient) return null;
+    window.__PM_MASTER_RULE_DB ||= window.supabase.createClient(url,key);
+    return window.__PM_MASTER_RULE_DB;
+  }
+
+  async function applyFromMaster(card){
+    if(!card||busy)return;
     const select=card.querySelector('select');
-    if(!select) return;
-    const code=select.value;
-    if(!code) return;
-
-    const master=(window.masters||[]).find(m=>String(m.kode)===String(code));
-    if(!master || !isUnit(master.satuan)) return;
-
-    const fields=[...card.querySelectorAll('.field')];
-    const typeField=fields.find(f=>/tipe perhitungan/i.test(S(f.querySelector('label')?.textContent)));
-    const type=typeField?.querySelector('select,input');
-    if(type && S(type.value)!=='qty'){
-      type.value='qty';
-      type.dispatchEvent(new Event('input',{bubbles:true}));
-      type.dispatchEvent(new Event('change',{bubbles:true}));
-    }
+    const code=select?.value;
+    if(!code)return;
+    const db=getDb();
+    if(!db)return;
+    busy=true;
+    try{
+      const result=await db.from('master_harga').select('satuan').eq('kode',code).maybeSingle();
+      if(result.error || !isUnit(result.data?.satuan))return;
+      const fields=[...card.querySelectorAll('.field')];
+      const typeField=fields.find(f=>/tipe perhitungan/i.test(S(f.querySelector('label')?.textContent)));
+      const type=typeField?.querySelector('select,input');
+      if(type && S(type.value)!=='qty'){
+        type.value='qty';
+        type.dispatchEvent(new Event('input',{bubbles:true}));
+        type.dispatchEvent(new Event('change',{bubbles:true}));
+      }
+    }finally{busy=false;}
   }
 
-  function scan(){document.querySelectorAll('#items .item').forEach(applyUnitRule);}
-
-  function patchPick(){
-    if(typeof window.pick!=='function' || window.__PM_MASTER_SATUAN_PICK_PATCH) return;
-    const original=window.pick;
-    window.pick=function(){
-      const result=original.apply(this,arguments);
-      setTimeout(scan,0);
-      return result;
-    };
-    window.__PM_MASTER_SATUAN_PICK_PATCH=true;
-  }
-
-  patchPick();
   document.addEventListener('change',e=>{
-    if(e.target.matches('#items .item select')) setTimeout(()=>applyUnitRule(e.target.closest('.item')),0);
+    if(!e.target.matches('#items .item select'))return;
+    applyFromMaster(e.target.closest('.item'));
   },true);
-  const observer=new MutationObserver(()=>{patchPick();scan();});
-  observer.observe(document.getElementById('content')||document.body,{childList:true,subtree:true});
-  scan();
 })();
