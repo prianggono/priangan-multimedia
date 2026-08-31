@@ -29,6 +29,25 @@
   async function rollback(database,quotationId){if(!quotationId)return;const itemsResult=await database.from(DB.items).select('id').eq('penawaran_id',quotationId);if(!itemsResult.error){for(const row of itemsResult.data||[])await database.from(DB.schedules).delete().eq('item_id',row.id)}await database.from(DB.items).delete().eq('penawaran_id',quotationId);const result=await database.from(DB.quotations).delete().eq('id',quotationId);if(result.error)console.error('Rollback penawaran gagal:',result.error)}
   function discountValue(){const base=qa('#items .item').reduce((sum,card)=>sum+num($('.sum b',card)?.textContent),0);const pct=Math.max(0,Math.min(100,num(document.querySelector('#pmDiscPct')?.value)));const rp=Math.max(0,num(document.querySelector('#pmDisc')?.value));let discount=rp;if(document.activeElement?.id==='pmDiscPct')discount=Math.round(base*pct/100);else if(!document.querySelector('#pmDisc')?.value && pct)discount=Math.round(base*pct/100);discount=Math.min(base,discount);return{base,discount,net:Math.max(0,base-discount)}}
 
+  function renderDiscountUI(){
+    const total=$('#total');
+    if(!total)return;
+    const sum=total.closest('.sum');
+    const host=sum?.parentElement;
+    if(!host||$('#pmDiscountBox'))return;
+    const box=document.createElement('div');
+    box.id='pmDiscountBox';
+    box.className='grid g2';
+    box.style.marginBottom='14px';
+    box.innerHTML='<div class="field"><label>Diskon (%)</label><input id="pmDiscPct" type="number" min="0" max="100" step="0.01" value="0"></div><div class="field"><label>Diskon (Rp)</label><input id="pmDisc" type="number" min="0" step="1" value="0"></div>';
+    host.insertBefore(box,sum);
+    const pct=$('#pmDiscPct'),rp=$('#pmDisc');
+    pct.addEventListener('input',()=>{const x=discountValue();const base=x.base;const p=Math.max(0,Math.min(100,num(pct.value)));rp.value=Math.round(base*p/100);refreshDiscountTotal()});
+    rp.addEventListener('input',()=>{const base=discountValue().base;const d=Math.max(0,Math.min(base,num(rp.value)));rp.value=d;pct.value=base?((d/base)*100).toFixed(2):'0';refreshDiscountTotal()});
+  }
+  function refreshDiscountTotal(){const x=discountValue();const total=$('#total');if(total){total.textContent=new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(x.net)}}
+  function scheduleDiscountUI(){requestAnimationFrame(()=>{renderDiscountUI();refreshDiscountTotal()})}
+
   async function saveQuoteFixed(){
     if((window.__pmEditingQuotationId||window.__PM_EDIT_QUOTATION_ID) && typeof window.__saveEditedQuotation==='function'){
       window.__pmEditingQuotationId=String(window.__pmEditingQuotationId||window.__PM_EDIT_QUOTATION_ID);
@@ -38,4 +57,8 @@
     try{const form=readForm();if(!form.nama_client||!form.perusahaan||!form.nama_event)throw new Error('Nama client, perusahaan, dan event wajib diisi.');if(form.tanggal_mulai&&form.tanggal_selesai&&form.tanggal_selesai<form.tanggal_mulai)throw new Error('Tanggal selesai tidak boleh lebih awal dari tanggal mulai.');const itemCards=qa('#items .item'),quoteItems=itemCards.map(readItem).filter((item)=>item.kode&&item.item);if(!quoteItems.length)throw new Error('Pilih minimal satu Produk / Jasa.');const base=quoteItems.reduce((sum,item)=>sum+num(item.subtotal),0),disc=Math.max(0,Math.min(base,num(document.querySelector('#pmDisc')?.value)||(document.activeElement?.id==='pmDiscPct'?Math.round(base*Math.max(0,Math.min(100,num(document.querySelector('#pmDiscPct')?.value)))/100):0))),total=Math.max(0,base-disc),client=await saveClient(form),quotation=await saveHeader(database,form,client,total);quotationId=quotation.id;for(const item of quoteItems){const savedItem=await saveItem(database,quotationId,item);if(!savedItem?.id)throw new Error(`Item ${item.kode||item.item} tidak mengembalikan ID.`);await saveSchedule(database,savedItem.id,item)}notify(`Penawaran ${quotation.nomor_penawaran} berhasil disimpan sebagai DRAFT.`);if(typeof window.go==='function')window.go('history')}catch(error){console.error('Quotation save error:',error);if(quotationId)await rollback(database,quotationId);notify(`Gagal menyimpan penawaran: ${error?.message||error}`)}finally{setBusy(false)}}
   window.saveQuote=saveQuoteFixed;window.__PRIANGAN_QUOTE_SAVE_FIXED=true;window.__PRIANGAN_QUOTE_SCHEMA=DB;
   document.addEventListener('click',(event)=>{const button=event.target.closest?.('button[onclick="saveQuote()"]');if(!button)return;event.preventDefault();event.stopImmediatePropagation();saveQuoteFixed()},true);
+
+  const observer=new MutationObserver(()=>scheduleDiscountUI());
+  observer.observe(document.body,{childList:true,subtree:true});
+  scheduleDiscountUI();
 })();
