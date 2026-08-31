@@ -1,42 +1,42 @@
-/* Priangan Multimedia — safe Master Harga unit rule.
- * Does NOT replace pick(), does NOT access window.items, and does NOT add another calculation system.
- * It only corrects an already-rendered quotation item when Master Harga says satuan=unit/pcs/buah/set.
+/* Priangan Multimedia — Master Harga satuan rule, source-level safe patch.
+ * IMPORTANT: keep existing quotation calculation logic untouched.
+ * The original pick() infers "luas" from words such as LED/Videotron.
+ * That is wrong for products whose Master Harga satuan is unit/pcs/buah/set,
+ * e.g. LED TV. This wrapper temporarily hides the category from the original
+ * inference, so the existing pick() stores the item as qty in its real state.
  */
 (function(){
   'use strict';
   const norm=v=>String(v??'').trim().toLowerCase();
-  const unit=v=>['unit','units','pcs','pc','buah','set'].includes(norm(v));
-  const cache=new Map();
-  function db(){
-    if(window.db)return window.db;
-    if(window.__PRIANGAN_QUOTE_DB)return window.__PRIANGAN_QUOTE_DB;
-    if(window.__PRIANGAN_EDIT_DB)return window.__PRIANGAN_EDIT_DB;
-    const c=window.PRIANGAN_CONFIG||{};
-    const u=String(localStorage.getItem('SUPABASE_URL')||c.SUPABASE_URL||'').trim();
-    const k=String(localStorage.getItem('SUPABASE_ANON_KEY')||c.SUPABASE_ANON_KEY||'').trim();
-    if(!u||!k||!window.supabase?.createClient)return null;
-    return window.__PM_SAFE_RULE_DB ||= window.supabase.createClient(u,k);
+  const isUnit=v=>['unit','units','pcs','pc','buah','set'].includes(norm(v));
+
+  function lexical(name){
+    try{return Function('return '+name)();}catch(_){return null;}
   }
-  async function master(code){
-    code=String(code||'').trim();if(!code)return null;
-    if(cache.has(code))return cache.get(code);
-    const local=Array.isArray(window.masters)?window.masters.find(m=>norm(m?.kode)===norm(code)):null;
-    if(local){cache.set(code,local);return local;}
-    const d=db();if(!d)return null;
-    try{const r=await d.from('master_harga').select('kode,satuan,harga_jual,item').eq('kode',code).maybeSingle();if(!r.error&&r.data){cache.set(code,r.data);return r.data;}}catch(e){console.warn('[PM] master unit lookup failed',e)}
-    return null;
+
+  const originalPick=window.pick;
+  if(typeof originalPick!=='function'){
+    console.warn('[PM] master satuan patch: pick() belum tersedia');
+    return;
   }
-  async function fix(card){
-    if(!card)return;
-    const select=card.querySelector('select');const code=select?.value;if(!code)return;
-    const m=await master(code);if(!unit(m?.satuan))return;
-    const field=[...card.querySelectorAll('.field')].find(x=>norm(x.querySelector('label')?.textContent).includes('tipe perhitungan'));
-    const input=field?.querySelector('select,input');if(!input||norm(input.value)==='qty')return;
-    input.value='qty';input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));
-  }
-  function scan(){document.querySelectorAll('#items .item').forEach(fix);}
-  document.addEventListener('change',e=>{if(e.target.closest?.('#items .item select'))fix(e.target.closest('#items .item'));},true);
-  new MutationObserver(()=>{if(document.getElementById('items'))scan();}).observe(document.body,{childList:true,subtree:true});
-  window.__PM_SAFE_MASTER_UNIT_RULE=true;
-  setTimeout(scan,250);setTimeout(scan,800);setTimeout(scan,1500);
+  if(window.__PM_MASTER_SATUAN_PICK_PATCHED)return;
+
+  window.pick=function(id,kode){
+    const list=lexical('masters');
+    const master=Array.isArray(list)?list.find(row=>String(row?.kode??'')===String(kode??'')):null;
+    if(!master || !isUnit(master.satuan)) return originalPick(id,kode);
+
+    // Let the original application perform the normal pick/calculation flow.
+    // Only suppress the misleading LED/Videotron category inference for unit items.
+    const oldKategori=master.kategori;
+    master.kategori='';
+    try{
+      return originalPick(id,kode);
+    }finally{
+      master.kategori=oldKategori;
+    }
+  };
+
+  window.__PM_MASTER_SATUAN_PICK_PATCHED=true;
+  console.info('[PM] Master Harga satuan rule aktif: unit/pcs/buah/set => qty');
 })();
