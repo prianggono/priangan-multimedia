@@ -69,35 +69,24 @@
   <script src="js/history-payment-display-fix.js?v=1"></script>
   <script src="js/invoice-additional-items-fix.js?v=1"></script>
   <script src="js/invoice-additional-items-final-fix.js?v=2"></script>
-  <script src="js/invoice-master-bridge-fix.js?v=1"></script>
+  <script src="js/invoice-master-bridge-fix.js?v=2"></script>
   <script>
-  /* Invoice UI: keep + Tambah Item directly below the item-list window. */
   (function(){
     'use strict';
     function place(){
       var target=document.getElementById('invoiceItems');
-      if(!target) return;
+      if(!target)return;
       var scroll=target.querySelector('.scroll');
-      if(!scroll) return;
+      if(!scroll)return;
       var buttons=Array.prototype.slice.call(target.querySelectorAll('[data-pm-add-main],button[onclick="invoiceAddItem()"]'));
       var btn=buttons[0];
       if(!btn){
-        var wrap=document.createElement('div');
-        wrap.setAttribute('data-pm-add-main','1');
-        wrap.style.cssText='display:flex;justify-content:flex-end;margin-top:14px';
-        wrap.innerHTML='<button class="btn sm" type="button" onclick="invoiceAddItem()">+ Tambah Item</button>';
-        btn=wrap;
-      } else {
-        var wrap=btn.closest('[data-pm-add-main]') || btn.parentElement;
-        if(wrap) btn=wrap;
-      }
+        var wrap=document.createElement('div');wrap.setAttribute('data-pm-add-main','1');wrap.style.cssText='display:flex;justify-content:flex-end;margin-top:14px';wrap.innerHTML='<button class="btn sm" type="button" onclick="invoiceAddItem()">+ Tambah Item</button>';btn=wrap;
+      }else{var wrap=btn.closest('[data-pm-add-main]')||btn.parentElement;if(wrap)btn=wrap;}
       buttons.slice(1).forEach(function(b){var w=b.closest('[data-pm-add-main]')||b.parentElement;if(w&&w!==btn)w.remove();});
-      if(btn.parentNode!==target || btn.previousElementSibling!==scroll) target.insertBefore(btn,scroll.nextSibling);
+      if(btn.parentNode!==target||btn.previousElementSibling!==scroll)target.insertBefore(btn,scroll.nextSibling);
     }
-    var observer=new MutationObserver(function(){place();});
-    observer.observe(document.getElementById('content')||document.body,{childList:true,subtree:true});
-    document.addEventListener('click',function(){setTimeout(place,50);});
-    setTimeout(place,100);setTimeout(place,400);setTimeout(place,1000);setTimeout(place,2000);
+    var observer=new MutationObserver(function(){place();});observer.observe(document.getElementById('content')||document.body,{childList:true,subtree:true});document.addEventListener('click',function(){setTimeout(place,50)});setTimeout(place,100);setTimeout(place,500);setTimeout(place,1500);
   })();
   </script>
 </body>
