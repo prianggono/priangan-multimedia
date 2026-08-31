@@ -8,7 +8,6 @@
   const N=v=>{if(typeof v==='number')return Number.isFinite(v)?v:0;const n=Number(S(v).replace(/[^0-9,.-]/g,'').replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.'));return Number.isFinite(n)?n:0};
   const toast=m=>typeof window.msg==='function'?window.msg(m):alert(m);
 
-  /* 1) History -> Edit must explicitly mark the original quotation as EDIT MODE. */
   function patchEdit(){
     if(typeof window.editQuotation!=='function') return false;
     if(window.__PM_SAFE_EDIT_PATCHED) return true;
@@ -22,7 +21,31 @@
     return true;
   }
 
-  /* 2) Invoice: guarantee state exists before the additional-item dialog opens. */
+  /* IMPORTANT: quotation-fix.js is loaded before this patch and owns window.saveQuote.
+     Therefore patch saveQuote again here, after every existing quotation module has loaded. */
+  function patchSave(){
+    if(typeof window.__saveEditedQuotation!=='function') return false;
+    if(window.__PM_SAFE_SAVE_PATCHED) return true;
+    const original=window.saveQuote;
+    window.saveQuote=async function(){
+      if(window.__pmEditingQuotationId || window.__PM_EDIT_QUOTATION_ID){
+        window.__pmEditingQuotationId=String(window.__pmEditingQuotationId || window.__PM_EDIT_QUOTATION_ID);
+        return window.__saveEditedQuotation();
+      }
+      return typeof original==='function' ? original() : toast('Fungsi simpan penawaran tidak tersedia.');
+    };
+    window.__PM_SAFE_SAVE_PATCHED=true;
+    document.addEventListener('click',function(e){
+      const b=e.target.closest?.('button[onclick="saveQuote()"]');
+      if(!b || (!window.__pmEditingQuotationId && !window.__PM_EDIT_QUOTATION_ID)) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      window.__pmEditingQuotationId=String(window.__pmEditingQuotationId || window.__PM_EDIT_QUOTATION_ID);
+      window.__saveEditedQuotation();
+    },true);
+    return true;
+  }
+
   async function invoiceState(id){
     const cur=window.__PM_INVOICE_ADD_STATE;
     if(cur?.id===Number(id)&&cur.row) return cur;
@@ -51,7 +74,6 @@
     return true;
   }
 
-  /* Keep exactly two actions on the invoice item list. */
   function decorateInvoiceButtons(){
     const target=document.getElementById('invoiceItems');
     if(!target) return;
@@ -65,7 +87,6 @@
     wrap.innerHTML='<button class="btn sm" type="button" data-pm-safe-add>+ Tambah Item</button><button class="btn sm secondary" type="button" data-pm-safe-overtime>+ Overtime</button>';
     wrap.querySelector('[data-pm-safe-add]').onclick=()=>openAdditional('master');
     wrap.querySelector('[data-pm-safe-overtime]').onclick=()=>openAdditional('overtime');
-    /* Hide duplicate add buttons created by older fixes, without touching the item table. */
     target.querySelectorAll('button[onclick="invoiceAddItem()"],button[data-pm-add-main]').forEach(b=>{
       const w=b.closest('[data-pm-add-main]');
       if(w && w!==wrap) w.remove(); else if(b.parentElement!==wrap) b.remove();
@@ -117,15 +138,14 @@
   }
 
   function captureInvoiceId(){
-    /* The invoice edit button always carries its numeric id. This is only a fallback for state recovery. */
     const b=document.querySelector('[onclick^="invoiceEdit("]');
     if(b){const m=S(b.getAttribute('onclick')).match(/invoiceEdit\((\d+)\)/);if(m)window.__PM_INVOICE_ADD_ID=Number(m[1]);}
   }
 
   function boot(){
-    patchEdit();patchInvoiceEdit();captureInvoiceId();decorateInvoiceButtons();
+    patchEdit();patchSave();patchInvoiceEdit();captureInvoiceId();decorateInvoiceButtons();
     if(!window.__PM_SAFE_OBSERVER){
-      const ob=new MutationObserver(()=>{patchEdit();patchInvoiceEdit();captureInvoiceId();decorateInvoiceButtons();});
+      const ob=new MutationObserver(()=>{patchEdit();patchSave();patchInvoiceEdit();captureInvoiceId();decorateInvoiceButtons();});
       ob.observe(document.getElementById('content')||document.body,{childList:true,subtree:true});
       window.__PM_SAFE_OBSERVER=true;
     }
