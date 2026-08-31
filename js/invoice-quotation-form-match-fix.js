@@ -23,4 +23,6 @@ function open(mode){
  el.querySelector('#pmxSaveButton').addEventListener('click',async()=>{if(typeof oldSave==='function'){await oldSave();}else toast('Fungsi Tambahkan ke Invoice belum siap.');});refresh();
 }
 window.invoiceAddItem=function(){open('master');};window.__PM_OPEN_INVOICE_OVERTIME=function(){open('overtime');};window.__PM_INVOICE_QUOTATION_FORM_MATCH=true;
+/* The existing final-safe patch may redraw the two action buttons. Capture the overtime click without modifying that patch. */
+document.addEventListener('click',function(e){const b=e.target.closest?.('[data-pm-safe-overtime]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();window.__PM_OPEN_INVOICE_OVERTIME();},true);
 })();
