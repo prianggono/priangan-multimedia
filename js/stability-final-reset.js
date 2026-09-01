@@ -10,8 +10,7 @@
     const result = originalGo.apply(this, arguments);
     window.items = [];
     window.__pmItems = [];
-    if (typeof window.drawItems === 'function') window.drawItems();
-    else if (typeof window.addItem === 'function') window.addItem();
+    if (typeof window.addItem === 'function') window.addItem();
     return result;
   };
   window.__PM_STABILITY_RESET_PATCHED = true;
