@@ -1,7 +1,7 @@
 /* Priangan Multimedia — stable quotation core
- * This file intentionally contains NO global MutationObserver.
- * Previous versions watched the whole document and could repeatedly mutate the
- * discount DOM, freezing the browser. All quotation recalculation is explicit.
+ * Calculation source of truth for the quotation form.
+ * Master Harga satuan is authoritative: unit/pcs/buah/set => qty.
+ * No global MutationObserver.
  */
 (function(){
   'use strict';
@@ -22,6 +22,8 @@
   function itemList(){try{return Array.isArray(window.items)?window.items:(typeof items!=='undefined'&&Array.isArray(items)?items:[])}catch(_){return[]}}
   function setList(a){try{items=a}catch(_){} window.items=a;}
 
+  /* Master Harga.satuan is authoritative. Never infer luas merely because
+     the item name/category contains LED or Videotron. */
   function typeOf(m){
     const sat=S(m?.satuan).toLowerCase().replace(/\s+/g,'');
     if(units.has(sat)) return 'qty';
@@ -124,7 +126,7 @@
   function draw(){
     const c=document.querySelector('#items'); if(!c)return;
     const a=itemList(),ms=masterList().filter(x=>x.aktif!==false&&String(x.aktif).toUpperCase()!=='FALSE');
-    c.innerHTML=a.map((i,n)=>`<div class="item"><div class="itemhead"><span class="blue">ITEM #${n+1}</span><button class="btn red sm" type="button" onclick="removeItem(${i.id})">Hapus</button></div><div class="field"><label>Produk / Jasa</label><select onchange="pick(${i.id},this.value)"><option value="">-- Pilih dari Master Harga --</option>${ms.map(m=>`<option value="${E(m.kode)}" ${S(i.kode)===S(m.kode)?'selected':''}>[${E(m.kode)}] ${E(m.item)}</option>`).join('')}</select></div><div class="grid g2"><div class="field"><label>Harga Jual</label><input value="${M(i.harga)}" readonly></div><div class="field"><label>Tipe Perhitungan</label><input value="${E(i.tipe==='qty'?'Qty':i.tipe)}" readonly></div></div>${dims(i)}<div class="sched"><b>Jadwal Pemakaian</b><div class="grid g2" style="margin-top:12px"><div class="field"><label>Tanggal Mulai</label><input type="date" value="${E(i.mulai)}" onchange="upd(${i.id},'mulai',this.value)"></div><div class="field"><label>Tanggal Selesai</label><input type="date" value="${E(i.selesai)}" onchange="upd(${i.id},'selesai',this.value)"></div></div></div><div class="sum"><span>Subtotal</span><b>${M(subtotal(i))}</b></div></div>`).join('');
+    c.innerHTML=a.map((i,n)=>`<div class="item" data-pm-saved-item-id="${E(i.__savedItemId??'')}"><div class="itemhead"><span class="blue">ITEM #${n+1}</span><button class="btn red sm" type="button" onclick="removeItem(${i.id})">Hapus</button></div><div class="field"><label>Produk / Jasa</label><select onchange="pick(${i.id},this.value)"><option value="">-- Pilih dari Master Harga --</option>${ms.map(m=>`<option value="${E(m.kode)}" ${S(i.kode)===S(m.kode)?'selected':''}>[${E(m.kode)}] ${E(m.item)}</option>`).join('')}</select></div><div class="grid g2"><div class="field"><label>Harga Jual</label><input value="${M(i.harga)}" readonly></div><div class="field"><label>Tipe Perhitungan</label><input value="${E(i.tipe==='qty'?'Qty':i.tipe)}" readonly></div></div>${dims(i)}<div class="sched"><b>Jadwal Pemakaian</b><div class="grid g2" style="margin-top:12px"><div class="field"><label>Tanggal Mulai</label><input type="date" value="${E(i.mulai)}" onchange="upd(${i.id},'mulai',this.value)"></div><div class="field"><label>Tanggal Selesai</label><input type="date" value="${E(i.selesai)}" onchange="upd(${i.id},'selesai',this.value)"></div></div></div><div class="sum"><span>Subtotal</span><b>${M(subtotal(i))}</b></div></div>`).join('');
     ensureDiscount();
   }
 
