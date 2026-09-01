@@ -58,7 +58,9 @@
   window.saveQuote=saveQuoteFixed;window.__PRIANGAN_QUOTE_SAVE_FIXED=true;window.__PRIANGAN_QUOTE_SCHEMA=DB;
   document.addEventListener('click',(event)=>{const button=event.target.closest?.('button[onclick="saveQuote()"]');if(!button)return;event.preventDefault();event.stopImmediatePropagation();saveQuoteFixed()},true);
 
-  const observer=new MutationObserver(()=>scheduleDiscountUI());
-  observer.observe(document.body,{childList:true,subtree:true});
+  /* IMPORTANT: no global MutationObserver here. The previous observer watched
+     the entire document and could react to its own DOM changes indefinitely,
+     causing the browser to freeze. Discount UI is initialized explicitly and
+     other quotation renderers can call scheduleDiscountUI() when they render. */
   scheduleDiscountUI();
 })();
