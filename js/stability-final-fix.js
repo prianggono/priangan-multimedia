@@ -20,8 +20,8 @@
   const areas = new Set(['m2','m²','meter2','meterpersegi','luas']);
 
   function db() {
-    try { if (typeof window.db !== 'undefined' && window.db) return window.db; } catch (_) {}
-    try { if (typeof window.supabase !== 'undefined') return null; } catch (_) {}
+    try { if (typeof db !== 'undefined' && db) return db; } catch (_) {}
+    try { if (window.db) return window.db; } catch (_) {}
     return window.__PRIANGAN_QUOTE_DB || null;
   }
 
@@ -57,9 +57,6 @@
     return (N(item.qty) || 1) * price * dur;
   }
 
-  /* Keep add/remove/pick state on window.items. This is intentional: the old
-     app.js has a private lexical `items` array, while the later fixes use the
-     window state. New/edit navigation must never create a second source. */
   const originalAdd = window.addItem;
   window.addItem = function () {
     const a = stateItems();
@@ -95,8 +92,6 @@
     if (typeof window.drawItems === 'function') window.drawItems();
   };
 
-  /* Navigation guard: quotation creation always starts with exactly one blank
-     item; edit navigation temporarily suppresses that automatic blank item. */
   const originalGo = window.go;
   if (typeof originalGo === 'function' && !window.__PM_STABILITY_GO_PATCHED) {
     window.go = function (target) {
@@ -109,10 +104,6 @@
     window.__PM_STABILITY_GO_PATCHED = true;
   }
 
-  /* Replace the quotation editor entry point. The old editor correctly reads
-     the database, but its window.items assignment did not update app.js's
-     private lexical items array. This version loads once, preserves DB order,
-     and redraws the normal quotation form without an extra blank item. */
   async function editQuotationStable(id) {
     const d = db();
     if (!d) return typeof window.msg === 'function' ? window.msg('Supabase belum terhubung.') : null;
@@ -155,10 +146,6 @@
 
       if (typeof originalGo === 'function') originalGo('quotation');
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-      /* quotationPage may have rendered a legacy blank row before the state was
-         installed. drawItems replaces the complete #items DOM, so that row is
-         removed atomically here. */
       window.items = loaded;
       window.__pmItems = loaded;
       if (typeof window.drawItems === 'function') window.drawItems();
@@ -195,10 +182,6 @@
   }
   window.editQuotation = editQuotationStable;
 
-  /* History is read-only in this layer. It calculates the displayed total from
-     the saved item rows, so an old corrupted header total can never inflate the
-     history screen. No UPDATE is performed while rendering history, preventing
-     request storms/freezes. */
   async function renderHistoryStable() {
     const d = db();
     if (!d) return;
@@ -236,12 +219,7 @@
         const status = S(row.status || 'DRAFT').toUpperCase();
         const sent = ['TERKIRIM','PUBLISHED','SENT'].includes(status);
         const date = S(row.tanggal_penawaran || row.tanggal || row.created_at || row.tanggal_mulai).slice(0,10) || '-';
-        const actions = `<div class="pmHistoryActions">
-          <button type="button" class="btn sm" onclick="editQuotation(${Number(row.id)})">Edit</button>
-          ${sent ? '<span class="pm-sent-note">Sudah diberikan</span>' : `<button type="button" class="btn green sm" onclick="publishQuotation(${Number(row.id)})">Publish</button>`}
-          <button type="button" class="btn secondary sm" onclick="inputDP(${Number(row.id)})">DP</button>
-          <button type="button" class="btn red sm" onclick="deleteQuotation(${Number(row.id)})">Hapus</button>
-        </div>`;
+        const actions = `<div class="pmHistoryActions"><button type="button" class="btn sm" onclick="editQuotation(${Number(row.id)})">Edit</button>${sent ? '<span class="pm-sent-note">Sudah diberikan</span>' : `<button type="button" class="btn green sm" onclick="publishQuotation(${Number(row.id)})">Publish</button>`}<button type="button" class="btn secondary sm" onclick="inputDP(${Number(row.id)})">DP</button><button type="button" class="btn red sm" onclick="deleteQuotation(${Number(row.id)})">Hapus</button></div>`;
         return `<tr><td>${E(row.nomor_penawaran || row.nomor || '-')}</td><td>${E(date)}</td><td>${E(row.nama_client || '-')}</td><td>${E(row.perusahaan || '-')}</td><td>${E(row.nama_event || row.event_name || row.event || row.project || '-')}</td><td>${M(x.total)}</td><td><span class="pm-status ${sent?'sent':'draft'}">${E(sent?'TERKIRIM':status)}</span></td><td>${actions}</td></tr>`;
       }).join('');
       c.innerHTML = `<div class="head"><div><h1>Riwayat Penawaran</h1><p>Penawaran tersimpan di Supabase.</p></div><button class="btn" onclick="go('quotation')">+ Buat Penawaran</button></div><div class="card"><div class="scroll"><table class="table pm-history-table"><thead><tr><th>No</th><th>Tanggal</th><th>Client</th><th>Perusahaan</th><th>Event</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${rowsHtml || '<tr><td colspan="8" class="empty">Belum ada penawaran.</td></tr>'}</tbody></table></div></div>`;
@@ -256,5 +234,5 @@
   style.textContent = `.pm-history-table{width:100%}.pm-history-table td,.pm-history-table th{vertical-align:middle}.pmHistoryActions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.pmHistoryActions .btn.sm{padding:6px 10px;font-size:12px;white-space:nowrap}.pm-sent-note{font-size:11px;color:#7dd3fc;white-space:nowrap}`;
   document.head.appendChild(style);
 
-  window.__PM_STABILITY_FINAL_FIX = 'v1';
+  window.__PM_STABILITY_FINAL_FIX = 'v2';
 })();
