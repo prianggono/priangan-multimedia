@@ -1,4 +1,7 @@
-/* PRIANGAN MULTIMEDIA — payment history integration */
+/* PRIANGAN MULTIMEDIA — payment history integration
+ * History only exposes DP. Pelunasan is handled from Invoice.
+ * IMPORTANT: no MutationObserver here; it caused repeated DOM work/freezes.
+ */
 (function(){
   'use strict';
   const S=v=>String(v??'').trim();
@@ -13,32 +16,40 @@
     const map=new Map();(pr.data||[]).forEach(p=>{const id=String(p.penawaran_id);if(!map.has(id))map.set(id,{dp:0,paid:0});const x=map.get(id),amount=N(p.nominal);x.paid+=amount;if(S(p.jenis).toUpperCase()==='DP')x.dp+=amount;});
     const head=table.querySelector('thead tr');
     if(head && !Array.from(head.children).some(x=>S(x.textContent).toUpperCase()==='DP')){
-      const h1=document.createElement('th');h1.textContent='DP';const h2=document.createElement('th');h2.textContent='Dibayar';
+      const h1=document.createElement('th');h1.textContent='DP';
+      const h2=document.createElement('th');h2.textContent='Dibayar';
       const totalHead=Array.from(head.children).find(x=>S(x.textContent).toUpperCase()==='TOTAL');
       head.insertBefore(h1,totalHead||null);head.insertBefore(h2,totalHead||null);
     }
-    table.querySelectorAll('tbody tr').forEach(tr=>{
+    table.querySelectorAll('tbody tr.pmQuoteDataRow').forEach(tr=>{
       const edit=tr.querySelector('[onclick*="editQuotation"]');const m=String(edit?.getAttribute('onclick')||'').match(/\((\d+)\)/);if(!m)return;
       const x=map.get(String(Number(m[1])))||{dp:0,paid:0};
-      let td1=tr.querySelector('.pm-pay-dp'),td2=tr.querySelector('.pm-pay-paid');
-      if(!td1||!td2){
-        const cells=Array.from(tr.children),totalCell=cells.find(td=>td.previousElementSibling?.textContent&&/GRAND|Rp|/i.test(td.textContent));
-        td1=document.createElement('td');td2=document.createElement('td');
-        const totalIndex=Math.max(0,cells.length-3);tr.insertBefore(td1,tr.children[totalIndex]||null);tr.insertBefore(td2,tr.children[totalIndex+1]||null);
-      }
-      td1.className='pm-pay-dp';td2.className='pm-pay-paid';td1.textContent=M(x.dp);td2.textContent=M(x.paid);
+      const td1=tr.querySelector('.pm-pay-dp'),td2=tr.querySelector('.pm-pay-paid');
+      if(td1)td1.textContent=M(x.dp);
+      if(td2)td2.textContent=M(x.paid);
     });
     table.dataset.paymentSummary='1';
   }
   function addButtons(){
     if(!/Riwayat Penawaran/i.test(document.querySelector('#title')?.textContent||''))return;
-    document.querySelectorAll('.pmHistActions').forEach(box=>{
-      if(box.querySelector('.pmActionRowBottom')||box.querySelector('.pm-payment-buttons'))return;
-      const edit=box.querySelector('[onclick*="editQuotation"]');const m=String(edit?.getAttribute('onclick')||'').match(/\((\d+)\)/);if(!m)return;
-      const id=Number(m[1]);const wrap=document.createElement('span');wrap.className='pm-payment-buttons';wrap.innerHTML=`<button type="button" class="btn secondary sm" title="Catat uang muka / DP" onclick="inputDP(${id})">DP</button><button type="button" class="btn green sm" title="Catat pembayaran pelunasan" onclick="inputPelunasan(${id})">Bayar</button>`;box.appendChild(wrap);
+    document.querySelectorAll('.pmHistoryActions').forEach(box=>{
+      // Remove any legacy Bayar button left by an older script version.
+      box.querySelectorAll('button').forEach(btn=>{
+        const text=S(btn.textContent).toLowerCase();
+        const click=S(btn.getAttribute('onclick')).toLowerCase();
+        if(text==='bayar'||click.includes('inputpelunasan'))btn.remove();
+      });
+      // Ensure exactly one DP button in quotation history.
+      if(!box.querySelector('button[onclick*="inputDP"]')){
+        const edit=box.querySelector('[onclick*="editQuotation"]');const m=String(edit?.getAttribute('onclick')||'').match(/\((\d+)\)/);if(m){
+          const b=document.createElement('button');b.type='button';b.className='btn secondary sm';b.title='Catat uang muka / DP';b.textContent='DP';b.onclick=()=>window.inputDP?.(Number(m[1]));box.appendChild(b);
+        }
+      }
     });
     addPaymentSummary().catch(console.warn);
   }
-  const style=document.createElement('style');style.textContent='.pm-payment-buttons{display:inline-flex!important;gap:6px!important;margin-top:4px}.pm-payment-buttons .btn{white-space:nowrap}';document.head.appendChild(style);
-  const observer=new MutationObserver(addButtons);observer.observe(document.body,{childList:true,subtree:true});setTimeout(addButtons,100);
+  const style=document.createElement('style');style.textContent='.pm-payment-buttons{display:none!important}.pmHistoryActions button[onclick*="inputPelunasan"]{display:none!important}';document.head.appendChild(style);
+  // Explicit calls only; do not observe the whole document.
+  setTimeout(addButtons,100);
+  window.__PM_HISTORY_PAYMENT_FIXED=true;
 })();
