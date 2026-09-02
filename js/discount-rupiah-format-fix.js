@@ -17,7 +17,14 @@
 
   function patch(){
     const r=document.querySelector('#pmDisc');
-    if(!r || r.dataset.pmRupiahFormat==='1')return !!r;
+    const p=document.querySelector('#pmDiscPct');
+    if(!r || r.dataset.pmRupiahFormat==='1'){
+      if(r && p && p.dataset.pmRupiahSync!=='1'){
+        p.dataset.pmRupiahSync='1';
+        p.addEventListener('input',()=>setTimeout(()=>{r.value=M(window.__pmDiscountValue||N(r.value));},0));
+      }
+      return !!r;
+    }
 
     r.type='text';
     r.inputMode='numeric';
@@ -47,6 +54,11 @@
     });
 
     r.addEventListener('blur',format);
+
+    if(p && p.dataset.pmRupiahSync!=='1'){
+      p.dataset.pmRupiahSync='1';
+      p.addEventListener('input',()=>setTimeout(()=>{r.value=M(window.__pmDiscountValue||N(r.value));},0));
+    }
     return true;
   }
 
