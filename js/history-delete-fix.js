@@ -1,8 +1,8 @@
 /* Priangan Multimedia — History quotation delete fix */
 (function(){
 'use strict';
-if(window.__PM_HISTORY_DELETE_FIX_V1)return;
-window.__PM_HISTORY_DELETE_FIX_V1=true;
+if(window.__PM_HISTORY_DELETE_FIX_V2)return;
+window.__PM_HISTORY_DELETE_FIX_V2=true;
 function DB(){try{if(typeof db!=='undefined'&&db)return db}catch(_){}return window.db||window.__PM_STABLE_DB||window.__PRIANGAN_QUOTE_DB||null}
 function notify(t){try{if(typeof window.msg==='function')window.msg(t);else alert(t)}catch(_){}
 }
@@ -17,6 +17,18 @@ async function removeQuotation(id){
  const i=await d.from('penawaran_items').delete().eq('penawaran_id',qid); if(i.error)throw i.error;
  const q=await d.from('penawaran').delete().eq('id',qid); if(q.error)throw q.error;
 }
+/* Expose the function globally because the existing history table uses inline onclick="deleteQuotation(id)". */
+window.deleteQuotation=async function(id){
+ const key=String(id??'').trim();
+ if(!key)return;
+ if(!confirm('Hapus penawaran ini beserta item, jadwal, dan riwayat pembayarannya? Client dan Master Harga tidak akan dihapus.'))return;
+ try{
+   await removeQuotation(key);
+   notify('Penawaran berhasil dihapus.');
+   if(typeof window.go==='function')window.go('history');
+   else if(typeof window.history==='function')window.history();
+ }catch(err){console.error('[PM] history delete failed',err);notify('Gagal menghapus penawaran: '+(err?.message||err));}
+};
 function getId(btn){
  const host=btn.closest('[data-id]'); if(host?.dataset?.id)return host.dataset.id;
  const s=btn.getAttribute('onclick')||'';
@@ -29,14 +41,12 @@ document.addEventListener('click',async e=>{
  const title=(document.querySelector('#title')?.textContent||'').toLowerCase();
  if(!/riwayat|penawaran/.test(title))return;
  const id=getId(btn); if(!id||btn.dataset.pmDeleteRunning)return;
+ /* Only intercept if the button still points at the legacy delete function. */
+ const onclick=btn.getAttribute('onclick')||'';
+ if(!/deleteQuotation|hapus/i.test(onclick))return;
  e.preventDefault();e.stopImmediatePropagation();btn.dataset.pmDeleteRunning='1';
  try{
-   if(!confirm('Hapus penawaran ini beserta item, jadwal, dan riwayat pembayarannya? Client dan Master Harga tidak akan dihapus.'))return;
-   await removeQuotation(id);
-   notify('Penawaran berhasil dihapus.');
-   if(typeof window.go==='function')window.go('history');
-   else if(typeof window.history==='function')window.history();
- }catch(err){console.error('[PM] history delete failed',err);notify('Gagal menghapus penawaran: '+(err?.message||err));}
- finally{delete btn.dataset.pmDeleteRunning}
+   await window.deleteQuotation(id);
+ }finally{delete btn.dataset.pmDeleteRunning}
 },true);
 })();
