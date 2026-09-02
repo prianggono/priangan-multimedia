@@ -1,4 +1,6 @@
-/* Invoice: pelunasan is handled from the Invoice page, not Riwayat Penawaran. */
+/* Invoice: pelunasan is handled from the Invoice page, not Riwayat Penawaran.
+ * Schema-safe: only request columns that exist in the current quotation model.
+ */
 (function(){
 'use strict';
 function S(v){return String(v??'').trim()}
@@ -10,8 +12,8 @@ window.invoicePage=async function(){
   const result=await original.apply(this,arguments);
   try{
     const d=DB();if(!d)return result;
-    const r=await d.from('penawaran').select('id,nomor_invoice,nomor_penawaran,nomor').order('id',{ascending:false});
-    if(r.error)return result;
+    const r=await d.from('penawaran').select('id,nomor_invoice,nomor_penawaran').order('id',{ascending:false});
+    if(r.error){console.warn('[PM] invoice payment query:',r.error);return result;}
     const rows=[...document.querySelectorAll('.table tbody tr')];
     const data=(r.data||[]).filter(x=>S(x.nomor_invoice));
     let di=0;
