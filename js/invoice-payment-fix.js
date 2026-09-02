@@ -1,35 +1,37 @@
-/* Invoice: pelunasan is handled from the Invoice page, not Riwayat Penawaran.
- * Schema-safe: only request columns that exist in the current quotation model.
+/* Invoice payment button bridge — schema safe.
+ * Do not query invoice columns from penawaran here. The Invoice module handles
+ * invoice metadata and the settlement modal only needs the quotation id already
+ * present in the rendered invoice action button.
  */
 (function(){
 'use strict';
-function S(v){return String(v??'').trim()}
-function DB(){try{if(typeof db!=='undefined'&&db)return db}catch(_){}return window.__PRIANGAN_QUOTE_DB||null}
-const original=window.invoicePage;
-if(typeof original!=='function'||window.__PM_INVOICE_PAYMENT_FIX)return;
+if(window.__PM_INVOICE_PAYMENT_FIX)return;
 window.__PM_INVOICE_PAYMENT_FIX=true;
-window.invoicePage=async function(){
-  const result=await original.apply(this,arguments);
+function addSettlementButtons(){
   try{
-    const d=DB();if(!d)return result;
-    const r=await d.from('penawaran').select('id,nomor_invoice,nomor_penawaran').order('id',{ascending:false});
-    if(r.error){console.warn('[PM] invoice payment query:',r.error);return result;}
-    const rows=[...document.querySelectorAll('.table tbody tr')];
-    const data=(r.data||[]).filter(x=>S(x.nomor_invoice));
-    let di=0;
+    const rows=document.querySelectorAll('.table tbody tr');
     rows.forEach(tr=>{
       const cells=tr.querySelectorAll('td');
       if(cells.length<8)return;
-      const q=data[di++];if(!q)return;
       const action=cells[cells.length-1];
       if(action.querySelector('.pm-invoice-settle'))return;
+      const edit=action.querySelector('button[onclick*="invoiceEdit("]');
+      if(!edit)return;
+      const m=String(edit.getAttribute('onclick')||'').match(/invoiceEdit\((\d+)\)/);
+      if(!m)return;
+      const id=Number(m[1]);
+      if(!Number.isFinite(id))return;
       const b=document.createElement('button');
-      b.type='button';b.className='btn sm green pm-invoice-settle';b.textContent='Pelunasan';
+      b.type='button';
+      b.className='btn sm green pm-invoice-settle';
+      b.textContent='Pelunasan';
       b.style.marginLeft='6px';
-      b.onclick=()=>window.inputPelunasan(Number(q.id));
+      b.onclick=()=>window.inputPelunasan?.(id);
       action.appendChild(b);
     });
   }catch(e){console.warn('[PM] invoice payment button:',e)}
-  return result;
-};
+}
+new MutationObserver(addSettlementButtons).observe(document.body,{childList:true,subtree:true});
+setTimeout(addSettlementButtons,300);
+setTimeout(addSettlementButtons,1000);
 })();
