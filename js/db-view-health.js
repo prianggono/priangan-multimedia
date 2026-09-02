@@ -31,9 +31,13 @@
       : null;
   }
 
-  async function checkViews(){
+  async function checkViews(attempt = 0){
     const client = getDb();
     if (!client) {
+      if (attempt < 10) {
+        setTimeout(() => checkViews(attempt + 1), 500);
+        return null;
+      }
       window.PM_DB_VIEW_HEALTH = {ok:false, checked:0, total:REQUIRED_VIEWS.length, error:'Supabase belum terhubung.'};
       return window.PM_DB_VIEW_HEALTH;
     }
@@ -57,11 +61,6 @@
     return window.PM_DB_VIEW_HEALTH;
   }
 
-  window.PM_CHECK_DB_VIEWS = checkViews;
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(checkViews, 0), { once:true });
-  } else {
-    setTimeout(checkViews, 0);
-  }
+  window.PM_CHECK_DB_VIEWS = () => checkViews(0);
+  setTimeout(() => checkViews(0), 700);
 })();
