@@ -1,0 +1,55 @@
+/* Priangan Multimedia — Finance Dashboard Cyberpunk UI
+ * Scoped only to the finance page via its unique #financeStableFrom filter.
+ */
+#content:has(#financeStableFrom){
+  --cy-bg:#070914;
+  --cy-panel:#0c1020;
+  --cy-line:#27304f;
+  --cy-cyan:#00e5ff;
+  --cy-pink:#ff2bd6;
+  --cy-purple:#8b5cf6;
+  --cy-green:#00f5a0;
+  --cy-yellow:#ffd166;
+  --cy-red:#ff4d6d;
+}
+#content:has(#financeStableFrom) .head h1{
+  color:var(--cy-cyan);
+  text-shadow:0 0 8px rgba(0,229,255,.45),0 0 22px rgba(0,229,255,.16);
+  letter-spacing:.4px;
+}
+#content:has(#financeStableFrom) .head p{color:#8ea4c9}
+#content:has(#financeStableFrom) .card{
+  background:linear-gradient(145deg,#0c1224,#090d1a);
+  border-color:#253052;
+  box-shadow:0 0 0 1px rgba(0,229,255,.025),0 0 22px rgba(0,0,0,.22);
+}
+#content:has(#financeStableFrom) .field label{color:#7edff0}
+#content:has(#financeStableFrom) input[type=date]{border-color:#24456a;box-shadow:inset 0 0 12px rgba(0,229,255,.035)}
+#content:has(#financeStableFrom) .btn:not(.secondary){background:linear-gradient(90deg,#075dff,#00a8ff);box-shadow:0 0 12px rgba(0,229,255,.18)}
+#content:has(#financeStableFrom) .btn.secondary{background:#18132c;border:1px solid #4b2e73;color:#d9b8ff}
+#content:has(#financeStableFrom) .grid.g4>.stat{position:relative;overflow:hidden;min-height:118px}
+#content:has(#financeStableFrom) .grid.g4>.stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--cy-cyan);box-shadow:0 0 12px currentColor}
+#content:has(#financeStableFrom) .grid.g4>.stat:nth-child(4n+1)::before{background:var(--cy-cyan)}
+#content:has(#financeStableFrom) .grid.g4>.stat:nth-child(4n+2)::before{background:var(--cy-pink)}
+#content:has(#financeStableFrom) .grid.g4>.stat:nth-child(4n+3)::before{background:var(--cy-green)}
+#content:has(#financeStableFrom) .grid.g4>.stat:nth-child(4n)::before{background:var(--cy-yellow)}
+#content:has(#financeStableFrom) .stat small{color:#9aaed0;text-transform:uppercase;letter-spacing:.7px;font-weight:700}
+#content:has(#financeStableFrom) .stat strong{font-variant-numeric:tabular-nums;text-shadow:0 0 10px rgba(255,255,255,.06)}
+#content:has(#financeStableFrom) .grid.g4>.stat:nth-child(4n+1) strong{color:#d9faff}
+#content:has(#financeStableFrom) .grid.g4>.stat:nth-child(4n+2) strong{color:#ffd4f7}
+#content:has(#financeStableFrom) .grid.g4>.stat:nth-child(4n+3) strong{color:#c9ffe9}
+#content:has(#financeStableFrom) .grid.g4>.stat:nth-child(4n) strong{color:#fff0bb}
+#content:has(#financeStableFrom) .table th{color:#00d9ff;border-bottom-color:#304064;text-shadow:0 0 7px rgba(0,229,255,.2)}
+#content:has(#financeStableFrom) .table td{border-bottom-color:#1c2844}
+#content:has(#financeStableFrom) .table tbody tr:hover{background:rgba(0,229,255,.055);box-shadow:inset 3px 0 0 var(--cy-cyan)}
+#content:has(#financeStableFrom) .table td:nth-child(6){color:#bfefff;font-weight:700}
+#content:has(#financeStableFrom) .table td:nth-child(7){color:#ffb5eb}
+#content:has(#financeStableFrom) .table td:nth-child(8){color:#8affcf}
+#content:has(#financeStableFrom) .table td:nth-child(9){color:#ffe28a}
+#content:has(#financeStableFrom) .table td:nth-child(10){color:#70ffd0}
+#content:has(#financeStableFrom) .table td:nth-child(11){color:#ffd166;font-weight:700}
+#content:has(#financeStableFrom) .table td:nth-child(13){font-weight:800}
+#content:has(#financeStableFrom) .sum{color:#8ea4c9}
+#content:has(#financeStableFrom) .sum b{color:var(--cy-green);text-shadow:0 0 8px rgba(0,245,160,.28)}
+#content:has(#financeStableFrom) code{color:#d7b5ff;background:#15102a;padding:2px 5px;border-radius:4px}
+@media(max-width:900px){#content:has(#financeStableFrom) .grid.g4>.stat{min-height:105px}}
