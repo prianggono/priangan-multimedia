@@ -1,34 +1,41 @@
-/* Priangan Multimedia — Dashboard Cyberpunk activation bridge
- * UI/routing only. Does not write to Supabase and does not modify transaction logic.
- * The core app keeps its original dashboardPage() lexical function, so this bridge
- * re-applies the Cyberpunk READ-ONLY renderer after the core renderer finishes.
+/* Priangan Multimedia — Dashboard Cyberpunk activation bridge FINAL
+ * Presentation/routing only. Does not write to Supabase and does not modify
+ * Penawaran, Invoice, Payment, Master Harga, or database structure.
+ * The core app keeps its original lexical dashboardPage(); this bridge waits
+ * until the core render has completed, then hands ONLY Dashboard to the
+ * existing Cyberpunk READ-ONLY renderer.
  */
 (function(){
   'use strict';
-  if(window.__PM_DASH_CY_ACTIVATION_V1)return;
-  window.__PM_DASH_CY_ACTIVATION_V1=true;
+  if(window.__PM_DASH_CY_ACTIVATION_V2)return;
+  window.__PM_DASH_CY_ACTIVATION_V2=true;
+
+  function isDashboard(){
+    return !!document.querySelector('.nav.active[data-p="dashboard"]');
+  }
 
   function renderCyber(){
-    try{
-      if(typeof window.pmRenderDashboardReport==='function'){
-        window.pmRenderDashboardReport();
-      }
-    }catch(e){console.error('[PM] dashboard cyberpunk activation',e)}
+    if(!isDashboard())return;
+    const fn=window.pmRenderDashboardCyber;
+    if(typeof fn!=='function'){
+      console.warn('[PM] Cyberpunk dashboard renderer belum tersedia');
+      return;
+    }
+    try{ fn(); }
+    catch(e){ console.error('[PM] dashboard cyberpunk activation',e); }
   }
 
-  function schedule(){
+  function schedule(delay){
     window.clearTimeout(window.__pmDashCyberTimer);
-    window.__pmDashCyberTimer=window.setTimeout(renderCyber,180);
+    window.__pmDashCyberTimer=window.setTimeout(renderCyber,delay);
   }
 
-  // Initial app render happens after app.js initialization.
-  window.setTimeout(renderCyber,900);
-  window.setTimeout(renderCyber,1800);
+  // app.js runs its final render after its async initial database load.
+  // One delayed hand-off avoids racing the core app and avoids request loops.
+  schedule(2200);
 
-  // The core router uses a lexical render() function, so intercept only the
-  // Dashboard navigation click and repaint after the core renderer completes.
+  // app.js handles navigation in the bubble phase. Repaint after it finishes.
   document.addEventListener('click',function(ev){
-    const nav=ev.target?.closest?.('.nav[data-p="dashboard"]');
-    if(nav)schedule();
-  },true);
+    if(ev.target?.closest?.('.nav[data-p="dashboard"]'))schedule(0);
+  },false);
 })();
