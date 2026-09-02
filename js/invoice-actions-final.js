@@ -1,153 +1,118 @@
-/* Priangan Multimedia — FINAL invoice actions bridge
- * This file is intentionally the LAST invoice patch loaded.
- * It does not replace the invoice calculation engine; it only guarantees:
- * 1) current invoice state is available,
- * 2) Add Item / Overtime buttons always open the active invoice form,
- * 3) the correct source mode is selected,
- * 4) save uses the existing invoice-only additional-item engine.
+/* Priangan Multimedia — Invoice actions FINAL v3
+ * Single, live action layer for + Tambah Item and + Overtime.
+ * This is deliberately self-contained: it creates the buttons, wires clicks,
+ * keeps the active quotation id, and delegates the form to invoice-ui-final.
  */
 (function(){
   'use strict';
-  if(window.__PM_INVOICE_ACTIONS_FINAL_V2)return;
-  window.__PM_INVOICE_ACTIONS_FINAL_V2=true;
+  if(window.__PM_INVOICE_ACTIONS_FINAL_V3)return;
+  window.__PM_INVOICE_ACTIONS_FINAL_V3=true;
 
   const S=v=>String(v??'').trim();
-  const N=v=>{const n=Number(String(v??'').replace(/[^0-9,.-]/g,'').replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.'));return Number.isFinite(n)?n:0;};
   const toast=t=>typeof window.msg==='function'?window.msg(t):alert(t);
 
   function getDb(){
-    try{if(typeof db!=='undefined'&&db)return db;}catch(_){}
+    try{if(typeof db!=='undefined'&&db)return db;}catch(e){}
     return window.__PRIANGAN_QUOTE_DB||window.db||null;
   }
 
-  async function setInvoiceState(id){
-    id=Number(id);
+  async function setState(id){
+    id=Number(id||0);
     if(!id)return null;
-    const cur=window.__PM_INVOICE_ADD_STATE;
-    if(cur?.id===id&&cur.row)return cur;
+    const old=window.__PM_INVOICE_ADD_STATE;
+    if(old&&Number(old.id)===id&&old.row)return old;
     const d=getDb();
     if(!d)return null;
     try{
       const r=await d.from('penawaran').select('*').eq('id',id).maybeSingle();
-      if(r.error||!r.data){console.error('[PM] invoice state:',r.error);return null;}
+      if(r.error||!r.data){console.error('[PM invoice actions]',r.error);return null;}
+      const state={id,row:r.data,baseTotal:Number(r.data.grand_total??r.data.total??0)||0};
       window.__PM_INVOICE_ADD_ID=id;
-      window.__PM_INVOICE_ADD_STATE={id,row:r.data,baseTotal:N(r.data.grand_total??r.data.total)};
-      return window.__PM_INVOICE_ADD_STATE;
-    }catch(e){console.error('[PM] invoice state:',e);return null;}
+      window.__PM_INVOICE_ADD_STATE=state;
+      return state;
+    }catch(e){console.error('[PM invoice actions]',e);return null;}
   }
 
-  /* Keep the active quotation id whenever Invoice is opened. */
   function patchInvoiceEdit(){
-    if(typeof window.invoiceEdit!=='function')return;
-    if(window.__PM_INVOICE_ACTIONS_EDIT_PATCHED)return;
+    if(typeof window.invoiceEdit!=='function'||window.__PM_INVOICE_ACTIONS_EDIT_V3)return;
     const original=window.invoiceEdit;
     window.invoiceEdit=async function(id){
       window.__PM_INVOICE_ADD_ID=Number(id);
-      await setInvoiceState(id);
+      await setState(id);
       return original(id);
     };
-    window.__PM_INVOICE_ACTIONS_EDIT_PATCHED=true;
+    window.__PM_INVOICE_ACTIONS_EDIT_V3=true;
   }
-
-  /* Some older patches also wrap invoiceEdit. Re-check once after boot. */
-  patchInvoiceEdit();
-  setTimeout(patchInvoiceEdit,300);
-  setTimeout(patchInvoiceEdit,1000);
 
   function currentId(){
-    const id=Number(window.__PM_INVOICE_ADD_ID||window.__PM_INVOICE_ADD_STATE?.id);
-    return id||0;
+    return Number(window.__PM_INVOICE_ADD_ID||window.__PM_INVOICE_ADD_STATE?.id||0);
   }
 
-  async function ensureCurrent(){
-    const id=currentId();
-    if(!id)return null;
-    return setInvoiceState(id);
-  }
-
-  function prepareDialog(mode){
-    const el=document.getElementById('pmInvoiceAddDialog');
-    if(!el)return false;
-    const source=el.querySelector('#pmxSource');
-    if(source){
-      source.value=mode==='overtime'?'overtime':'master';
-      source.dispatchEvent(new Event('change',{bubbles:true}));
-    }
-    const title=el.querySelector('.pmx h3');
-    if(title)title.textContent=mode==='overtime'?'Tambah Overtime ke Invoice':'Tambah Item ke Invoice';
-
-    const save=el.querySelector('.pmx-save,#pmxSaveButton');
-    if(save&&!save.__pmFinalSave){
-      save.__pmFinalSave=true;
-      save.addEventListener('click',async function(e){
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        const s=await ensureCurrent();
-        if(!s?.row)return toast('Invoice belum dipilih. Silakan buka Edit / Lihat invoice terlebih dahulu.');
-        if(typeof window.invoiceSaveAddItem!=='function')return toast('Fungsi penyimpanan item invoice belum siap.');
-        try{await window.invoiceSaveAddItem();}
-        catch(err){console.error('[PM] invoice add save:',err);toast('Gagal menambahkan item: '+(err.message||err));}
-      },true);
-    }
-    return true;
+  function ensureToolbar(){
+    const target=document.getElementById('invoiceItems');
+    if(!target)return;
+    let bar=document.getElementById('pmInvoiceActions');
+    if(bar&&bar.isConnected)return;
+    bar=document.createElement('div');
+    bar.id='pmInvoiceActions';
+    bar.style.cssText='display:flex;justify-content:flex-end;gap:8px;margin:0 0 14px;position:relative;z-index:5;pointer-events:auto';
+    bar.innerHTML='<button class="btn" type="button" data-pm-final-add style="cursor:pointer;pointer-events:auto">+ TAMBAH ITEM</button><button class="btn" type="button" data-pm-safe-overtime style="cursor:pointer;pointer-events:auto">+ OVERTIME</button>';
+    target.insertBefore(bar,target.firstChild);
   }
 
   async function open(mode){
-    const s=await ensureCurrent();
-    if(!s?.row){
-      return toast('Invoice belum dipilih. Silakan buka Edit / Lihat invoice terlebih dahulu.');
-    }
+    const id=currentId();
+    if(!id)return toast('Invoice belum dipilih. Buka Edit / Lihat invoice terlebih dahulu.');
+    const state=await setState(id);
+    if(!state?.row)return toast('Data invoice tidak ditemukan.');
 
-    /* invoice-ui-final / invoice-quotation-form-match-fix may expose the form.
-       Prefer the currently active implementation rather than recursively calling
-       our own bridge. */
     const fn=window.invoiceAddItem;
-    if(typeof fn!=='function')return toast('Form Tambah Item belum siap.');
-
+    if(typeof fn!=='function')return toast('Form invoice belum siap.');
     try{
       fn();
-      setTimeout(()=>prepareDialog(mode),0);
-      setTimeout(()=>prepareDialog(mode),50);
-      setTimeout(()=>prepareDialog(mode),200);
-    }catch(e){
-      console.error('[PM] open invoice addition:',e);
-      toast('Gagal membuka form: '+(e.message||e));
-    }
+      const apply=()=>{
+        const dialog=document.getElementById('pmInvoiceAddDialog');
+        if(!dialog)return false;
+        const source=dialog.querySelector('#pmxSource');
+        if(source){
+          source.value=mode==='overtime'?'overtime':'master';
+          source.dispatchEvent(new Event('change',{bubbles:true}));
+        }
+        const title=dialog.querySelector('.pmx h3');
+        if(title)title.textContent=mode==='overtime'?'Tambah Overtime ke Invoice':'Tambah Item ke Invoice';
+        return true;
+      };
+      setTimeout(apply,0);setTimeout(apply,50);setTimeout(apply,200);
+    }catch(e){console.error('[PM invoice open]',e);toast('Gagal membuka form: '+(e.message||e));}
   }
 
-  /* Expose one stable API for all older patches. */
   window.__PM_OPEN_INVOICE_ADDITIONAL=open;
   window.__PM_OPEN_INVOICE_OVERTIME=()=>open('overtime');
 
-  /* Direct delegated handlers win over old inline/onclick handlers. */
   document.addEventListener('click',function(e){
-    const target=e.target?.closest?.('[data-pm-safe-add],[data-pm-safe-overtime],[data-pm-final-add]');
-    if(!target)return;
+    const b=e.target?.closest?.('#pmInvoiceActions [data-pm-final-add],#pmInvoiceActions [data-pm-safe-overtime],[data-pm-final-add],[data-pm-safe-overtime]');
+    if(!b)return;
     e.preventDefault();
     e.stopImmediatePropagation();
-    open(target.matches('[data-pm-safe-overtime]')?'overtime':'master');
+    open(b.matches('[data-pm-safe-overtime]')?'overtime':'master');
   },true);
 
-  /* If a previous patch created the toolbar, make sure its buttons are wired too. */
-  function wireExisting(){
-    document.querySelectorAll('[data-pm-safe-add]').forEach(b=>{b.type='button';b.dataset.pmFinalReady='1';});
-    document.querySelectorAll('[data-pm-safe-overtime]').forEach(b=>{b.type='button';b.dataset.pmFinalReady='1';});
-    document.querySelectorAll('[data-pm-final-add]').forEach(b=>{b.type='button';b.dataset.pmFinalReady='1';});
-  }
-  wireExisting();
-  new MutationObserver(wireExisting).observe(document.body,{childList:true,subtree:true});
-
-  /* If the page is already in an invoice edit screen when this script loads,
-     recover its id from the invoice list's edit button if possible. */
   function recoverId(){
     if(currentId())return;
-    const b=document.querySelector('[onclick^="invoiceEdit("]');
-    if(b){
-      const m=S(b.getAttribute('onclick')).match(/invoiceEdit\(\s*(\d+)\s*\)/);
-      if(m){window.__PM_INVOICE_ADD_ID=Number(m[1]);setInvoiceState(Number(m[1]));}
-    }
+    const b=document.querySelector('button[onclick*="invoiceEdit("]');
+    if(!b)return;
+    const m=S(b.getAttribute('onclick')).match(/invoiceEdit\(\s*(\d+)\s*\)/);
+    if(m){window.__PM_INVOICE_ADD_ID=Number(m[1]);setState(Number(m[1]));}
   }
-  recoverId();
-  setTimeout(recoverId,250);
-  setTimeout(recoverId,1000);
+
+  patchInvoiceEdit();
+  [100,400,1000,2000].forEach(ms=>setTimeout(()=>{patchInvoiceEdit();recoverId();ensureToolbar();},ms));
+
+  let queued=false;
+  function observe(){
+    if(queued)return;queued=true;
+    requestAnimationFrame(()=>{queued=false;patchInvoiceEdit();recoverId();ensureToolbar();});
+  }
+  new MutationObserver(observe).observe(document.body,{childList:true,subtree:true});
+  ensureToolbar();
 })();
