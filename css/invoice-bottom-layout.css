@@ -1,0 +1,56 @@
+/* Invoice: bottom section matches Surat Penawaran */
+#pmInvoicePreview .pm-inv-bottom-row{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 58mm!important;
+  gap:10mm!important;
+  align-items:end!important;
+  margin-top:10mm!important;
+}
+#pmInvoicePreview .pm-inv-bottom-row .pm-inv-terms{
+  margin-top:0!important;
+  width:auto!important;
+  min-width:0!important;
+  align-self:start!important;
+}
+#pmInvoicePreview .pm-inv-bottom-row .pm-inv-sign{
+  width:auto!important;
+  margin:0!important;
+  min-height:31mm!important;
+  align-self:end!important;
+  text-align:center!important;
+}
+#pmInvoicePreview .pm-inv-bottom-row .pm-inv-sign img{
+  margin:1mm auto 0!important;
+  max-width:35mm!important;
+  height:15mm!important;
+}
+#pmInvoicePreview .pm-inv-bottom-row .pm-inv-line{
+  width:40mm!important;
+  margin:1mm auto 1.2mm!important;
+}
+#pmInvoicePreview .pm-inv-bottom-row .pm-inv-terms{
+  padding:3.5mm!important;
+  font-size:7px!important;
+  line-height:1.4!important;
+}
+#pmInvoicePreview .pm-inv-bottom-row .pm-inv-terms ul{
+  margin:1mm 0 0!important;
+  padding-left:4.5mm!important;
+}
+#pmInvoicePreview .pm-inv-bottom-row .pm-inv-terms li{margin-bottom:.8mm!important}
+#pmInvoicePreview .pm-inv-footer{
+  margin-top:5mm!important;
+}
+@media(max-width:700px){
+  #pmInvoicePreview .pm-inv-bottom-row{grid-template-columns:1fr!important;gap:6mm!important}
+  #pmInvoicePreview .pm-inv-bottom-row .pm-inv-sign{max-width:58mm!important;margin-left:auto!important}
+}
+@media print{
+  #pmInvoicePreview .pm-inv-bottom-row{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) 58mm!important;
+    gap:10mm!important;
+    margin-top:8mm!important;
+  }
+  #pmInvoicePreview .pm-inv-footer{margin-top:4mm!important}
+}
