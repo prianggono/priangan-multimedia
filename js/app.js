@@ -47,9 +47,12 @@ function msg(text) {
 }
 
 function getConfig() {
-  const url = localStorage.getItem('SUPABASE_URL') || C.SUPABASE_URL || '';
-  const key = localStorage.getItem('SUPABASE_ANON_KEY') || C.SUPABASE_ANON_KEY || '';
-  return { url: url.trim(), key: key.trim() };
+  // js/config.js is the only browser connection source.
+  // Never restore endpoint or key overrides from localStorage.
+  return {
+    url: String(C.SUPABASE_URL || '').trim(),
+    key: String(C.SUPABASE_ANON_KEY || '').trim()
+  };
 }
 
 async function init() {
