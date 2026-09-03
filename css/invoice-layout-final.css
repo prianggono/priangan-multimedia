@@ -1,0 +1,285 @@
+/* Priangan Multimedia — Invoice A4 layout final
+ * Visual-only invoice preview/print polish.
+ * Keeps invoice data, totals, payment logic and Supabase schema untouched.
+ */
+#pmInvoicePreview{
+  --pm-navy:#172b5c;
+  --pm-blue:#1f4ea3;
+  --pm-blue-soft:#edf4ff;
+  --pm-line:#d7dfeb;
+  --pm-text:#172033;
+  --pm-muted:#667085;
+  font-family:Arial,"Helvetica Neue",sans-serif!important;
+}
+
+#pmInvoicePreview .pm-inv-toolbar{
+  height:64px!important;
+  flex:0 0 64px!important;
+  padding:0 22px!important;
+}
+#pmInvoicePreview .pm-inv-scroll{
+  padding:22px!important;
+  background:#e9edf3!important;
+}
+#pmInvoicePreview .pm-inv-a4{
+  width:210mm!important;
+  min-height:297mm!important;
+  padding:0 14mm 12mm!important;
+  background:#fff!important;
+  color:var(--pm-text)!important;
+  box-shadow:0 8px 35px rgba(15,23,42,.16)!important;
+  overflow:hidden!important;
+}
+
+/* Header */
+#pmInvoicePreview .pm-inv-accent{
+  height:4px!important;
+  margin:0 -14mm 9mm!important;
+  background:var(--pm-blue)!important;
+}
+#pmInvoicePreview .pm-inv-head{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 43mm!important;
+  align-items:start!important;
+  gap:12mm!important;
+  min-height:29mm!important;
+  border-bottom:1px solid var(--pm-line)!important;
+  padding-bottom:5mm!important;
+}
+#pmInvoicePreview .pm-inv-head>div:first-child{
+  display:grid!important;
+  grid-template-columns:26mm minmax(0,1fr)!important;
+  grid-template-rows:auto auto auto!important;
+  column-gap:5mm!important;
+  align-items:start!important;
+  min-width:0!important;
+}
+#pmInvoicePreview .pm-inv-logo{
+  grid-column:1!important;
+  grid-row:1 / span 3!important;
+  width:24mm!important;
+  max-width:24mm!important;
+  height:18mm!important;
+  max-height:18mm!important;
+  object-fit:contain!important;
+  object-position:left top!important;
+  margin:0!important;
+}
+#pmInvoicePreview .pm-inv-brand{
+  grid-column:2!important;
+  grid-row:1!important;
+  margin:0!important;
+  padding:0!important;
+  font-size:17px!important;
+  line-height:1.15!important;
+  letter-spacing:.2px!important;
+  color:var(--pm-navy)!important;
+}
+#pmInvoicePreview .pm-inv-sub{
+  grid-column:2!important;
+  grid-row:2!important;
+  margin-top:2px!important;
+  font-size:8px!important;
+  line-height:1.25!important;
+  letter-spacing:1px!important;
+  color:#64748b!important;
+}
+#pmInvoicePreview .pm-inv-contact{
+  grid-column:2!important;
+  grid-row:3!important;
+  margin-top:5px!important;
+  font-size:7.5px!important;
+  line-height:1.45!important;
+  color:var(--pm-muted)!important;
+  overflow-wrap:anywhere!important;
+}
+#pmInvoicePreview .pm-inv-doc{
+  text-align:right!important;
+  padding-top:1mm!important;
+}
+#pmInvoicePreview .pm-inv-doc b{
+  color:var(--pm-blue)!important;
+  font-size:21px!important;
+  line-height:1!important;
+  letter-spacing:1.5px!important;
+}
+#pmInvoicePreview .pm-inv-doc strong{
+  margin-top:4px!important;
+  font-size:11px!important;
+  letter-spacing:.3px!important;
+}
+#pmInvoicePreview .pm-inv-dates{
+  margin-top:7px!important;
+  font-size:7.5px!important;
+  line-height:1.55!important;
+  color:var(--pm-muted)!important;
+}
+
+/* Client / reference */
+#pmInvoicePreview .pm-inv-info{
+  grid-template-columns:1fr 1fr!important;
+  gap:4mm!important;
+  margin-top:5mm!important;
+}
+#pmInvoicePreview .pm-inv-box{
+  min-height:25mm!important;
+  padding:3.5mm!important;
+  border:1px solid var(--pm-line)!important;
+  border-radius:2.5mm!important;
+  background:#fff!important;
+  font-size:8px!important;
+  line-height:1.5!important;
+}
+#pmInvoicePreview .pm-inv-label{
+  margin-bottom:1.5mm!important;
+  font-size:6.8px!important;
+  line-height:1!important;
+  font-weight:800!important;
+  letter-spacing:.8px!important;
+  color:var(--pm-blue)!important;
+}
+#pmInvoicePreview .pm-inv-client{
+  margin-bottom:1px!important;
+  font-size:10px!important;
+  line-height:1.25!important;
+  font-weight:800!important;
+  color:var(--pm-navy)!important;
+}
+
+/* Items */
+#pmInvoicePreview .pm-inv-table{
+  width:100%!important;
+  margin-top:5mm!important;
+  font-size:7.8px!important;
+  table-layout:fixed!important;
+}
+#pmInvoicePreview .pm-inv-table th{
+  padding:2.3mm 2mm!important;
+  background:var(--pm-navy)!important;
+  color:#fff!important;
+  font-size:7px!important;
+  line-height:1.1!important;
+  letter-spacing:.2px!important;
+}
+#pmInvoicePreview .pm-inv-table td{
+  padding:2.2mm 2mm!important;
+  border:1px solid var(--pm-line)!important;
+  vertical-align:middle!important;
+  line-height:1.3!important;
+}
+#pmInvoicePreview .pm-inv-table th:nth-child(1),
+#pmInvoicePreview .pm-inv-table td:nth-child(1){width:9mm!important;text-align:center!important}
+#pmInvoicePreview .pm-inv-table th:nth-child(3),
+#pmInvoicePreview .pm-inv-table td:nth-child(3){width:27mm!important;text-align:center!important}
+#pmInvoicePreview .pm-inv-table th:nth-child(4),
+#pmInvoicePreview .pm-inv-table td:nth-child(4){width:31mm!important}
+#pmInvoicePreview .pm-inv-table th:nth-child(5),
+#pmInvoicePreview .pm-inv-table td:nth-child(5){width:34mm!important}
+#pmInvoicePreview .pm-inv-table .code{
+  margin-top:1px!important;
+  font-size:6.5px!important;
+  color:#7b8798!important;
+}
+#pmInvoicePreview .pm-inv-total td{
+  padding-top:2.8mm!important;
+  padding-bottom:2.8mm!important;
+  background:var(--pm-blue-soft)!important;
+  color:var(--pm-navy)!important;
+  font-size:8.5px!important;
+}
+
+/* Payment blocks */
+#pmInvoicePreview .pm-inv-pay{
+  grid-template-columns:1fr 1fr!important;
+  gap:4mm!important;
+  margin-top:5mm!important;
+}
+#pmInvoicePreview .pm-inv-paybox{
+  min-height:22mm!important;
+  padding:3.5mm!important;
+  border:1px solid var(--pm-line)!important;
+  border-radius:2.5mm!important;
+}
+#pmInvoicePreview .pm-inv-payrow{
+  margin:1.5mm 0!important;
+  font-size:7.8px!important;
+  line-height:1.2!important;
+}
+#pmInvoicePreview .pm-inv-balance{
+  color:#b77900!important;
+  font-size:9px!important;
+}
+
+/* Terms */
+#pmInvoicePreview .pm-inv-terms{
+  margin-top:5mm!important;
+  padding:3.5mm!important;
+  border:1px solid var(--pm-line)!important;
+  border-radius:2.5mm!important;
+  font-size:7px!important;
+  line-height:1.4!important;
+}
+#pmInvoicePreview .pm-inv-terms>strong{
+  display:block!important;
+  margin-bottom:1mm!important;
+  color:var(--pm-navy)!important;
+  font-size:7.2px!important;
+  letter-spacing:.3px!important;
+}
+#pmInvoicePreview .pm-inv-terms ul{
+  margin:1mm 0 0!important;
+  padding-left:4.5mm!important;
+}
+#pmInvoicePreview .pm-inv-terms li{
+  margin:0 0 .8mm!important;
+}
+
+/* Signature + footer */
+#pmInvoicePreview .pm-inv-sign{
+  width:44mm!important;
+  margin:5mm 0 0 auto!important;
+  min-height:25mm!important;
+  text-align:center!important;
+  font-size:7.8px!important;
+  color:var(--pm-text)!important;
+}
+#pmInvoicePreview .pm-inv-sign img{
+  width:auto!important;
+  max-width:28mm!important;
+  height:11mm!important;
+  object-fit:contain!important;
+  margin:1mm auto 0!important;
+}
+#pmInvoicePreview .pm-inv-line{
+  width:34mm!important;
+  border-top:1px solid #374151!important;
+  margin:1mm auto 1.2mm!important;
+}
+#pmInvoicePreview .pm-inv-sign strong{font-size:8px!important}
+#pmInvoicePreview .pm-inv-footer{
+  left:14mm!important;
+  right:14mm!important;
+  bottom:7mm!important;
+  padding-top:2mm!important;
+  font-size:6.5px!important;
+  color:#7b8798!important;
+}
+
+@media(max-width:850px){
+  #pmInvoicePreview .pm-inv-scroll{padding:10px!important}
+  #pmInvoicePreview .pm-inv-a4{transform-origin:top center;box-shadow:none!important}
+}
+
+@media print{
+  @page{size:A4 portrait;margin:0}
+  #pmInvoicePreview .pm-inv-toolbar{display:none!important}
+  #pmInvoicePreview .pm-inv-scroll{padding:0!important;overflow:visible!important;background:#fff!important}
+  #pmInvoicePreview .pm-inv-a4{
+    width:210mm!important;
+    min-height:297mm!important;
+    margin:0!important;
+    box-shadow:none!important;
+    overflow:hidden!important;
+  }
+  #pmInvoicePreview .pm-inv-accent{margin:0 -14mm 9mm!important}
+}
