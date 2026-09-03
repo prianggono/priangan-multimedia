@@ -8,9 +8,11 @@ window.PRIANGAN_CONFIG = Object.freeze({
 
 // Remove stale local connection overrides so GitHub and Supabase stay aligned.
 try {
-  const canonicalUrl = window.PRIANGAN_CONFIG.SUPABASE_URL;
+  const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.PRIANGAN_CONFIG;
   const storedUrl = localStorage.getItem('SUPABASE_URL');
-  if (storedUrl && storedUrl.trim() !== canonicalUrl) {
+  const storedKey = localStorage.getItem('SUPABASE_ANON_KEY');
+  if ((storedUrl && storedUrl.trim() !== SUPABASE_URL) ||
+      (storedKey && storedKey.trim() !== SUPABASE_ANON_KEY)) {
     localStorage.removeItem('SUPABASE_URL');
     localStorage.removeItem('SUPABASE_ANON_KEY');
   }
