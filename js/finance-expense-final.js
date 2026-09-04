@@ -1,32 +1,31 @@
-/* Priangan Multimedia — Pengeluaran Keuangan FORCE UI v2 */
+/* Priangan Multimedia — Pengeluaran Keuangan FINAL v3 */
 (function(){
   'use strict';
-  if(window.__PM_FINANCE_EXPENSE_FORCE_V2)return;
-  window.__PM_FINANCE_EXPENSE_FORCE_V2=true;
+  if(window.__PM_FINANCE_EXPENSE_FINAL_V3)return;
+  window.__PM_FINANCE_EXPENSE_FINAL_V3=true;
 
-  const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  const num=v=>{
+  const S=v=>String(v??'').trim();
+  const N=v=>{
     if(typeof v==='number')return Number.isFinite(v)?v:0;
-    let s=String(v??'').replace(/[^0-9,.-]/g,'');
+    let s=S(v).replace(/[^0-9,.-]/g,'');
     if(!s)return 0;
     s=s.replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.');
     const n=Number(s); return Number.isFinite(n)?n:0;
   };
-  const money=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(num(v));
+  const M=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(N(v));
+  const E=v=>S(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const today=()=>new Date().toISOString().slice(0,10);
-  const getDB=()=>{try{if(typeof db!=='undefined'&&db)return db}catch(_){}return window.db||window.__PM_STABLE_DB||null};
+  const DB=()=>{try{if(typeof db!=='undefined'&&db)return db}catch(_){}return window.db||window.__PM_STABLE_DB||window.__PRIANGAN_QUOTE_DB||null};
 
-  function isFinancePage(){
-    const nav=document.querySelector('.nav[data-p="finance"]');
-    const title=(document.querySelector('#title')?.textContent||'').trim().toLowerCase();
-    return !!nav?.classList.contains('active') || title==='laporan keuangan';
+  function financeActive(){
+    return !!document.querySelector('.nav[data-p="finance"].active') && !!document.querySelector('#pmFiV2');
   }
 
-  async function readExpenses(){
-    const d=getDB();
+  function remove(){document.querySelector('#pmExpenseFinal')?.remove()}
+
+  async function loadRows(from,to){
+    const d=DB();
     if(!d)return {rows:[],error:'Supabase belum terhubung.'};
-    const from=document.querySelector('#pmExpenseFrom')?.value||'';
-    const to=document.querySelector('#pmExpenseTo')?.value||'';
     let q=d.from('pengeluaran_keuangan').select('*').order('tanggal',{ascending:false}).order('id',{ascending:false});
     if(from)q=q.gte('tanggal',from);
     if(to)q=q.lte('tanggal',to);
@@ -34,120 +33,76 @@
     return r.error?{rows:[],error:r.error.message}:{rows:r.data||[],error:''};
   }
 
-  async function draw(){
-    const content=document.querySelector('#content');
-    if(!content)return;
+  async function renderExpense(){
+    if(!financeActive()){remove();return;}
+    if(document.querySelector('#pmExpenseFinal'))return;
 
-    // PENTING: modul ini hanya boleh hidup di halaman Laporan Keuangan.
-    // Jangan pernah menempelkan kartu Pengeluaran ke Dashboard atau halaman lain.
-    if(!isFinancePage()){
-      document.querySelector('#pmExpenseForce')?.remove();
-      return;
-    }
-    if(document.querySelector('#pmExpenseForce'))return;
+    const host=document.querySelector('#pmFiV2');
+    if(!host)return;
 
-    const r=await readExpenses();
-    const rows=r.rows;
-    const total=rows.reduce((a,x)=>a+num(x.nominal),0);
-    const list=rows.length?rows.map((x,i)=>`<tr>
-      <td>${i+1}</td><td>${esc(x.tanggal||'-')}</td><td>${esc(x.keperluan||'-')}</td><td>${esc(x.catatan||'-')}</td><td><b>${money(x.nominal)}</b></td>
-      <td><button class="btn secondary" type="button" data-pm-exp-edit="${x.id}">Edit</button> <button class="btn red" type="button" data-pm-exp-del="${x.id}">Hapus</button></td>
-    </tr>`).join(''):`<tr><td colspan="6" class="empty">Belum ada pengeluaran pada periode ini.</td></tr>`;
+    const from=S(document.querySelector('#fiV2From')?.value);
+    const to=S(document.querySelector('#fiV2To')?.value);
+    const r=await loadRows(from,to);
+    if(!financeActive())return;
+    if(document.querySelector('#pmExpenseFinal'))return;
 
+    const rows=r.rows,total=rows.reduce((a,x)=>a+N(x.nominal),0);
     const box=document.createElement('div');
-    box.id='pmExpenseForce';
+    box.id='pmExpenseFinal';
     box.className='card';
-    box.style.cssText='margin:16px 0;border:1px solid #2b4668;background:linear-gradient(145deg,#101a2f,#0b1222);position:relative;z-index:5';
+    box.style.cssText='margin-top:16px;border:1px solid #263654;background:linear-gradient(145deg,#0d1529,#080d1c);position:relative;z-index:20';
     box.innerHTML=`
-      <style>
-        #pmExpenseForce .pm-exp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
-        #pmExpenseForce .pm-exp-total{font-size:24px;font-weight:900;color:#ffb4ab}
-        #pmExpenseForce .pm-exp-form{margin-top:14px;padding:15px;border:1px solid #263654;border-radius:12px;background:rgba(255,255,255,.025)}
-        #pmExpenseForce label{display:block;margin-bottom:6px}
-        #pmExpenseForce .pm-exp-help{font-size:12px;color:#8ea4c9;margin:5px 0 0}
-      </style>
-      <div class="pm-exp-head">
-        <div><h2 style="margin:0">Pengeluaran</h2><p style="margin:5px 0 0">Catat dana keluar dan <b>untuk apa dana tersebut digunakan</b>.</p></div>
-        <div style="text-align:right"><small>Total Pengeluaran Periode</small><div class="pm-exp-total">${money(total)}</div></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+        <div><h2 style="margin:0">Pengeluaran</h2><p style="margin:6px 0 0;color:var(--muted)">Catat setiap dana keluar dan jelaskan <b>pengeluaran untuk apa</b>.</p></div>
+        <div style="text-align:right"><small>Total Pengeluaran</small><div style="font-size:24px;font-weight:900;color:#ffb4ab">${M(total)}</div></div>
       </div>
-      <div class="card" style="margin-top:14px;padding:12px">
+      <div class="card" style="margin-top:14px;padding:14px">
         <div class="grid g2">
-          <div class="field"><label>Dari Tanggal</label><input id="pmExpenseFrom" type="date"></div>
-          <div class="field"><label>Sampai Tanggal</label><input id="pmExpenseTo" type="date"></div>
+          <div class="field"><label>Tanggal *</label><input id="pmeTanggal" type="date" value="${today()}"></div>
+          <div class="field"><label>Nominal *</label><input id="pmeNominal" type="number" min="1" step="1" placeholder="500000"></div>
+          <div class="field" style="grid-column:1/-1"><label>Pengeluaran untuk apa? *</label><input id="pmeKeperluan" type="text" placeholder="Contoh: transport crew, konsumsi, sewa alat, pembelian kabel"></div>
+          <div class="field" style="grid-column:1/-1"><label>Catatan</label><textarea id="pmeCatatan" rows="2" placeholder="Keterangan tambahan"></textarea></div>
         </div>
+        <div class="actions" style="margin-top:12px"><button class="btn green" id="pmeSave" type="button">Simpan Pengeluaran</button></div>
       </div>
-      <div class="pm-exp-form" id="pmExpenseForm">
-        <b id="pmExpenseFormTitle">Tambah Pengeluaran</b>
-        <input type="hidden" id="pmExpenseId">
-        <div class="grid g2" style="margin-top:12px">
-          <div class="field"><label>Tanggal *</label><input id="pmExpenseTanggal" type="date" value="${today()}"></div>
-          <div class="field"><label>Nominal *</label><input id="pmExpenseNominal" type="number" min="0" step="1" placeholder="Contoh: 500000"></div>
-          <div class="field" style="grid-column:1/-1"><label>Pengeluaran untuk apa? *</label><input id="pmExpenseKeperluan" type="text" placeholder="Contoh: Sewa genset event / transport operator / konsumsi crew / pembelian kabel"></div>
-          <div class="field" style="grid-column:1/-1"><label>Catatan (opsional)</label><textarea id="pmExpenseCatatan" rows="2" placeholder="Keterangan tambahan"></textarea></div>
-        </div>
-        <p class="pm-exp-help">Kolom <b>Pengeluaran untuk apa?</b> wajib diisi agar laporan jelas digunakan untuk kebutuhan apa.</p>
-        <div class="actions" style="margin-top:12px"><button class="btn green" type="button" id="pmExpenseSave">Simpan Pengeluaran</button><button class="btn secondary" type="button" id="pmExpenseReset">Reset Form</button></div>
-      </div>
-      ${r.error?`<div style="margin-top:12px;padding:10px;border:1px solid #7f1d1d;border-radius:8px;color:#ffb4ab">Gagal membaca pengeluaran: ${esc(r.error)}</div>`:''}
-      <div class="scroll" style="margin-top:14px"><table class="table"><thead><tr><th>No.</th><th>Tanggal</th><th>Pengeluaran untuk apa?</th><th>Catatan</th><th>Nominal</th><th>Aksi</th></tr></thead><tbody>${list}</tbody></table></div>`;
+      ${r.error?`<div style="margin-top:10px;color:#ff6b7a">Gagal membaca pengeluaran: ${E(r.error)}</div>`:''}
+      <div class="scroll" style="margin-top:14px"><table class="table"><thead><tr><th>No.</th><th>Tanggal</th><th>Pengeluaran untuk apa?</th><th>Catatan</th><th>Nominal</th><th>Aksi</th></tr></thead><tbody>
+      ${rows.map((x,i)=>`<tr><td>${i+1}</td><td>${E(x.tanggal)}</td><td>${E(x.keperluan)}</td><td>${E(x.catatan||'-')}</td><td><b>${M(x.nominal)}</b></td><td><button class="btn red" type="button" data-pme-del="${x.id}">Hapus</button></td></tr>`).join('')||'<tr><td colspan="6" class="empty">Belum ada pengeluaran.</td></tr>'}
+      </tbody></table></div>`;
 
-    const head=content.querySelector('.head');
-    if(head&&head.nextSibling)content.insertBefore(box,head.nextSibling);else content.prepend(box);
+    host.appendChild(box);
 
-    const fromInput=box.querySelector('#pmExpenseFrom'),toInput=box.querySelector('#pmExpenseTo');
-    const reset=()=>{
-      box.querySelector('#pmExpenseId').value='';
-      box.querySelector('#pmExpenseTanggal').value=today();
-      box.querySelector('#pmExpenseNominal').value='';
-      box.querySelector('#pmExpenseKeperluan').value='';
-      box.querySelector('#pmExpenseCatatan').value='';
-      box.querySelector('#pmExpenseFormTitle').textContent='Tambah Pengeluaran';
-    };
-    const rerender=()=>{box.remove();setTimeout(draw,80)};
-    box.querySelector('#pmExpenseReset').onclick=reset;
-    box.querySelector('#pmExpenseSave').onclick=async()=>{
-      const d=getDB(); if(!d)return alert('Supabase belum terhubung.');
-      const id=box.querySelector('#pmExpenseId').value;
-      const tanggal=box.querySelector('#pmExpenseTanggal').value||today();
-      const nominal=num(box.querySelector('#pmExpenseNominal').value);
-      const keperluan=box.querySelector('#pmExpenseKeperluan').value.trim();
-      const catatan=box.querySelector('#pmExpenseCatatan').value.trim();
-      if(!keperluan)return alert('Isi dulu: Pengeluaran untuk apa?');
+    box.querySelector('#pmeSave').onclick=async()=>{
+      const d=DB();if(!d)return alert('Supabase belum terhubung.');
+      const tanggal=box.querySelector('#pmeTanggal').value||today();
+      const nominal=N(box.querySelector('#pmeNominal').value);
+      const keperluan=box.querySelector('#pmeKeperluan').value.trim();
+      const catatan=box.querySelector('#pmeCatatan').value.trim();
+      if(!keperluan)return alert('Isi: Pengeluaran untuk apa?');
       if(nominal<=0)return alert('Nominal harus lebih dari 0.');
-      const payload={tanggal,nominal,keperluan,catatan,updated_at:new Date().toISOString()};
-      const z=id?await d.from('pengeluaran_keuangan').update(payload).eq('id',id):await d.from('pengeluaran_keuangan').insert([payload]);
-      if(z.error){console.error('[PM] expense save',z.error);return alert('Gagal menyimpan pengeluaran: '+z.error.message)}
-      rerender();
+      const z=await d.from('pengeluaran_keuangan').insert([{tanggal,nominal,keperluan,catatan,updated_at:new Date().toISOString()}]);
+      if(z.error)return alert('Gagal menyimpan pengeluaran: '+z.error.message);
+      remove();
+      setTimeout(renderExpense,50);
     };
-    [fromInput,toInput].forEach(x=>x?.addEventListener('change',rerender));
-    box.querySelectorAll('[data-pm-exp-edit]').forEach(btn=>btn.onclick=()=>{
-      const x=rows.find(v=>String(v.id)===btn.dataset.pmExpEdit);if(!x)return;
-      box.querySelector('#pmExpenseId').value=x.id;
-      box.querySelector('#pmExpenseTanggal').value=x.tanggal||today();
-      box.querySelector('#pmExpenseNominal').value=num(x.nominal);
-      box.querySelector('#pmExpenseKeperluan').value=x.keperluan||'';
-      box.querySelector('#pmExpenseCatatan').value=x.catatan||'';
-      box.querySelector('#pmExpenseFormTitle').textContent='Edit Pengeluaran';
-      box.querySelector('#pmExpenseKeperluan').focus();
-    });
-    box.querySelectorAll('[data-pm-exp-del]').forEach(btn=>btn.onclick=async()=>{
+
+    box.querySelectorAll('[data-pme-del]').forEach(btn=>btn.onclick=async()=>{
       if(!confirm('Hapus pengeluaran ini?'))return;
-      const d=getDB();if(!d)return;
-      const z=await d.from('pengeluaran_keuangan').delete().eq('id',btn.dataset.pmExpDel);
+      const d=DB();if(!d)return;
+      const z=await d.from('pengeluaran_keuangan').delete().eq('id',btn.dataset.pmeDel);
       if(z.error)return alert('Gagal menghapus pengeluaran: '+z.error.message);
-      rerender();
+      remove();setTimeout(renderExpense,50);
     });
   }
 
   let timer=0;
-  const schedule=()=>{clearTimeout(timer);timer=setTimeout(draw,150)};
+  function schedule(){clearTimeout(timer);timer=setTimeout(renderExpense,250)}
   const observer=new MutationObserver(schedule);
   observer.observe(document.body,{childList:true,subtree:true});
   document.addEventListener('click',e=>{
-    const nav=e.target?.closest?.('[data-p="finance"]');
-    const anyNav=e.target?.closest?.('[data-p]');
-    if(nav){setTimeout(draw,250);setTimeout(draw,700);setTimeout(draw,1500)}
-    else if(anyNav){setTimeout(draw,250)}
+    if(e.target?.closest?.('[data-p="finance"]')){setTimeout(renderExpense,300);setTimeout(renderExpense,900);setTimeout(renderExpense,1800)}
+    else if(e.target?.closest?.('[data-p]'))setTimeout(renderExpense,300);
   },true);
-  setTimeout(draw,700);
+  setInterval(()=>{if(financeActive()&&!document.querySelector('#pmExpenseFinal'))renderExpense()},1000);
+  setTimeout(renderExpense,500);
 })();
