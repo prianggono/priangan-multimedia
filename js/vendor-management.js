@@ -8,14 +8,32 @@
   const getDb=()=>{try{return typeof db!=='undefined'?db:null}catch(_){return null}};
   const msg=t=>typeof window.msg==='function'?window.msg(t):alert(t);
 
+  function openVendorPage(button){
+    document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));
+    if(button)button.classList.add('active');
+    const title=document.querySelector('#title');
+    if(title)title.textContent='Data Vendor';
+    render();
+    document.querySelector('.sidebar')?.classList.remove('open');
+  }
+
   function installNav(){
     const nav=document.querySelector('.sidebar nav');
-    if(!nav||nav.querySelector('[data-p="vendors"]'))return;
-    const b=document.createElement('button');
-    b.className='nav'; b.type='button'; b.dataset.p='vendors'; b.textContent='♧ Data Vendor';
-    const template=nav.querySelector('[data-p="template"]');
-    nav.insertBefore(b,template||null);
-    b.addEventListener('click',()=>{document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelector('#title').textContent='Data Vendor';render();document.querySelector('.sidebar')?.classList.remove('open')});
+    if(!nav)return;
+    let b=nav.querySelector('[data-p="vendors"]');
+    if(!b){
+      b=document.createElement('button');
+      b.className='nav'; b.type='button'; b.dataset.p='vendors'; b.textContent='♧ Data Vendor';
+      const template=nav.querySelector('[data-p="template"]');
+      nav.insertBefore(b,template||null);
+    }
+    if(b.dataset.vendorBound==='1')return;
+    b.dataset.vendorBound='1';
+    b.addEventListener('click',function(e){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      openVendorPage(b);
+    },true);
   }
 
   async function render(){
@@ -23,7 +41,7 @@
     const d=getDb();
     if(!d){content.innerHTML='<div class="card"><b>Data Vendor</b><p>Supabase belum terhubung.</p></div>';return}
     const r=await d.from('vendors').select('*').order('id',{ascending:false});
-    if(r.error){console.error(r.error);content.innerHTML='<div class="card"><b>Data Vendor</b><p>Gagal membaca data vendor.</p></div>';return}
+    if(r.error){console.error(r.error);content.innerHTML='<div class="card"><b>Data Vendor</b><p>Gagal membaca data vendor: '+esc(r.error.message)+'</p></div>';return}
     const rows=r.data||[];
     content.innerHTML=`
       <div class="head"><div><h1>Data Vendor</h1><p>Kelola kontak vendor untuk kebutuhan operasional Priangan Multimedia.</p></div><button class="btn" type="button" id="pmVendorAdd">+ Tambah Vendor</button></div>
@@ -49,6 +67,6 @@
     content.querySelectorAll('[data-del]').forEach(btn=>btn.onclick=async()=>{if(!confirm('Hapus data vendor ini?'))return;const z=await d.from('vendors').delete().eq('id',btn.dataset.del);if(z.error)return msg('Gagal menghapus vendor: '+z.error.message);msg('Vendor dihapus.');render()});
   }
 
-  function hook(){installNav();document.addEventListener('click',e=>{const b=e.target?.closest?.('[data-p="vendors"]');if(b){setTimeout(()=>{if(document.querySelector('#title')?.textContent==='Data Vendor')render()},30)}},true)}
+  function hook(){installNav();}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',hook);else hook();
 })();
