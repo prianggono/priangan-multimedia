@@ -1,111 +1,124 @@
-/* Priangan Multimedia — discount input format v4
- * Percent input is intentionally NOT reformatted while typing.
- * This prevents 10 from becoming 100 and makes replacement/editing reliable.
+/* Priangan Multimedia — discount input format v5
+ * Final guard for quotation discount fields.
+ * Prevents the quotation core from rewriting the percent field while typing.
  */
 (function(){
   'use strict';
-  if(window.__PM_DISCOUNT_INPUT_V4)return;
-  window.__PM_DISCOUNT_INPUT_V4=true;
+  if(window.__PM_DISCOUNT_INPUT_V5)return;
+  window.__PM_DISCOUNT_INPUT_V5=true;
 
-  const parsePct=v=>{
-    let s=String(v??'').trim().replace(/%/g,'').replace(/\s/g,'').replace(',','.');
-    if(!s)return 0;
+  const cleanNumber=v=>{
+    let s=String(v??'').trim().replace(/[^0-9,.-]/g,'');
+    s=s.replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.');
     const n=Number(s);
     return Number.isFinite(n)?n:0;
   };
-
-  const normalizePct=v=>{
-    const n=Math.max(0,Math.min(100,parsePct(v)));
+  const money=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(cleanNumber(v));
+  const pctText=v=>{
+    const n=Math.max(0,Math.min(100,cleanNumber(v)));
     return Number.isInteger(n)?String(n):String(Number(n.toFixed(2)));
   };
 
-  function patchPercent(){
-    const p=document.querySelector('#pmDiscPct');
-    if(!p)return false;
+  function fields(){
+    return {p:document.querySelector('#pmDiscPct'),r:document.querySelector('#pmDisc')};
+  }
 
-    p.type='text';
-    p.inputMode='decimal';
-    p.autocomplete='off';
-    p.placeholder='0';
-    p.removeAttribute('step');
-    p.removeAttribute('min');
-    p.removeAttribute('max');
+  function calculatePct(){
+    const {p,r}=fields();
+    if(!p||!r)return;
+    const base=Math.max(0,cleanNumber(window.__pmDiscountBase));
+    const pct=Math.max(0,Math.min(100,cleanNumber(p.value)));
+    const rp=Math.round(base*pct/100);
+    r.value=money(rp);
+    const net=Math.max(0,base-rp);
+    const grand=document.querySelector('#pmGrand');
+    const total=document.querySelector('#total');
+    if(grand)grand.textContent=money(net);
+    if(total)total.textContent=money(net);
+    window.__pmDiscountBase=base;
+    window.__pmDiscountPct=pct;
+    window.__pmDiscountValue=rp;
+    window.__pmNetTotal=net;
+  }
 
-    if(p.dataset.pmPctV4!=='1'){
-      p.dataset.pmPctV4='1';
+  function calculateRp(){
+    const {p,r}=fields();
+    if(!p||!r)return;
+    const base=Math.max(0,cleanNumber(window.__pmDiscountBase));
+    const rp=Math.max(0,Math.min(base,cleanNumber(r.value)));
+    const pct=base?rp/base*100:0;
+    p.value=Number.isInteger(pct)?String(pct):String(Number(pct.toFixed(2)));
+    r.value=money(rp);
+    const net=Math.max(0,base-rp);
+    const grand=document.querySelector('#pmGrand');
+    const total=document.querySelector('#total');
+    if(grand)grand.textContent=money(net);
+    if(total)total.textContent=money(net);
+    window.__pmDiscountBase=base;
+    window.__pmDiscountPct=pct;
+    window.__pmDiscountValue=rp;
+    window.__pmNetTotal=net;
+  }
 
-      // Saat mulai mengedit, hilangkan format lama lalu pilih seluruh angka.
-      p.addEventListener('focus',()=>{
-        const clean=normalizePct(p.value);
-        p.value=clean;
-        requestAnimationFrame(()=>{
-          try{p.setSelectionRange(0,p.value.length)}catch(_){}
+  function patch(){
+    const {p,r}=fields();
+    if(p){
+      p.type='text';
+      p.inputMode='decimal';
+      p.autocomplete='off';
+      p.placeholder='0';
+      p.removeAttribute('min');
+      p.removeAttribute('max');
+      p.removeAttribute('step');
+      if(p.dataset.pmPctV5!=='1'){
+        p.dataset.pmPctV5='1';
+        p.addEventListener('focus',()=>{
+          p.value=pctText(p.value);
+          requestAnimationFrame(()=>{try{p.select()}catch(_){} });
         });
-      });
-
-      // Jangan menghitung/clamp saat setiap karakter masuk.
-      // Biarkan user mengetik "10" secara normal.
-      p.addEventListener('input',()=>{
-        const old=p.value;
-        const pos=p.selectionStart;
-        const clean=old.replace(/[^0-9.,]/g,'').replace(/,/g,'.');
-        if(clean!==old){
-          p.value=clean;
-          try{p.setSelectionRange(Math.max(0,(pos||0)-(old.length-clean.length)),Math.max(0,(pos||0)-(old.length-clean.length)))}catch(_){}
-        }
-        // Hanya batas keras jika memang sudah >100; tidak mengubah 10 menjadi 100.
-        const n=parsePct(p.value);
-        if(n>100){
-          p.value='100';
-          try{p.setSelectionRange(3,3)}catch(_){}
-        }
-      },true);
-
-      // Rapikan hanya setelah selesai mengetik.
-      p.addEventListener('blur',()=>{
-        p.value=normalizePct(p.value);
-        p.dispatchEvent(new Event('change',{bubbles:true}));
-      },true);
-
-      p.addEventListener('keydown',e=>{
-        if(e.key==='%')e.preventDefault();
-      });
+        p.addEventListener('blur',()=>{
+          p.value=pctText(p.value);
+          calculatePct();
+        });
+        p.addEventListener('keydown',e=>{if(e.key==='%')e.preventDefault()});
+      }
     }
-
-    if(document.activeElement!==p){
-      const n=normalizePct(p.value);
-      if(p.value!==n)p.value=n;
+    if(r){
+      r.type='text';
+      r.inputMode='numeric';
+      r.autocomplete='off';
+      r.placeholder='Rp0';
+      if(r.dataset.pmRpV5!=='1'){
+        r.dataset.pmRpV5='1';
+        r.addEventListener('focus',()=>{const n=cleanNumber(r.value);r.value=n?String(n):''});
+        r.addEventListener('blur',()=>{r.value=money(r.value);calculateRp()});
+      }
     }
-    return true;
   }
 
-  function patchRupiah(){
-    const r=document.querySelector('#pmDisc');
-    if(!r)return false;
-    r.type='text';
-    r.inputMode='numeric';
-    r.autocomplete='off';
-    r.placeholder='Rp0';
-    if(r.dataset.pmRpV4==='1')return true;
-    r.dataset.pmRpV4='1';
+  // Capture before the quotation-core input listeners. The browser has already
+  // placed the typed character in the field, so we can keep that value and stop
+  // the old core handler from formatting/replacing it.
+  document.addEventListener('input',e=>{
+    const t=e.target;
+    if(!t)return;
+    if(t.id==='pmDiscPct'){
+      patch();
+      const old=t.value;
+      const clean=old.replace(/[^0-9.,]/g,'').replace(/,/g,'.');
+      if(clean!==old)t.value=clean;
+      if(cleanNumber(t.value)>100)t.value='100';
+      e.stopImmediatePropagation();
+      calculatePct();
+    }else if(t.id==='pmDisc'){
+      patch();
+      e.stopImmediatePropagation();
+      calculateRp();
+    }
+  },true);
 
-    const number=v=>{
-      let s=String(v??'').replace(/[^0-9,.-]/g,'');
-      s=s.replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.');
-      const n=Number(s);return Number.isFinite(n)?n:0;
-    };
-    const money=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(number(v));
-
-    r.addEventListener('focus',()=>{r.value=number(r.value)?String(number(r.value)):''});
-    r.addEventListener('input',()=>{r.value=number(r.value)?String(number(r.value)):''});
-    r.addEventListener('blur',()=>{r.value=money(r.value)});
-    return true;
-  }
-
-  function sync(){patchPercent();patchRupiah()}
-  const mo=new MutationObserver(()=>requestAnimationFrame(sync));
+  document.addEventListener('focusin',e=>{if(e.target?.id==='pmDiscPct'||e.target?.id==='pmDisc')patch()},true);
+  const mo=new MutationObserver(()=>requestAnimationFrame(patch));
   mo.observe(document.body,{childList:true,subtree:true});
-  document.addEventListener('focusin',e=>{if(e.target?.id==='pmDiscPct')patchPercent()},true);
-  document.addEventListener('input',e=>{if(e.target?.id==='pmDiscPct')patchPercent();if(e.target?.id==='pmDisc')patchRupiah()},true);
-  [0,100,300,700,1500,3000].forEach(ms=>setTimeout(sync,ms));
+  [0,100,300,700,1500,3000].forEach(ms=>setTimeout(patch,ms));
 })();
