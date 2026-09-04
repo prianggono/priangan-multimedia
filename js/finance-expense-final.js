@@ -1,8 +1,8 @@
-/* Priangan Multimedia — Pengeluaran Keuangan FORCE UI */
+/* Priangan Multimedia — Pengeluaran Keuangan FORCE UI v2 */
 (function(){
   'use strict';
-  if(window.__PM_FINANCE_EXPENSE_FORCE)return;
-  window.__PM_FINANCE_EXPENSE_FORCE=true;
+  if(window.__PM_FINANCE_EXPENSE_FORCE_V2)return;
+  window.__PM_FINANCE_EXPENSE_FORCE_V2=true;
 
   const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   const num=v=>{
@@ -15,6 +15,12 @@
   const money=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(num(v));
   const today=()=>new Date().toISOString().slice(0,10);
   const getDB=()=>{try{if(typeof db!=='undefined'&&db)return db}catch(_){}return window.db||window.__PM_STABLE_DB||null};
+
+  function isFinancePage(){
+    const nav=document.querySelector('.nav[data-p="finance"]');
+    const title=(document.querySelector('#title')?.textContent||'').trim().toLowerCase();
+    return !!nav?.classList.contains('active') || title==='laporan keuangan';
+  }
 
   async function readExpenses(){
     const d=getDB();
@@ -31,7 +37,13 @@
   async function draw(){
     const content=document.querySelector('#content');
     if(!content)return;
-    if(!/finance|keuangan|reconciliation|rekonsiliasi/i.test((document.querySelector('#title')?.textContent||'')+' '+(content.textContent||'')))return;
+
+    // PENTING: modul ini hanya boleh hidup di halaman Laporan Keuangan.
+    // Jangan pernah menempelkan kartu Pengeluaran ke Dashboard atau halaman lain.
+    if(!isFinancePage()){
+      document.querySelector('#pmExpenseForce')?.remove();
+      return;
+    }
     if(document.querySelector('#pmExpenseForce'))return;
 
     const r=await readExpenses();
@@ -51,7 +63,6 @@
         #pmExpenseForce .pm-exp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap}
         #pmExpenseForce .pm-exp-total{font-size:24px;font-weight:900;color:#ffb4ab}
         #pmExpenseForce .pm-exp-form{margin-top:14px;padding:15px;border:1px solid #263654;border-radius:12px;background:rgba(255,255,255,.025)}
-        #pmExpenseForce .pm-exp-form[hidden]{display:none!important}
         #pmExpenseForce label{display:block;margin-bottom:6px}
         #pmExpenseForce .pm-exp-help{font-size:12px;color:#8ea4c9;margin:5px 0 0}
       </style>
@@ -92,7 +103,7 @@
       box.querySelector('#pmExpenseCatatan').value='';
       box.querySelector('#pmExpenseFormTitle').textContent='Tambah Pengeluaran';
     };
-    const rerender=()=>{box.remove();setTimeout(draw,50)};
+    const rerender=()=>{box.remove();setTimeout(draw,80)};
     box.querySelector('#pmExpenseReset').onclick=reset;
     box.querySelector('#pmExpenseSave').onclick=async()=>{
       const d=getDB(); if(!d)return alert('Supabase belum terhubung.');
@@ -129,13 +140,14 @@
   }
 
   let timer=0;
-  const schedule=()=>{clearTimeout(timer);timer=setTimeout(draw,120)};
+  const schedule=()=>{clearTimeout(timer);timer=setTimeout(draw,150)};
   const observer=new MutationObserver(schedule);
   observer.observe(document.body,{childList:true,subtree:true});
   document.addEventListener('click',e=>{
     const nav=e.target?.closest?.('[data-p="finance"]');
-    if(nav){window.__PM_FINANCE_EXPENSE_LAST=true;setTimeout(draw,250);setTimeout(draw,700);setTimeout(draw,1500)}
+    const anyNav=e.target?.closest?.('[data-p]');
+    if(nav){setTimeout(draw,250);setTimeout(draw,700);setTimeout(draw,1500)}
+    else if(anyNav){setTimeout(draw,250)}
   },true);
-  setTimeout(draw,500);
-  setTimeout(draw,1500);
+  setTimeout(draw,700);
 })();
