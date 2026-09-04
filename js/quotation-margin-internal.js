@@ -1,125 +1,17 @@
-/* Priangan Multimedia — internal quotation margin guard.
- * Uses Master Harga cost data only; this panel is never included in customer output.
- */
-(function () {
-  'use strict';
-  if (window.__PM_QUOTATION_MARGIN_INTERNAL) return;
-  window.__PM_QUOTATION_MARGIN_INTERNAL = true;
-
-  const number = (value) => {
-    const clean = String(value ?? '').replace(/[^0-9,.-]/g, '').replace(/./g, '').replace(',', '.');
-    const parsed = Number(clean);
-    return Number.isFinite(parsed) ? parsed : 0;
-  };
-  const money = (value) => new Intl.NumberFormat('id-ID', {
-    style: 'currency', currency: 'IDR', maximumFractionDigits: 0
-  }).format(number(value));
-  const text = (value) => String(value ?? '').trim();
-
-  function dayCount(start, end) {
-    if (!start || !end) return 1;
-    const a = new Date(start + 'T00:00:00');
-    const b = new Date(end + 'T00:00:00');
-    const days = Math.round((b - a) / 86400000) + 1;
-    return Number.isFinite(days) ? Math.max(1, days) : 1;
-  }
-
-  function currentMasters() {
-    try {
-      if (typeof masters !== 'undefined' && Array.isArray(masters)) return masters;
-    } catch (_) {}
-    return Array.isArray(window.masters) ? window.masters : [];
-  }
-
-  function currentItems() {
-    try {
-      if (typeof items !== 'undefined' && Array.isArray(items)) return items;
-    } catch (_) {}
-    return Array.isArray(window.items) ? window.items : [];
-  }
-
-  function typeFor(item, master) {
-    return text(item.tipe || item.tipe_perhitungan || master?.tipe_perhitungan || master?.tipe || 'qty').toLowerCase();
-  }
-
-  function masterFor(item, allMasters) {
-    const code = text(item.kode);
-    return allMasters.find((master) => text(master.kode) === code) ||
-      allMasters.find((master) => text(master.item) === text(item.item)) || null;
-  }
-
-  function itemCost(item, master) {
-    const unitCost = number(item.harga_modal ?? master?.harga_modal);
-    const days = dayCount(text(item.mulai || item.tanggal_mulai), text(item.selesai || item.tanggal_selesai));
-    const qty = Math.max(1, number(item.qty ?? item.jumlah) || 1);
-    const width = number(item.lebar);
-    const height = number(item.tinggi);
-    const length = number(item.panjang);
-    const type = typeFor(item, master);
-
-    if (type === 'luas') return width * height * unitCost * days;
-    if (type === 'rigging') return ((length * 2) + (height * 2)) * unitCost * days;
-    if (type === 'level') return width * unitCost * days;
-    return qty * unitCost * days;
-  }
-
-  function render() {
-    const totalElement = document.querySelector('#total');
-    if (!totalElement) return;
-
-    const card = totalElement.closest('.card');
-    const discountBox = document.querySelector('#pmDiscount');
-    if (!card || !discountBox) return;
-
-    let panel = document.querySelector('#pmInternalMargin');
-    if (!panel) {
-      panel = document.createElement('section');
-      panel.id = 'pmInternalMargin';
-      panel.className = 'no-print';
-      panel.style.cssText = 'margin-top:14px;padding:14px;border:1px solid var(--border);border-radius:10px;background:rgba(12,20,40,.45)';
-      discountBox.insertAdjacentElement('afterend', panel);
-    }
-
-    const quoteItems = currentItems().filter((item) => text(item.kode) || text(item.item));
-    const allMasters = currentMasters();
-    const details = quoteItems.map((item) => ({ item, master: masterFor(item, allMasters) }));
-    const missingCost = details.filter(({ master, item }) => number(item.harga_modal ?? master?.harga_modal) <= 0);
-    const cost = details.reduce((sum, { item, master }) => sum + itemCost(item, master), 0);
-    const revenue = number(window.__pmNetTotal ?? totalElement.textContent);
-    const profit = revenue - cost;
-    const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
-    const ready = quoteItems.length > 0 && missingCost.length === 0;
-    const passes = ready && margin >= 20;
-    const tone = !ready ? '#fbbf24' : passes ? '#34d399' : '#fb7185';
-    const state = !quoteItems.length
-      ? 'Tambahkan item untuk menghitung margin.'
-      : !ready
-        ? 'Harga modal belum lengkap — margin belum dapat disetujui.'
-        : passes
-          ? 'Memenuhi batas internal minimum 20%.'
-          : 'Di bawah batas internal minimum 20%.';
-
-    panel.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-        <div><b>Kontrol Margin Internal</b><small style="display:block;margin-top:3px;color:var(--muted)">Tidak ditampilkan pada surat penawaran atau cetakan.</small></div>
-        <strong style="color:${tone}">${ready ? margin.toFixed(2) + '%' : 'PERLU DATA MODAL'}</strong>
-      </div>
-      <div class="grid g2" style="margin-top:12px">
-        <div class="sum"><span>Total Modal</span><b>${money(cost)}</b></div>
-        <div class="sum"><span>Laba Kotor</span><b>${money(profit)}</b></div>
-      </div>
-      <div style="margin-top:10px;color:${tone};font-weight:700">Margin: ${ready ? margin.toFixed(2) + '%' : '—'} · ${state}</div>
-      ${missingCost.length ? `<small style="display:block;margin-top:6px;color:var(--muted)">${missingCost.length} item belum memiliki harga modal pada Master Harga.</small>` : ''}
-    `;
-  }
-
-  function schedule() {
-    window.clearTimeout(window.__pmMarginRenderTimer);
-    window.__pmMarginRenderTimer = window.setTimeout(render, 0);
-  }
-
-  document.addEventListener('input', schedule, true);
-  document.addEventListener('change', schedule, true);
-  document.addEventListener('click', schedule, true);
-  [0, 250, 800].forEach((delay) => window.setTimeout(render, delay));
+/* Priangan Multimedia — internal quotation margin indicator. */
+(function(){
+'use strict';
+if(window.__PM_QUOTATION_MARGIN_INTERNAL_V2)return;
+window.__PM_QUOTATION_MARGIN_INTERNAL_V2=true;
+const num=v=>{if(typeof v==='number')return Number.isFinite(v)?v:0;const s=String(v??'').trim();if(!s)return 0;const n=Number(s.replace(/[^0-9,.-]/g,'').replace(/\.(?=\d{3}(?:\.|,|$))/g,'').replace(',','.'));return Number.isFinite(n)?n:0};
+const money=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(num(v));
+const text=v=>String(v??'').trim();
+function dayCount(a,b){if(!a||!b)return 1;const x=new Date(a+'T00:00:00'),y=new Date(b+'T00:00:00');return Math.max(1,Math.round((y-x)/86400000)+1)}
+function mastersNow(){try{if(typeof masters!=='undefined'&&Array.isArray(masters))return masters}catch(_){}return Array.isArray(window.masters)?window.masters:[]}
+function itemsNow(){try{if(typeof items!=='undefined'&&Array.isArray(items))return items}catch(_){}return Array.isArray(window.items)?window.items:[]}
+function masterFor(i,all){return all.find(m=>text(m.kode)===text(i.kode))||all.find(m=>text(m.item)===text(i.item))||null}
+function itemCost(i,m){const unit=num(i.harga_modal??m?.harga_modal);const days=dayCount(text(i.mulai||i.tanggal_mulai),text(i.selesai||i.tanggal_selesai));const qty=Math.max(1,num(i.qty??i.jumlah)||1),w=num(i.lebar),h=num(i.tinggi),l=num(i.panjang),type=text(i.tipe||i.tipe_perhitungan||m?.tipe_perhitungan||m?.tipe||'qty').toLowerCase();if(type==='luas')return w*h*unit*days;if(type==='rigging')return ((l*2)+(h*2))*unit*days;if(type==='level')return w*unit*days;return qty*unit*days}
+function render(){const totalEl=document.querySelector('#total');if(!totalEl)return;const card=totalEl.closest('.card');if(!card)return;let p=document.querySelector('#pmInternalMargin');if(!p){p=document.createElement('section');p.id='pmInternalMargin';p.className='no-print pm-internal-margin';card.insertAdjacentElement('afterend',p)}const list=itemsNow().filter(i=>text(i.kode)||text(i.item)),all=mastersNow(),d=list.map(i=>({i,m:masterFor(i,all)})),missing=d.filter(x=>num(x.i.harga_modal??x.m?.harga_modal)<=0),cost=d.reduce((s,x)=>s+itemCost(x.i,x.m),0),revenue=num(window.__pmNetTotal??totalEl.textContent),profit=revenue-cost,margin=revenue>0?profit/revenue*100:0,ready=list.length>0&&missing.length===0,pass=ready&&margin>=20,tone=!ready?'warn':pass?'good':'bad';p.innerHTML=`<div class="pm-margin-head"><div><strong>INDIKATOR MARGIN INTERNAL</strong><small>Hanya untuk internal • tidak masuk surat / PDF customer</small></div><span class="pm-margin-badge ${tone}">${ready?margin.toFixed(2)+'%':'DATA MODAL BELUM LENGKAP'}</span></div><div class="pm-margin-grid"><div><span>Total Modal</span><b>${money(cost)}</b></div><div><span>Laba Kotor</span><b>${money(profit)}</b></div><div><span>Margin</span><b class="${tone}">${ready?margin.toFixed(2)+'%':'—'}</b></div><div><span>Batas Internal</span><b>≥ 20%</b></div></div><div class="pm-margin-state ${tone}">${!list.length?'Tambahkan item untuk menghitung margin.':!ready?missing.length+' item belum memiliki harga modal di Master Harga.':pass?'✓ Margin memenuhi batas internal minimum 20%.':'⚠ Margin di bawah batas internal minimum 20%.'}</div>`}
+function schedule(){clearTimeout(window.__pmMarginRenderTimer);window.__pmMarginRenderTimer=setTimeout(render,0)}
+document.addEventListener('input',schedule,true);document.addEventListener('change',schedule,true);document.addEventListener('click',schedule,true);[0,250,800,1500].forEach(d=>setTimeout(render,d));
 }());
