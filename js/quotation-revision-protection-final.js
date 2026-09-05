@@ -1,4 +1,4 @@
-/* Priangan Multimedia — quotation revision protection FINAL
+/* Priangan Multimedia — quotation revision protection FINAL v2
  * A revision is created ONLY when quotation business data actually changes.
  * Re-saving an unchanged quotation keeps the existing quotation number.
  */
@@ -27,11 +27,12 @@
     };
   }
 
-  async function restoreNumber(id,no){
+  async function setNumber(id,no){
     const d=DB();if(!d||!id||!no)return;
     const r=await d.from('penawaran').update({nomor_penawaran:no}).eq('id',id);
-    if(r.error)console.warn('[PM] restore quotation number',r.error);
-    window.__PM_LAST_QUOTATION_NUMBER=no;window.__PM_PRINT_DOCUMENT_NUMBER=no;
+    if(r.error)throw r.error;
+    window.__PM_LAST_QUOTATION_NUMBER=no;
+    window.__PM_PRINT_DOCUMENT_NUMBER=no;
   }
 
   async function install(){
@@ -49,17 +50,24 @@
         const result=await original.apply(this,arguments);
         const after=await snapshot(id);
         if(before&&after&&!same(before,after)){
-          const d=DB();const r=await d.from('penawaran').select('nomor_penawaran').eq('id',id).maybeSingle();
-          const current=S(r.data?.nomor_penawaran);
-          if(oldNo&&current===oldNo){return result}
-          if(oldNo&&current&&current===nextRevision(oldNo)){window.__PM_LAST_QUOTATION_NUMBER=current;window.__PM_PRINT_DOCUMENT_NUMBER=current;return result}
-          if(oldNo){await restoreNumber(id,nextRevision(oldNo))}
+          // Business data changed: create exactly ONE revision.
+          // The numbering module no longer increments automatically.
+          if(oldNo){
+            const d=DB();const r=await d.from('penawaran').select('nomor_penawaran').eq('id',id).maybeSingle();
+            const current=S(r.data?.nomor_penawaran);
+            const expected=nextRevision(oldNo);
+            if(current!==expected)await setNumber(id,expected);
+            else{window.__PM_LAST_QUOTATION_NUMBER=current;window.__PM_PRINT_DOCUMENT_NUMBER=current}
+          }
         }else if(before&&after&&oldNo){
-          await restoreNumber(id,oldNo);
+          // Absolutely no business-data change: keep the exact original number.
+          const d=DB();const r=await d.from('penawaran').select('nomor_penawaran').eq('id',id).maybeSingle();
+          if(S(r.data?.nomor_penawaran)!==oldNo)await setNumber(id,oldNo);
+          else{window.__PM_LAST_QUOTATION_NUMBER=oldNo;window.__PM_PRINT_DOCUMENT_NUMBER=oldNo}
         }
         return result;
       }catch(e){
-        if(oldNo)try{await restoreNumber(id,oldNo)}catch(_){}
+        if(oldNo)try{await setNumber(id,oldNo)}catch(_){}
         throw e;
       }
     };
