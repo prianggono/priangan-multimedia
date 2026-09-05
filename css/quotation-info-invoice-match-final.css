@@ -1,0 +1,80 @@
+/* Priangan Multimedia — quotation recipient/event card matches invoice info card */
+#pmPrintPreview .pm-info-card{
+  display:grid!important;
+  grid-template-columns:1.25fr 1fr!important;
+  gap:0!important;
+  margin-top:12px!important;
+  border:1px solid #dbe3ef!important;
+  border-radius:8px!important;
+  overflow:hidden!important;
+  background:#f8fafc!important;
+}
+
+#pmPrintPreview .pm-info-section{
+  min-height:0!important;
+  padding:9px 11px!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  font-size:7.8pt!important;
+  line-height:1.5!important;
+  color:#475569!important;
+  box-sizing:border-box!important;
+}
+
+#pmPrintPreview .pm-info-section + .pm-info-section{
+  border-left:1px solid #dbe3ef!important;
+  background:#f1f5f9!important;
+}
+
+#pmPrintPreview .pm-section-label{
+  margin-bottom:4px!important;
+  color:#64748b!important;
+  font-size:6.6pt!important;
+  line-height:1.2!important;
+  font-weight:800!important;
+  letter-spacing:1px!important;
+}
+
+#pmPrintPreview .pm-client-name,
+#pmPrintPreview .pm-event-name{
+  color:#111827!important;
+  font-weight:800!important;
+  font-size:9.3pt!important;
+  line-height:1.25!important;
+}
+
+#pmPrintPreview .pm-period-label{
+  margin-top:5px!important;
+  margin-bottom:1px!important;
+  color:#64748b!important;
+  font-size:6.6pt!important;
+  line-height:1.2!important;
+  font-weight:800!important;
+  letter-spacing:1px!important;
+}
+
+#pmPrintPreview .pm-event-section{
+  color:#475569!important;
+}
+
+@media print{
+  #pmPrintPreview .pm-info-card{
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+  }
+  #pmPrintPreview .pm-info-section + .pm-info-section{
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+  }
+}
+
+@media (max-width:700px){
+  #pmPrintPreview .pm-info-card{
+    grid-template-columns:1fr!important;
+  }
+  #pmPrintPreview .pm-info-section + .pm-info-section{
+    border-left:0!important;
+    border-top:1px solid #dbe3ef!important;
+  }
+}
