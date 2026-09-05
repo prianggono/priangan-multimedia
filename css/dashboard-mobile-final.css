@@ -1,0 +1,44 @@
+/* Priangan Multimedia — Dashboard Mobile FINAL */
+/* Mobile-only presentation fix. No data or calculation changes. */
+@media (max-width: 620px){
+  html,body{width:100%;max-width:100%;overflow-x:hidden}
+  main{width:100%;min-width:0;overflow-x:hidden}
+  #content.pmcy{width:100%;max-width:100%;margin:0;padding:12px;min-width:0;overflow:hidden}
+  #content.pmcy .cyhero{padding:16px;margin-bottom:12px;border-radius:13px}
+  #content.pmcy .cyhero h1{font-size:21px;line-height:1.2;margin:5px 0 7px}
+  #content.pmcy .cyhero p{font-size:11px;line-height:1.45}
+  #content.pmcy .cybtns{gap:7px;margin-top:12px}
+  #content.pmcy .cybtns button{flex:1 1 calc(50% - 7px);min-width:0;padding:9px 8px;font-size:11px}
+  #content.pmcy .cygrid{grid-template-columns:1fr;gap:10px}
+  #content.pmcy .cykpi{min-height:88px;padding:13px}
+  #content.pmcy .cykpi strong{font-size:20px;margin-top:8px}
+  #content.pmcy .cyrow{grid-template-columns:1fr;gap:10px;margin-top:10px}
+  #content.pmcy .cypanel{padding:13px;min-width:0;overflow:hidden}
+  #content.pmcy .cytitle{margin-bottom:8px}
+  #content.pmcy .cytitle b{font-size:13px}
+  #content.pmcy .cytitle i{font-size:8px;padding:3px 6px}
+
+  /* Chart: compact, readable, no giant empty vertical area. */
+  #content.pmcy .chart{height:190px;min-height:190px;padding:8px 2px 22px;gap:4px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+  #content.pmcy .chart::-webkit-scrollbar{display:none}
+  #content.pmcy .month{height:158px;min-width:43px}
+  #content.pmcy .bars{height:135px;gap:2px}
+  #content.pmcy .bar{width:10px;min-height:2px}
+  #content.pmcy .month label{font-size:8px;margin-top:5px}
+  #content.pmcy .legend{gap:10px;font-size:8px}
+
+  /* Status donut stays completely inside the phone viewport. */
+  #content.pmcy .donut{width:128px;height:128px;margin:14px auto 16px;flex:none}
+  #content.pmcy .donut:after{width:74px;height:74px}
+  #content.pmcy .donut b{font-size:10px;text-align:center;line-height:1.1;max-width:65px}
+  #content.pmcy .legendlist{gap:6px}
+  #content.pmcy .legendlist div{font-size:9px}
+
+  #content.pmcy .cybottom{grid-template-columns:1fr;gap:10px;margin-top:10px}
+  #content.pmcy .cytable{min-width:0}
+  #content.pmcy .cytable th,#content.pmcy .cytable td{padding:7px 5px}
+}
+
+@media (min-width:621px){
+  #content.pmcy .chart{overflow-x:auto;overflow-y:hidden}
+}
