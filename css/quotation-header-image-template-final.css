@@ -1,0 +1,193 @@
+/* Priangan Multimedia — quotation header template based on supplied artwork */
+#pmPrintPreview .pm-letterhead{
+  position:relative!important;
+  display:grid!important;
+  grid-template-columns:120px minmax(0,1fr) 190px!important;
+  column-gap:16px!important;
+  align-items:center!important;
+  height:118px!important;
+  min-height:118px!important;
+  padding:8px 18px!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+  border:1px solid #173f78!important;
+  border-radius:10px!important;
+  background:
+    radial-gradient(circle at 92% 30%,rgba(53,130,246,.34),transparent 34%),
+    linear-gradient(110deg,#020817 0%,#071a38 38%,#0c3568 100%)!important;
+  box-shadow:0 7px 20px rgba(15,23,42,.22)!important;
+}
+#pmPrintPreview .pm-letterhead::before{
+  content:""!important;
+  position:absolute!important;
+  inset:0!important;
+  pointer-events:none!important;
+  opacity:.22!important;
+  background-image:linear-gradient(115deg,transparent 0 47%,rgba(255,255,255,.12) 48%,transparent 50%),linear-gradient(75deg,transparent 0 47%,rgba(34,211,238,.10) 48%,transparent 50%)!important;
+  background-size:80px 80px,120px 120px!important;
+}
+#pmPrintPreview .pm-letterhead::after{
+  content:""!important;
+  position:absolute!important;
+  left:0!important;
+  right:0!important;
+  bottom:0!important;
+  height:4px!important;
+  background:linear-gradient(90deg,#2563eb,#06b6d4,#60a5fa)!important;
+}
+
+/* LOGO */
+#pmPrintPreview .pm-letterhead .pm-logo-wrap{
+  grid-column:1!important;
+  grid-row:1!important;
+  width:104px!important;
+  height:104px!important;
+  margin:0!important;
+  padding:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  position:relative!important;
+  z-index:2!important;
+}
+#pmPrintPreview .pm-letterhead .pm-logo-wrap img,
+#pmPrintPreview .pm-letterhead .pm-logo-wrap .logo{
+  width:104px!important;
+  height:104px!important;
+  max-width:104px!important;
+  max-height:104px!important;
+  object-fit:contain!important;
+  display:block!important;
+  margin:0!important;
+}
+
+/* BRAND — fixed beside logo, never centered */
+#pmPrintPreview .pm-letterhead .pm-brand{
+  grid-column:2!important;
+  grid-row:1!important;
+  min-width:0!important;
+  width:auto!important;
+  margin:0!important;
+  padding:0!important;
+  position:relative!important;
+  z-index:2!important;
+  text-align:left!important;
+  overflow:hidden!important;
+}
+#pmPrintPreview .pm-letterhead .pm-brand-name,
+#pmPrintPreview .pm-letterhead .pm-brand>div:first-child{
+  margin:0!important;
+  padding:0!important;
+  color:#fff!important;
+  font-size:18px!important;
+  line-height:1.05!important;
+  font-weight:900!important;
+  letter-spacing:.7px!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:clip!important;
+  text-shadow:0 2px 4px rgba(0,0,0,.6)!important;
+}
+#pmPrintPreview .pm-letterhead .pm-brand-sub{
+  margin-top:4px!important;
+  color:#67e8f9!important;
+  font-size:8pt!important;
+  line-height:1.1!important;
+  font-weight:900!important;
+  letter-spacing:1.5px!important;
+  white-space:nowrap!important;
+}
+#pmPrintPreview .pm-letterhead .pm-brand p{
+  margin:3px 0 0!important;
+  padding:0!important;
+  color:#f1f5f9!important;
+  font-size:7.1pt!important;
+  line-height:1.35!important;
+  font-weight:600!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:clip!important;
+  text-shadow:0 1px 3px rgba(0,0,0,.55)!important;
+}
+
+/* DOCUMENT NUMBER — dedicated right column */
+#pmPrintPreview .pm-letterhead .pm-doc-tag{
+  grid-column:3!important;
+  grid-row:1!important;
+  min-width:0!important;
+  width:190px!important;
+  max-width:190px!important;
+  margin:0!important;
+  padding:0 2px 0 10px!important;
+  box-sizing:border-box!important;
+  text-align:right!important;
+  position:relative!important;
+  z-index:3!important;
+  overflow:hidden!important;
+}
+#pmPrintPreview .pm-letterhead .pm-doc-tag span,
+#pmPrintPreview .pm-letterhead .pm-doc-tag b{
+  display:block!important;
+  margin:0!important;
+  padding:0!important;
+  color:#bae6fd!important;
+  font-size:7pt!important;
+  line-height:1.1!important;
+  font-weight:900!important;
+  letter-spacing:1.4px!important;
+  white-space:nowrap!important;
+}
+#pmPrintPreview .pm-letterhead .pm-doc-tag strong{
+  display:block!important;
+  width:100%!important;
+  margin:5px 0 0!important;
+  padding:0!important;
+  color:#fff!important;
+  font-size:8.2pt!important;
+  line-height:1.15!important;
+  font-weight:900!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:clip!important;
+  text-align:right!important;
+  text-shadow:0 1px 3px rgba(0,0,0,.6)!important;
+}
+
+@media print{
+  #pmPrintPreview .pm-letterhead{
+    display:grid!important;
+    grid-template-columns:120px minmax(0,1fr) 190px!important;
+    column-gap:16px!important;
+    height:118px!important;
+    min-height:118px!important;
+    padding:8px 18px!important;
+    box-sizing:border-box!important;
+    overflow:hidden!important;
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+  }
+}
+
+@media (max-width:700px){
+  #pmPrintPreview .pm-letterhead{
+    grid-template-columns:82px minmax(0,1fr)!important;
+    column-gap:10px!important;
+    height:auto!important;
+    min-height:94px!important;
+    padding:7px 10px!important;
+  }
+  #pmPrintPreview .pm-letterhead .pm-logo-wrap{
+    width:76px!important;height:76px!important;
+  }
+  #pmPrintPreview .pm-letterhead .pm-logo-wrap img,
+  #pmPrintPreview .pm-letterhead .pm-logo-wrap .logo{
+    width:76px!important;height:76px!important;
+  }
+  #pmPrintPreview .pm-letterhead .pm-doc-tag{
+    grid-column:2!important;
+    grid-row:2!important;
+    width:auto!important;
+    max-width:none!important;
+    padding:3px 0 0!important;
+  }
+}
