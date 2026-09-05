@@ -1,0 +1,80 @@
+/* Invoice letterhead — use the same uploaded Priangan Multimedia header artwork as quotation. */
+#pmInvoicePreview .pm-inv-head{
+  position:relative!important;
+  display:block!important;
+  min-height:0!important;
+  height:auto!important;
+  aspect-ratio:2048 / 390!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  overflow:hidden!important;
+  background-image:url('../header%201.png')!important;
+  background-size:100% 100%!important;
+  background-repeat:no-repeat!important;
+  background-position:center!important;
+  box-shadow:none!important;
+}
+#pmInvoicePreview .pm-inv-head::before,
+#pmInvoicePreview .pm-inv-head::after{
+  display:none!important;
+}
+
+/* The uploaded artwork already contains logo, company name, tagline and contact details. */
+#pmInvoicePreview .pm-inv-head>div:first-child{
+  display:none!important;
+}
+
+/* Put only the dynamic invoice document number/date in the blank right side. */
+#pmInvoicePreview .pm-inv-doc{
+  position:absolute!important;
+  right:3.2%!important;
+  top:25%!important;
+  width:28%!important;
+  min-width:0!important;
+  padding:0!important;
+  margin:0!important;
+  text-align:right!important;
+  z-index:3!important;
+}
+#pmInvoicePreview .pm-inv-doc b{
+  margin:0!important;
+  color:#67e8f9!important;
+  font-size:7.2pt!important;
+  letter-spacing:1.4px!important;
+  text-shadow:0 1px 3px rgba(0,0,0,.7)!important;
+}
+#pmInvoicePreview .pm-inv-doc strong{
+  margin-top:4px!important;
+  color:#fff!important;
+  font-size:9pt!important;
+  font-weight:900!important;
+  text-shadow:0 1px 3px rgba(0,0,0,.7)!important;
+}
+#pmInvoicePreview .pm-inv-dates{
+  margin-top:4px!important;
+  color:#dbeafe!important;
+  font-size:6.8pt!important;
+  line-height:1.45!important;
+  text-shadow:0 1px 3px rgba(0,0,0,.7)!important;
+}
+
+@media print{
+  #pmInvoicePreview .pm-inv-head{
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+    background-image:url('../header%201.png')!important;
+    background-size:100% 100%!important;
+  }
+}
+
+@media (max-width:700px){
+  #pmInvoicePreview .pm-inv-doc{
+    right:3%!important;
+    top:22%!important;
+    width:30%!important;
+  }
+  #pmInvoicePreview .pm-inv-doc b{font-size:5.8pt!important}
+  #pmInvoicePreview .pm-inv-doc strong{font-size:7pt!important}
+  #pmInvoicePreview .pm-inv-dates{font-size:5.6pt!important}
+}
