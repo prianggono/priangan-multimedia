@@ -1,0 +1,61 @@
+/* Priangan Multimedia — quotation document number alignment FINAL */
+
+/* Keep QUOTATION + document number safely inside the letterhead box. */
+#pmPrintPreview .pm-letterhead{
+  overflow:hidden!important;
+}
+
+#pmPrintPreview .pm-doc-tag{
+  flex:0 0 180px!important;
+  width:180px!important;
+  min-width:180px!important;
+  max-width:180px!important;
+  box-sizing:border-box!important;
+  padding-left:12px!important;
+  padding-right:12px!important;
+  text-align:right!important;
+  overflow:hidden!important;
+}
+
+#pmPrintPreview .pm-doc-tag span,
+#pmPrintPreview .pm-doc-tag strong{
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  box-sizing:border-box!important;
+  text-align:right!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:clip!important;
+}
+
+#pmPrintPreview .pm-doc-tag strong{
+  font-size:8pt!important;
+  letter-spacing:.1px!important;
+}
+
+@media print{
+  #pmPrintPreview .pm-letterhead{
+    overflow:hidden!important;
+  }
+  #pmPrintPreview .pm-doc-tag{
+    flex:0 0 180px!important;
+    width:180px!important;
+    min-width:180px!important;
+    max-width:180px!important;
+    padding-left:12px!important;
+    padding-right:12px!important;
+    overflow:hidden!important;
+  }
+}
+
+@media (max-width:700px){
+  #pmPrintPreview .pm-doc-tag{
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+    flex:0 0 auto!important;
+    padding:5px 6px 0!important;
+    text-align:right!important;
+  }
+}
