@@ -1,0 +1,61 @@
+@media (max-width:700px){
+body.pm-preview-open{overflow:hidden!important}
+#pmPrintPreview,#pmInvoicePreview{position:fixed!important;inset:0!important;z-index:99999!important;overflow:hidden!important;background:#e9edf3!important}
+#pmPrintPreview .pm-print-toolbar,#pmInvoicePreview .pm-inv-toolbar{height:auto!important;min-height:58px!important;padding:8px 10px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;flex-wrap:wrap!important}
+#pmPrintPreview .pm-print-scroll,#pmInvoicePreview .pm-inv-scroll{padding:10px!important;overflow:auto!important;-webkit-overflow-scrolling:touch!important;display:block!important}
+#pmPrintPreview .pm-a4,#pmInvoicePreview .pm-inv-a4{width:100%!important;min-width:0!important;max-width:100%!important;height:auto!important;min-height:0!important;margin:0 auto!important;box-sizing:border-box!important;overflow:visible!important;box-shadow:0 3px 18px rgba(15,23,42,.15)!important}
+#pmPrintPreview .pm-print-actions,#pmInvoicePreview .pm-inv-actions{display:flex!important;gap:6px!important}
+#pmPrintPreview .pm-print-actions button,#pmInvoicePreview .pm-inv-actions button{font-size:10px!important;padding:8px 9px!important}
+#pmPrintPreview .pm-letterhead{display:grid!important;grid-template-columns:56px minmax(0,1fr)!important;gap:9px!important;padding:9px!important;min-height:0!important}
+#pmPrintPreview .pm-logo-wrap{width:56px!important;height:56px!important}
+#pmPrintPreview .pm-logo-wrap img.logo{width:52px!important;height:52px!important}
+#pmPrintPreview .pm-brand-name{font-size:13px!important;line-height:1.1!important}
+#pmPrintPreview .pm-brand-sub{font-size:7px!important;letter-spacing:1px!important}
+#pmPrintPreview .pm-brand p{font-size:7px!important;line-height:1.3!important;overflow-wrap:anywhere!important}
+#pmPrintPreview .pm-doc-tag{grid-column:1/-1!important;text-align:right!important;padding-top:5px!important}
+#pmPrintPreview .pm-title-row{display:block!important;margin-top:10px!important}
+#pmPrintPreview .pm-title-row h1{font-size:15px!important}
+#pmPrintPreview .pm-info-card{grid-template-columns:1fr!important;margin-top:9px!important}
+#pmPrintPreview .pm-info-section{padding:8px!important;font-size:8px!important;line-height:1.4!important}
+#pmPrintPreview .pm-info-section+.pm-info-section{border-left:0!important;border-top:1px solid #dbe3ef!important}
+#pmPrintPreview .pm-items{width:100%!important;table-layout:fixed!important;font-size:7px!important}
+#pmPrintPreview .pm-items th,#pmPrintPreview .pm-items td{padding:5px 3px!important;word-break:break-word!important;white-space:normal!important;line-height:1.25!important}
+#pmPrintPreview .pm-items th:nth-child(2),#pmPrintPreview .pm-items td:nth-child(2){width:31%!important}
+#pmPrintPreview .pm-items th:nth-child(3),#pmPrintPreview .pm-items td:nth-child(3){width:17%!important}
+#pmPrintPreview .pm-items th:nth-child(4),#pmPrintPreview .pm-items td:nth-child(4){width:18%!important}
+#pmPrintPreview .pm-items th:nth-child(5),#pmPrintPreview .pm-items td:nth-child(5){width:17%!important}
+#pmPrintPreview .pm-items th:nth-child(6),#pmPrintPreview .pm-items td:nth-child(6){width:17%!important}
+#pmPrintPreview .pm-terms,#pmPrintPreview .pm-signature{margin-top:9px!important}
+#pmPrintPreview .pm-terms-body{font-size:7px!important;line-height:1.4!important}
+#pmPrintPreview .pm-signature img.signature{max-width:130px!important;height:58px!important}
+#pmPrintPreview .pm-footer{position:static!important;margin-top:12px!important;font-size:6.5px!important}
+#pmInvoicePreview .pm-inv-a4{padding:14px!important}
+#pmInvoicePreview .pm-inv-head{display:grid!important;grid-template-columns:52px minmax(0,1fr)!important;gap:8px!important;min-height:0!important;padding:8px!important}
+#pmInvoicePreview .pm-inv-head>div:first-child{grid-template-columns:52px minmax(0,1fr)!important;column-gap:8px!important}
+#pmInvoicePreview .pm-inv-logo{width:48px!important;height:48px!important;max-width:48px!important;max-height:48px!important}
+#pmInvoicePreview .pm-inv-brand{font-size:13px!important}
+#pmInvoicePreview .pm-inv-sub{font-size:6.5px!important;letter-spacing:1px!important}
+#pmInvoicePreview .pm-inv-contact{font-size:6px!important;line-height:1.3!important}
+#pmInvoicePreview .pm-inv-doc{grid-column:1/-1!important;text-align:right!important;min-width:0!important;padding:5px 0 0!important}
+#pmInvoicePreview .pm-inv-info{grid-template-columns:1fr!important;margin-top:9px!important}
+#pmInvoicePreview .pm-inv-box{padding:8px!important;font-size:7px!important;line-height:1.4!important}
+#pmInvoicePreview .pm-inv-box+.pm-inv-box{border-left:0!important;border-top:1px solid #dbe3ef!important}
+#pmInvoicePreview .pm-inv-client{font-size:9px!important}
+#pmInvoicePreview .pm-inv-table{font-size:6.5px!important;table-layout:fixed!important}
+#pmInvoicePreview .pm-inv-table th,#pmInvoicePreview .pm-inv-table td{padding:5px 3px!important;word-break:break-word!important;white-space:normal!important;line-height:1.25!important}
+#pmInvoicePreview .pm-inv-table th:nth-child(1),#pmInvoicePreview .pm-inv-table td:nth-child(1){width:6%!important}
+#pmInvoicePreview .pm-inv-table th:nth-child(2),#pmInvoicePreview .pm-inv-table td:nth-child(2){width:31%!important}
+#pmInvoicePreview .pm-inv-table th:nth-child(3),#pmInvoicePreview .pm-inv-table td:nth-child(3){width:17%!important}
+#pmInvoicePreview .pm-inv-table th:nth-child(4),#pmInvoicePreview .pm-inv-table td:nth-child(4){width:18%!important}
+#pmInvoicePreview .pm-inv-table th:nth-child(5),#pmInvoicePreview .pm-inv-table td:nth-child(5){width:28%!important}
+#pmInvoicePreview .pm-inv-pay{grid-template-columns:1fr!important;margin-top:9px!important}
+#pmInvoicePreview .pm-inv-paybox{padding:8px!important;font-size:7px!important}
+#pmInvoicePreview .pm-inv-paybox:last-child{border-left:1px solid #dbe3ef!important;margin-top:6px!important}
+#pmInvoicePreview .pm-inv-payrow{font-size:7px!important;margin:3px 0!important}
+#pmInvoicePreview .pm-inv-balance{font-size:9px!important}
+#pmInvoicePreview .pm-inv-terms{margin-top:9px!important;font-size:6.5px!important}
+#pmInvoicePreview .pm-inv-sign{width:150px!important;min-height:90px!important;margin:10px 0 0 auto!important;font-size:6.5px!important}
+#pmInvoicePreview .pm-inv-sign img{max-width:125px!important;height:58px!important}
+#pmInvoicePreview .pm-inv-line{width:125px!important}
+#pmInvoicePreview .pm-inv-footer{position:static!important;margin-top:10px!important;font-size:6px!important}
+}
