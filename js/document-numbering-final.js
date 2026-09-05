@@ -3,7 +3,11 @@
  *   Quotation: PM-[EVENT]-[YEAR]-[6 DIGITS]
  *   Revision:  PM-[EVENT]-[YEAR]-[6 DIGITS]_1, _2, ...
  *   Invoice:   INV-[QUOTATION NUMBER]
- * PDF print titles follow the same document number.
+ *
+ * IMPORTANT:
+ *   This module NEVER creates a revision merely because Save is pressed.
+ *   Revision creation is handled by quotation-revision-protection-final.js
+ *   only after actual quotation business data changes.
  */
 (function(){
   'use strict';
@@ -16,7 +20,13 @@
   const toast=t=>typeof window.msg==='function'?window.msg(t):console.warn('[PM]',t);
 
   function slug(v){return S(v).normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-+|-+$/g,'').replace(/-+/g,'-').toLowerCase()||'event'}
-  function baseNumber(eventName,seed){const year=new Date().getFullYear();const digits=String(seed??Date.now()).replace(/\D/g,'').slice(-6).padStart(6,'0');return `PM-${slug(eventName)}-${year}-${digits}`}
+  function digitsFromNumber(no,seed){
+    const raw=S(no).replace(/_\d+$/,'').match(/(\d{6})$/);
+    if(raw)return raw[1];
+    const s=String(seed??Date.now()).replace(/\D/g,'');
+    return s.slice(-6).padStart(6,'0');
+  }
+  function baseNumber(eventName,seed,sourceNo){const year=new Date().getFullYear();const digits=digitsFromNumber(sourceNo,seed);return `PM-${slug(eventName)}-${year}-${digits}`}
   function splitRevision(no){const m=S(no).match(/^(.*?)(?:_(\d+))?$/);return{base:m?.[1]||S(no),rev:m?.[2]?Number(m[2]):0}}
   function nextRevision(no){const x=splitRevision(no);return `${x.base}_${x.rev+1}`}
 
@@ -26,10 +36,20 @@
     const d=dbx();if(!d)return null;
     const row=await quoteById(id);if(!row)return null;
     let number=S(row.nomor_penawaran);
-    if(isEdit){const oldNo=S(oldRow?.nomor_penawaran);number=oldNo?nextRevision(oldNo):baseNumber(eventName||row.nama_event,id)}
-    else if(!/^PM-/i.test(number)||/^PM-\d{6}$/i.test(number)){number=baseNumber(eventName||row.nama_event,id)}
-    else{const p=number.split('-');if(p.length===2&&/^\d+$/.test(p[1]))number=baseNumber(eventName||row.nama_event,id)}
-    if(number!==S(row.nomor_penawaran)){const u=await d.from('penawaran').update({nomor_penawaran:number}).eq('id',id);if(u.error)throw u.error}
+    if(isEdit){
+      // NEVER increment here. Save-without-change must preserve the exact number.
+      // The revision-protection module decides whether an actual revision is needed.
+      number=S(oldRow?.nomor_penawaran)||number||baseNumber(eventName||row.nama_event,id);
+    }else if(!/^PM-/i.test(number)||/^PM-\d{6}$/i.test(number)){
+      number=baseNumber(eventName||row.nama_event,id,number);
+    }else{
+      const p=number.split('-');
+      if(p.length===2&&/^\d+$/.test(p[1]))number=baseNumber(eventName||row.nama_event,id,number);
+    }
+    if(number!==S(row.nomor_penawaran)){
+      const u=await d.from('penawaran').update({nomor_penawaran:number}).eq('id',id);
+      if(u.error)throw u.error;
+    }
     window.__PM_LAST_QUOTATION_NUMBER=number;window.__PM_LAST_QUOTATION_ID=id;return number
   }
 
@@ -40,8 +60,12 @@
       const editing=N(window.__pmEditingQuotationId||window.__PM_EDIT_QUOTATION_ID);let oldRow=null;if(editing)oldRow=await quoteById(editing);
       const eventName=S(document.querySelector('#qeve')?.value);const result=await original.apply(this,arguments);
       try{
-        if(editing){const no=await normalizeSavedQuote(editing,true,oldRow,eventName);if(no)toast(`Penawaran ${no} berhasil diperbarui.`)}
-        else{const d=dbx();if(d){const r=await d.from('penawaran').select('id,nomor_penawaran,nama_event,nama_client,perusahaan').order('id',{ascending:false}).limit(1).maybeSingle();if(!r.error&&r.data)await normalizeSavedQuote(r.data.id,false,null,eventName||r.data.nama_event)}}
+        if(editing){
+          const no=await normalizeSavedQuote(editing,true,oldRow,eventName);
+          if(no)window.__PM_LAST_QUOTATION_NUMBER=no;
+        }else{
+          const d=dbx();if(d){const r=await d.from('penawaran').select('id,nomor_penawaran,nama_event,nama_client,perusahaan').order('id',{ascending:false}).limit(1).maybeSingle();if(!r.error&&r.data)await normalizeSavedQuote(r.data.id,false,null,eventName||r.data.nama_event)}
+        }
       }catch(e){console.error('[PM] numbering save',e)}
       return result
     };
