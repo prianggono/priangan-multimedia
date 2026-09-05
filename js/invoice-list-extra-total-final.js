@@ -1,11 +1,11 @@
-/* Priangan Multimedia — Invoice list total sync FINAL
+/* Priangan Multimedia — Invoice list total sync FINAL v2
  * Adds persisted invoice-only items to the Invoice list total and balance.
  * Quotation totals remain unchanged.
  */
 (function(){
   'use strict';
-  if(window.__PM_INVOICE_LIST_EXTRA_TOTAL_FINAL)return;
-  window.__PM_INVOICE_LIST_EXTRA_TOTAL_FINAL=true;
+  if(window.__PM_INVOICE_LIST_EXTRA_TOTAL_FINAL_V2)return;
+  window.__PM_INVOICE_LIST_EXTRA_TOTAL_FINAL_V2=true;
 
   const N=v=>{
     if(typeof v==='number')return Number.isFinite(v)?v:0;
@@ -34,10 +34,11 @@
       const id=m[1],extra=sums[id]||0;if(!extra)return;
       const cells=tr.children;if(cells.length<8)return;
       const totalCell=cells[4],paidCell=cells[5];
-      const baseText=totalCell.dataset.pmBaseTotal||totalCell.textContent;
-      const base=N(baseText);totalCell.dataset.pmBaseTotal=String(base);
+      const base=N(totalCell.dataset.pmBaseTotal||totalCell.textContent);
+      totalCell.dataset.pmBaseTotal=String(base);
       const total=base+extra;totalCell.textContent=M(total);
-      const paid= N(paidCell.dataset.pmBasePaid||String(paidCell.textContent).split('Sisa')[0]);
+      const strong=paidCell.querySelector('strong');
+      const paid=strong?N(strong.textContent):N(paidCell.dataset.pmBasePaid||0);
       paidCell.dataset.pmBasePaid=String(paid);
       const amount=paidCell.querySelector('div');
       if(amount)amount.textContent='Sisa '+M(Math.max(0,total-paid));
@@ -45,10 +46,10 @@
   }
 
   function patch(){
-    if(typeof window.invoicePage!=='function'||window.invoicePage.__pmListExtra)return false;
+    if(typeof window.invoicePage!=='function'||window.invoicePage.__pmListExtraV2)return false;
     const old=window.invoicePage;
     const wrapped=async function(){const r=await old.apply(this,arguments);setTimeout(()=>sync().catch(()=>{}),50);setTimeout(()=>sync().catch(()=>{}),400);return r;};
-    wrapped.__pmListExtra=true;window.invoicePage=wrapped;return true;
+    wrapped.__pmListExtraV2=true;window.invoicePage=wrapped;return true;
   }
   const mo=new MutationObserver(()=>patch());
   mo.observe(document.documentElement,{childList:true,subtree:true});
