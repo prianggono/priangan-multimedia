@@ -1,13 +1,11 @@
-/* Priangan Multimedia — quotation integrity FINAL.
- * This is a read/repair layer only. It does not replace the quotation renderer,
- * save engine, price editor, history, invoice or finance modules.
- * Responsibilities: keep saved discount coherent on Edit and keep the internal
- * margin indicator visible/accurate after quotation DOM rerenders.
+/* Priangan Multimedia — quotation integrity FINAL v2.
+ * Read/repair layer only. Deliberately avoids broad body MutationObserver loops.
+ * Refresh is driven by quotation events and short post-render passes.
  */
 (function(){
 'use strict';
-if(window.__PM_QUOTATION_INTEGRITY_FINAL)return;
-window.__PM_QUOTATION_INTEGRITY_FINAL=true;
+if(window.__PM_QUOTATION_INTEGRITY_FINAL_V2)return;
+window.__PM_QUOTATION_INTEGRITY_FINAL_V2=true;
 const S=v=>String(v??'').trim();
 const N=v=>{if(typeof v==='number')return Number.isFinite(v)?v:0;const s=S(v).replace(/[^0-9,.-]/g,'').replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.');const n=Number(s);return Number.isFinite(n)?n:0};
 const M=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Math.max(0,Math.round(N(v))));
@@ -23,9 +21,8 @@ function repairDiscount(){
  const p=document.querySelector('#pmDiscPct'),r=document.querySelector('#pmDisc'),g=document.querySelector('#pmGrand'),t=document.querySelector('#total');
  if(!p||!r||document.activeElement===p)return;
  const b=base();if(!b)return;
- const rp=Math.max(0,Math.min(b,N(r.value)));
- if(rp<=0)return;
- const raw=S(p.value);if(/^\d{1,3}$/.test(raw)&&Number(raw)>0)return;
+ const rp=Math.max(0,Math.min(b,N(r.value)));if(rp<=0)return;
+ const raw=S(p.value);if(/^\d{1,3}$/.test(raw)&&Number(raw)>=0&&Number(raw)<=100)return;
  const pct=Math.max(0,Math.min(100,Math.round(rp/b*100))),d=Math.round(b*pct/100),net=Math.max(0,b-d);
  p.value=String(pct);r.value=M(d);if(g)g.textContent=M(net);if(t)t.textContent=M(net);
  window.__PM_DISC_MODE='pct';window.__pmDiscountBase=b;window.__pmDiscountValue=d;window.__pmDiscountPct=pct;window.__pmNetTotal=net;
@@ -48,6 +45,5 @@ let timer=0;function refresh(){clearTimeout(timer);timer=setTimeout(()=>{if(docu
 document.addEventListener('input',e=>{if(e.target?.id==='pmDiscPct'||e.target?.id==='pmDisc'||e.target?.closest?.('#items'))refresh()},true);
 document.addEventListener('change',e=>{if(e.target?.closest?.('#items'))refresh()},true);
 document.addEventListener('click',e=>{if(e.target?.closest?.('#items')||e.target?.closest?.('[data-p="quotation"]'))refresh()},true);
-const observer=new MutationObserver(()=>refresh());observer.observe(document.body,{childList:true,subtree:true});
-[0,150,400,800,1500,2500].forEach(ms=>setTimeout(refresh,ms));
+[0,150,400,800,1500,2500,4000].forEach(ms=>setTimeout(refresh,ms));
 })();
