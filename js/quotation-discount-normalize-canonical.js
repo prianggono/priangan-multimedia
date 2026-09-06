@@ -1,13 +1,11 @@
-/* Priangan Multimedia — discount percentage canonical normalization v4.
+/* Priangan Multimedia — discount percentage canonical normalization v5.
  * INTEGER ONLY: 0–100.
- * The percentage field is deliberately type=text so Backspace/Delete and typing
- * behave like a normal numeric text field. Capture-phase handlers prevent older
- * quotation listeners from rewriting the field while the user is typing.
+ * Percentage display must never show decimal places: 5%, not 5.00%.
  */
 (function(){
 'use strict';
-if(window.__PM_QUOTATION_DISCOUNT_NORMALIZE_CANONICAL_V4)return;
-window.__PM_QUOTATION_DISCOUNT_NORMALIZE_CANONICAL_V4=true;
+if(window.__PM_QUOTATION_DISCOUNT_NORMALIZE_CANONICAL_V5)return;
+window.__PM_QUOTATION_DISCOUNT_NORMALIZE_CANONICAL_V5=true;
 const S=v=>String(v??'').trim();
 const M=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Math.max(0,Math.round(Number(v)||0)));
 function currentPct(){return Math.max(0,Math.min(100,Math.trunc(Number(window.__pmDiscountPct)||0)))}
@@ -30,13 +28,23 @@ function applyPct(p){
   if(t)t.textContent=M(window.__pmNetTotal);
   if(g)g.textContent=M(window.__pmNetTotal);
 }
+function normalizeDiscountLabels(){
+  document.querySelectorAll('.pm-discount-row td, .pm-discount-label').forEach(el=>{
+    const text=S(el.textContent);
+    const m=text.match(/^(DISKON\s*\()\s*(\d+(?:[.,]\d+)?)\s*(%\))$/i);
+    if(!m)return;
+    const pct=Math.max(0,Math.min(100,Math.round(Number(String(m[2]).replace(',','.'))||0)));
+    el.textContent=m[1]+pct+m[3];
+  });
+}
 function setup(){
  const p=document.querySelector('#pmDiscPct'),r=document.querySelector('#pmDisc');
+ normalizeDiscountLabels();
  if(!p||!r)return;
  p.type='text';p.inputMode='numeric';p.autocomplete='off';p.maxLength=3;
  p.setAttribute('pattern','[0-9]{0,3}');
- if(p.dataset.pmIntegerDiscount==='4'){repairValue(p);return}
- p.dataset.pmIntegerDiscount='4';
+ if(p.dataset.pmIntegerDiscount==='5'){repairValue(p);return}
+ p.dataset.pmIntegerDiscount='5';
  repairValue(p);
  p.addEventListener('focus',()=>{
    const raw=S(p.value);
@@ -61,8 +69,9 @@ function setup(){
    const x=raw===''?0:Math.max(0,Math.min(100,parseInt(raw,10)||0));
    p.value=String(x);
    applyPct(p);
+   normalizeDiscountLabels();
  },true);
 }
 const mo=new MutationObserver(setup);mo.observe(document.body,{childList:true,subtree:true});
-[0,100,300,700,1200].forEach(ms=>setTimeout(setup,ms));
+[0,100,300,700,1200,2000].forEach(ms=>setTimeout(setup,ms));
 })();
