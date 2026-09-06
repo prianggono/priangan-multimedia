@@ -1,4 +1,4 @@
-/* Priangan Multimedia — discount percentage canonical normalization v3.
+/* Priangan Multimedia — discount percentage canonical normalization v4.
  * INTEGER ONLY: 0–100.
  * The percentage field is deliberately type=text so Backspace/Delete and typing
  * behave like a normal numeric text field. Capture-phase handlers prevent older
@@ -6,11 +6,16 @@
  */
 (function(){
 'use strict';
-if(window.__PM_QUOTATION_DISCOUNT_NORMALIZE_CANONICAL_V3)return;
-window.__PM_QUOTATION_DISCOUNT_NORMALIZE_CANONICAL_V3=true;
+if(window.__PM_QUOTATION_DISCOUNT_NORMALIZE_CANONICAL_V4)return;
+window.__PM_QUOTATION_DISCOUNT_NORMALIZE_CANONICAL_V4=true;
 const S=v=>String(v??'').trim();
-const N=v=>{const n=Number(S(v).replace(/[^0-9-]/g,''));return Number.isFinite(n)?n:0};
 const M=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Math.max(0,Math.round(Number(v)||0)));
+function currentPct(){return Math.max(0,Math.min(100,Math.trunc(Number(window.__pmDiscountPct)||0)))}
+function repairValue(p){
+  if(document.activeElement===p)return;
+  const raw=S(p.value);
+  if(!/^\d{1,3}$/.test(raw)||Number(raw)>100)p.value=String(currentPct());
+}
 function applyPct(p){
   const base=Math.max(0,Number(window.__pmDiscountBase)||0);
   const raw=S(p.value).replace(/[^0-9]/g,'');
@@ -30,10 +35,13 @@ function setup(){
  if(!p||!r)return;
  p.type='text';p.inputMode='numeric';p.autocomplete='off';p.maxLength=3;
  p.setAttribute('pattern','[0-9]{0,3}');
- if(p.dataset.pmIntegerDiscount==='3')return;
- p.dataset.pmIntegerDiscount='3';
- if(S(p.value)==='0')p.value='';
- p.addEventListener('focus',()=>{if(S(p.value)==='0')p.value='';},true);
+ if(p.dataset.pmIntegerDiscount==='4'){repairValue(p);return}
+ p.dataset.pmIntegerDiscount='4';
+ repairValue(p);
+ p.addEventListener('focus',()=>{
+   const raw=S(p.value);
+   if(raw==='0'||!/^\d{1,3}$/.test(raw)||Number(raw)>100)p.value=String(currentPct()||'');
+ },true);
  p.addEventListener('keydown',e=>{
    const allowed=['Backspace','Delete','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','Tab'];
    if(allowed.includes(e.key)||e.ctrlKey||e.metaKey)return;
