@@ -1,10 +1,11 @@
-/* Priangan Multimedia — FINAL A4 print geometry + letterhead visibility v2.
+/* Priangan Multimedia — FINAL A4 print geometry + letterhead visibility v3.
  * No broad MutationObserver: style enforcement must never observe its own DOM writes.
+ * Discount label is integer-only in customer preview (5%, not 5.00%).
  */
 (function(){
   'use strict';
-  if(window.__PM_A4_PRINT_FINAL_V2)return;
-  window.__PM_A4_PRINT_FINAL_V2=true;
+  if(window.__PM_A4_PRINT_FINAL_V3)return;
+  window.__PM_A4_PRINT_FINAL_V3=true;
   const style=document.createElement('style');
   style.id='pmA4PrintFinalStyles';
   style.textContent=`
@@ -28,9 +29,15 @@
     }
   `;
   document.head.appendChild(style);
+  function normalizeDiscountLabel(area){
+    area.querySelectorAll('.pm-discount-row td').forEach(td=>{
+      td.textContent=td.textContent.replace(/DISKON\s*\(\s*(\d+(?:\.\d+)?)%\s*\)/i,(_,n)=>'DISKON ('+String(Math.round(Number(n)))+'%)');
+    });
+  }
   function enforce(){
     const area=document.querySelector('#pmPrintArea');if(!area)return;
     area.style.width='210mm';area.style.height='297mm';area.style.minHeight='297mm';area.style.maxHeight='297mm';area.style.boxSizing='border-box';
+    normalizeDiscountLabel(area);
     const head=area.querySelector('.pm-letterhead');
     if(head){head.style.display='flex';head.style.visibility='visible';head.style.opacity='1';head.style.height='112px';head.style.minHeight='112px';head.style.maxHeight='112px';head.style.overflow='visible';head.querySelectorAll('*').forEach(el=>{el.style.visibility='visible';el.style.opacity='1'})}
   }
