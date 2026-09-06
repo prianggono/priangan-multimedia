@@ -1,13 +1,13 @@
 /* Priangan Multimedia — final quotation UI repair
  * 1) Keep Diskon (%) and Diskon (Rp) synchronized.
  * 2) Never leave a non-zero nominal discount paired with 0%.
- * 3) Route the Preview / Cetak A4 button through a reliable click handler.
+ * 3) Preview handling is owned by quotation-final-integration-fix.js.
  * Presentation/UI only; no database schema changes.
  */
 (function () {
   'use strict';
-  if (window.__PM_QUOTATION_FINAL_UI_FIX_V1) return;
-  window.__PM_QUOTATION_FINAL_UI_FIX_V1 = true;
+  if (window.__PM_QUOTATION_FINAL_UI_FIX_V2) return;
+  window.__PM_QUOTATION_FINAL_UI_FIX_V2 = true;
 
   const num = (value) => {
     if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
@@ -34,7 +34,6 @@
     let base = num(window.__pmDiscountBase);
     if (base > 0) return base;
 
-    // Prefer the visible total when no explicit base has been exposed yet.
     const visibleTotal = num(pct?.dataset?.base || '') || num(document.querySelector('#pmDiscountBase')?.textContent);
     if (visibleTotal > 0) base = visibleTotal;
 
@@ -89,7 +88,6 @@
     const base = getBase(pct, rp);
     if (!base) return;
 
-    // While the user is editing one field, that field is authoritative.
     if (document.activeElement === pct) {
       const expected = Math.round(base * Math.max(0, Math.min(100, pctValue)) / 100);
       if (Math.abs(rpValue - expected) > 0) {
@@ -99,6 +97,7 @@
       }
       return;
     }
+
     if (document.activeElement === rp) {
       const expectedPct = base ? Math.min(100, Math.max(0, rpValue / base * 100)) : 0;
       const pText = Number.isInteger(expectedPct) ? String(expectedPct) : String(Number(expectedPct.toFixed(2)));
@@ -109,13 +108,11 @@
       return;
     }
 
-    // On redraw/initial load, a non-zero nominal discount wins over a stale 0%.
     if (rpValue > 0 && pctValue === 0) {
       syncFromRp();
       return;
     }
 
-    // Otherwise normalize both sides from the percentage.
     const expectedRp = Math.round(base * Math.max(0, Math.min(100, pctValue)) / 100);
     if (Math.abs(rpValue - expectedRp) > 0) apply(base, expectedRp);
   }
@@ -138,37 +135,9 @@
     }
   }
 
-  // Capture phase is intentionally avoided here because an older discount
-  // listener uses stopImmediatePropagation. Reconciliation below is resilient
-  // to those older handlers and keeps the final DOM state correct.
   document.addEventListener('blur', (event) => {
     if (event.target?.id === 'pmDiscPct') syncFromPct();
     if (event.target?.id === 'pmDisc') syncFromRp();
-  }, true);
-
-  // Reliable Preview button. This runs before the inline onclick handler so a
-  // stale/broken inline path cannot swallow the click.
-  document.addEventListener('click', (event) => {
-    const button = event.target?.closest?.('button');
-    if (!button) return;
-    const label = String(button.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
-    if (!label.includes('preview') || !label.includes('cetak') || !label.includes('a4')) return;
-    event.preventDefault();
-    event.stopPropagation();
-    try {
-      reconcile();
-      if (typeof window.printQuote === 'function') {
-        Promise.resolve(window.printQuote()).catch((error) => {
-          console.error('Final quotation preview error:', error);
-          if (typeof window.msg === 'function') window.msg('Preview A4 gagal: ' + (error?.message || error));
-        });
-      } else if (typeof window.msg === 'function') {
-        window.msg('Fungsi Preview A4 belum siap. Muat ulang halaman.');
-      }
-    } catch (error) {
-      console.error('Final quotation preview handler error:', error);
-      if (typeof window.msg === 'function') window.msg('Preview A4 gagal dibuka.');
-    }
   }, true);
 
   const observer = new MutationObserver(() => {
@@ -184,8 +153,6 @@
     reconcile();
   }, ms));
 
-  // Some legacy handlers change input.value without emitting an observable
-  // mutation. A lightweight interval closes that gap without touching the DB.
   let ticks = 0;
   const timer = setInterval(() => {
     patchFields();
