@@ -1,13 +1,18 @@
-/* Priangan Multimedia — final navigation safety guard */
+/* Priangan Multimedia — navigation safety guard */
 (function(){
   'use strict';
-  if(window.__PM_NAVIGATION_SAFETY_FINAL)return;
-  window.__PM_NAVIGATION_SAFETY_FINAL=true;
+  if(window.__PM_NAVIGATION_SAFETY_FINAL_V2)return;
+  window.__PM_NAVIGATION_SAFETY_FINAL_V2=true;
 
   function isCreateQuotationButton(el){
     if(!el || el.tagName!=='BUTTON')return false;
     const text=String(el.textContent||'').trim().toUpperCase();
     return text.includes('BUAT PENAWARAN');
+  }
+
+  function isHistoryPage(){
+    const title=String(document.querySelector('#title')?.textContent||'').trim().toUpperCase();
+    return /RIWAYAT PENAWARAN/.test(title);
   }
 
   function openQuotation(){
@@ -30,18 +35,20 @@
     return false;
   }
 
-  document.addEventListener('click',function(ev){
+  function handleNavigation(ev){
     const btn=ev.target?.closest?.('button');
-    if(!isCreateQuotationButton(btn))return;
+    if(!isCreateQuotationButton(btn) || !isHistoryPage())return;
 
-    /* Only take ownership of the create-quotation action from History.
-       Other pages keep their normal button handlers. */
-    const title=String(document.querySelector('#title')?.textContent||'').trim().toUpperCase();
-    const isHistory=/RIWAYAT PENAWARAN/.test(title);
-    if(!isHistory)return;
-
+    /* Navigate on the earliest pointer event so older click handlers cannot
+       consume this action first. */
     ev.preventDefault();
     ev.stopImmediatePropagation();
+
+    if(btn.dataset.pmQuotationNavBusy==='1')return;
+    btn.dataset.pmQuotationNavBusy='1';
     openQuotation();
-  },true);
+  }
+
+  document.addEventListener('pointerdown',handleNavigation,true);
+  document.addEventListener('click',handleNavigation,true);
 })();
