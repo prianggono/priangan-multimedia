@@ -1,5 +1,6 @@
 /* Priangan Multimedia — Finance UI/UX Cyberpunk
  * Visual layer only. Financial calculation remains in js/finance.js.
+ * Color hierarchy aligned with Dashboard Cyberpunk.
  */
 #content:has(#pmFinanceRefresh){--fin-bg:#050814;--fin-panel:#0b1222;--fin-panel-2:#0f1930;--fin-line:#263858;--fin-text:#eaf7ff;--fin-muted:#8ea6ca;--cyan:#00e5ff;--green:#00f5a0;--pink:#ff2bd6;--yellow:#ffd166;--purple:#9b6cff;--red:#ff4d6d;color:var(--fin-text)!important;background:transparent!important;max-width:1400px;margin:auto}
 #content:has(#pmFinanceRefresh) .head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:16px}
@@ -18,18 +19,29 @@
 #content:has(#pmFinanceRefresh) .grid.g4>.stat{position:relative;min-height:112px;padding:16px 16px 15px;border:1px solid #263858!important;border-radius:14px;background:linear-gradient(145deg,#0d1529,#080d19)!important;box-shadow:0 10px 30px #0005!important;overflow:hidden;color:var(--fin-text)!important}
 #content:has(#pmFinanceRefresh) .grid.g4>.stat::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent,var(--cyan))!important;box-shadow:0 0 12px var(--accent,var(--cyan))}
 #content:has(#pmFinanceRefresh) .grid.g4>.stat small{display:block;margin-bottom:10px;color:#8fa7ca!important;font-size:10px;font-weight:900;letter-spacing:1px;text-transform:uppercase}
-#content:has(#pmFinanceRefresh) .grid.g4>.stat strong{display:block;color:#f1faff!important;font-size:24px;line-height:1.15;font-variant-numeric:tabular-nums;text-shadow:0 0 9px #b9ebff18;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#content:has(#pmFinanceRefresh) .grid.g4>.stat strong{display:block;color:var(--value,#f1faff)!important;font-size:24px;line-height:1.15;font-variant-numeric:tabular-nums;text-shadow:0 0 9px #b9ebff18;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #content:has(#pmFinanceRefresh) .grid.g4>.stat span{display:block;margin-top:7px;color:#6f86ab!important;font-size:10px}
 #content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat{min-height:120px}
 #content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat strong{font-size:28px}
-#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat:nth-child(1){--accent:var(--cyan)}
-#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat:nth-child(2){--accent:var(--purple)}
-#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat:nth-child(3){--accent:var(--green)}
-#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat:nth-child(4){--accent:var(--yellow)}
-#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(3)>.stat:nth-child(1){--accent:var(--pink)}
-#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(4)>.stat:nth-child(1){--accent:var(--red)}
-#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat:nth-child(3) strong{color:var(--green)!important}
-#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat:nth-child(4) strong{color:#fff2b8!important}
+
+/* Dashboard-aligned KPI colors */
+#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(1)>.stat:nth-child(1){--accent:var(--cyan);--value:var(--cyan)}
+#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(1)>.stat:nth-child(2){--accent:var(--purple);--value:var(--purple)}
+#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(1)>.stat:nth-child(3){--accent:var(--green);--value:var(--green)}
+#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(1)>.stat:nth-child(4){--accent:var(--yellow);--value:var(--yellow)}
+#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(2)>.stat:nth-child(1){--accent:var(--pink);--value:var(--pink)}
+#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(2)>.stat:nth-child(2){--accent:var(--yellow);--value:var(--yellow)}
+#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(2)>.stat:nth-child(3){--accent:var(--cyan);--value:var(--cyan)}
+#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(2)>.stat:nth-child(4){--accent:var(--purple);--value:var(--purple)}
+#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(3)>.stat:nth-child(1){--accent:var(--cyan);--value:var(--cyan)}
+#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(3)>.stat:nth-child(2){--accent:var(--purple);--value:var(--purple)}
+#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(3)>.stat:nth-child(3){--accent:var(--green);--value:var(--green)}
+#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(3)>.stat:nth-child(4){--accent:var(--pink);--value:var(--pink)}
+#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(4)>.stat:nth-child(1){--accent:var(--red);--value:var(--red)}
+#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(4)>.stat:nth-child(2){--accent:var(--cyan);--value:var(--cyan)}
+#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(4)>.stat:nth-child(3){--accent:var(--yellow);--value:var(--yellow)}
+#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(4)>.stat:nth-child(4){--accent:var(--green);--value:var(--green)}
+
 #content:has(#pmFinanceRefresh) > .card:last-child{padding:18px 18px 10px}
 #content:has(#pmFinanceRefresh) > .card:last-child > b{display:block;font-size:14px;color:#f4fbff!important;margin-bottom:2px;letter-spacing:.2px}
 #content:has(#pmFinanceRefresh) .scroll{border:1px solid #233655!important;border-radius:10px;background:#071022!important;overflow:auto}
