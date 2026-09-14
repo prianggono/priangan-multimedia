@@ -1,8 +1,6 @@
-/* Priangan Multimedia — Per-item quotation discount
- * Adds discount per quotation item without changing master_harga.
- * Discount percent is editable; discount nominal is calculated from the
- * item's pre-discount subtotal. The effective item price is derived so the
- * canonical quotation engine keeps totals consistent.
+/* Priangan Multimedia — Per-item quotation discount UI
+ * UI/calculation extension only. Persistence belongs exclusively to
+ * quotation-save-safe.js so quotation save has one authority.
  */
 (function(){
   'use strict';
@@ -16,9 +14,8 @@
     const n=Number(s);return Number.isFinite(n)?n:0;
   };
   const M=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Math.max(0,Math.round(N(v))));
+  const items=()=>Array.isArray(window.items)?window.items:[];
 
-  function items(){return Array.isArray(window.items)?window.items:[];}
-  function itemFromCard(card){const id=card?.dataset?.itemId;return items().find(x=>String(x.id)===String(id))||null;}
   function masterFor(item){
     const id=item?.master_id??item?.masterId??item?.id_master??item?.master_harga_id;
     const ms=Array.isArray(window.masters)?window.masters:[];
@@ -51,21 +48,24 @@
     return qty*price*d;
   }
   function state(item){
-    let pct=Math.max(0,Math.min(100,N(item.diskon_persen)));
+    const pct=Math.max(0,Math.min(100,N(item.diskon_persen)));
     const baseUnit=rawUnit(item),baseSubtotal=rawSubtotal(item,baseUnit);
-    let nominal=N(item.diskon_nominal);
-    if(pct>0)nominal=Math.min(baseSubtotal,Math.round(baseSubtotal*pct/100));
-    else nominal=Math.min(baseSubtotal,Math.max(0,nominal));
-    if(baseSubtotal<=0)nominal=0;
-    const effectiveSubtotal=Math.max(0,baseSubtotal-nominal),factor=baseSubtotal>0?effectiveSubtotal/baseSubtotal:1,effectiveUnit=baseUnit*factor;
-    return{pct,baseUnit,baseSubtotal,nominal,effectiveSubtotal,effectiveUnit};
+    const nominal=pct>0?Math.min(baseSubtotal,Math.round(baseSubtotal*pct/100)):Math.min(baseSubtotal,Math.max(0,N(item.diskon_nominal)));
+    const effectiveSubtotal=Math.max(0,baseSubtotal-nominal);
+    const factor=baseSubtotal>0?effectiveSubtotal/baseSubtotal:1;
+    return{pct,baseUnit,baseSubtotal,nominal,effectiveSubtotal,effectiveUnit:baseUnit*factor};
   }
   function apply(item){
     if(!item)return state(item);
     const s=state(item);
-    item.__pmBaseHarga=s.baseUnit;item.harga=s.effectiveUnit;item.harga_jual=s.effectiveUnit;item.diskon_persen=s.pct;item.diskon_nominal=s.nominal;
+    item.__pmBaseHarga=s.baseUnit;
+    item.harga=s.effectiveUnit;
+    item.harga_jual=s.effectiveUnit;
+    item.diskon_persen=s.pct;
+    item.diskon_nominal=s.nominal;
     return s;
   }
+  function itemFromCard(card){const id=card?.dataset?.itemId;return items().find(x=>String(x.id)===String(id))||null;}
   function subtotalElement(card){return [...card.querySelectorAll('.pm-item-body > .sum')].find(el=>/subtotal/i.test(S(el.querySelector('span')?.textContent)))||card.querySelector('.pm-item-body > .sum');}
   function priceInput(card){return [...card.querySelectorAll('.field')].map(f=>({i:f.querySelector('input'),l:S(f.querySelector('label')?.textContent).toLowerCase()})).find(x=>x.l.includes('harga jual'))?.i||null;}
   function refreshCard(card,item){
@@ -74,15 +74,14 @@
     if(box){const pct=box.querySelector('.pm-item-discount-pct'),rp=box.querySelector('.pm-item-discount-rp');if(pct&&document.activeElement!==pct)pct.value=String(Number(s.pct.toFixed(2)));if(rp)rp.value=M(s.nominal);}
     if(sum?.querySelector('b'))sum.querySelector('b').textContent=M(s.effectiveSubtotal);
   }
-  function syncGrand(){try{if(window.__PM_QUOTATION_CORE?.sync)window.__PM_QUOTATION_CORE.sync();}catch(_){} }
+  function syncGrand(){try{window.__PM_QUOTATION_CORE?.sync?.();}catch(_){} }
   function enhance(){
     const container=document.querySelector('#items');if(!container)return;
     container.querySelectorAll(':scope > .item').forEach(card=>{
       const item=itemFromCard(card);if(!item)return;
       if(item.__pmBaseHarga==null){
         const master=masterFor(item),storedPct=N(item.diskon_persen),storedNet=N(item.harga);
-        if(storedPct>0&&storedNet>0)item.__pmBaseHarga=storedNet/(1-storedPct/100);
-        else item.__pmBaseHarga=N(master?.harga_jual??item.harga_jual??item.harga);
+        item.__pmBaseHarga=storedPct>0&&storedNet>0?storedNet/(1-storedPct/100):N(master?.harga_jual??item.harga_jual??item.harga);
       }
       apply(item);
       if(card.querySelector('.pm-item-discount')){refreshCard(card,item);return;}
@@ -92,7 +91,7 @@
       (schedule||subtotal).insertAdjacentElement('afterend',box);
       const pct=box.querySelector('.pm-item-discount-pct');
       pct.addEventListener('focus',()=>{pct.value=String(N(item.diskon_persen));});
-      const change=()=>{const v=Math.max(0,Math.min(100,N(pct.value)));item.diskon_persen=v;item.diskon_nominal=0;apply(item);refreshCard(card,item);syncGrand();};
+      const change=()=>{item.diskon_persen=Math.max(0,Math.min(100,N(pct.value)));item.diskon_nominal=0;apply(item);refreshCard(card,item);syncGrand();};
       pct.addEventListener('input',change);pct.addEventListener('change',change);
     });
   }
@@ -100,30 +99,9 @@
     if(document.getElementById('pmItemDiscountStyles'))return;
     const st=document.createElement('style');st.id='pmItemDiscountStyles';st.textContent=`#content .pm-item-discount{margin:12px 0 0;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)}#content .pm-item-discount-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}#content .pm-item-discount label{font-size:12px;color:var(--muted,#9aa7bd)}#content .pm-item-discount-rp{background:rgba(255,255,255,.035)!important;color:#35e6a5!important;font-weight:700}@media(max-width:700px){#content .pm-item-discount-grid{grid-template-columns:1fr}}`;document.head.appendChild(st);
   }
-  function priceEvent(e){
-    const input=e.target?.closest?.('#items > .item input');if(!input)return;
-    const card=input.closest('#items > .item');const label=S(input.closest('.field')?.querySelector('label')?.textContent).toLowerCase();
-    if(!card||!label.includes('harga jual'))return;
-    const item=itemFromCard(card);if(!item)return;
-    const base=Math.max(0,N(input.value));item.__pmBaseHarga=base;apply(item);refreshCard(card,item);syncGrand();
-  }
-  async function persistAfterSave(snapshot){
-    const db=window.db||window.__PM_STABLE_DB;if(!db||!snapshot?.length)return;
-    const number=S(window.__PM_LAST_QUOTATION_NUMBER);if(!number)return;
-    try{
-      const q=await db.from('penawaran').select('id').eq('nomor_penawaran',number).maybeSingle();if(q.error||!q.data)return;
-      const rows=(await db.from('penawaran_items').select('id').eq('penawaran_id',q.data.id).order('id',{ascending:true})).data||[];
-      for(let i=0;i<Math.min(rows.length,snapshot.length);i++){const it=snapshot[i];await db.from('penawaran_items').update({diskon_persen:Math.max(0,Math.min(100,N(it.diskon_persen))),diskon_nominal:Math.max(0,N(it.diskon_nominal))}).eq('id',rows[i].id);}
-    }catch(e){console.error('[PM] item discount persist',e);}
-  }
-  function wrapSave(){
-    const fn=window.saveQuote;if(typeof fn!=='function'||fn.__pmItemDiscountWrapped)return false;
-    const wrapped=async function(){const snapshot=items().map(it=>({...it}));snapshot.forEach(apply);const result=await fn.apply(this,arguments);await persistAfterSave(snapshot);return result;};
-    wrapped.__pmItemDiscountWrapped=true;window.saveQuote=wrapped;return true;
-  }
+  document.addEventListener('input',e=>{const input=e.target?.closest?.('#items > .item input');if(!input)return;const card=input.closest('#items > .item');const label=S(input.closest('.field')?.querySelector('label')?.textContent).toLowerCase();if(!card||!label.includes('harga jual'))return;const item=itemFromCard(card);if(!item)return;item.__pmBaseHarga=Math.max(0,N(input.value));item.diskon_nominal=0;apply(item);refreshCard(card,item);syncGrand();},true);
   style();
   new MutationObserver(()=>requestAnimationFrame(enhance)).observe(document.body,{childList:true,subtree:true});
-  document.addEventListener('input',priceEvent,true);document.addEventListener('change',priceEvent,true);
-  [0,150,350,700,1200,2000].forEach(ms=>setTimeout(()=>{enhance();wrapSave();},ms));
-  window.addEventListener('load',()=>{enhance();wrapSave();});
+  [0,150,350,700,1200].forEach(ms=>setTimeout(enhance,ms));
+  window.addEventListener('load',enhance);
 })();
