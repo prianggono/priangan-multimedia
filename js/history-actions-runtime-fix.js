@@ -97,8 +97,6 @@
       ss.forEach(s=>map.set(String(s.penawaran_item_id??s.item_id),s));
       window.items=(ir.data||[]).map((r,i)=>{
         const s=map.get(String(r.id))||ss[i]||{};
-        // `harga` is the negotiated quotation price. `harga_jual` is kept as a
-        // compatibility fallback for legacy rows that did not store `harga`.
         const quotePrice = N(r.harga ?? r.harga_jual);
         return {
           id:Date.now()+Math.random()+i,
@@ -109,6 +107,8 @@
           harga:quotePrice,
           harga_jual:quotePrice,
           harga_modal:N(r.harga_modal),
+          diskon_persen:N(r.diskon_persen),
+          diskon_nominal:N(r.diskon_nominal),
           qty:Math.max(1,N(r.qty??r.jumlah??s.qty)||1),
           jumlah:Math.max(1,N(r.jumlah??r.qty??s.qty)||1),
           lebar:N(r.lebar),
@@ -242,6 +242,8 @@
   }
 
   window.renderHistory=renderHistory;
+  // App shell route contract: app.js calls window.historyPage().
+  window.historyPage=renderHistory;
   window.editQuotation=editQuotation;
   window.publishQuotation=publishQuotation;
   window.deleteQuotation=deleteQuotation;
