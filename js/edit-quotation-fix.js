@@ -1,6 +1,7 @@
 /* Priangan Multimedia — reliable quotation editor.
  * Loads saved quotation items directly into the normal quotation state.
  * Removes only exact accidental duplicate item rows before loading.
+ * Restores both saved discount percentage and nominal discount when editing.
  */
 (function(){
 'use strict';
@@ -11,6 +12,36 @@ function DB(){try{if(typeof db!=='undefined'&&db)return db}catch(_){}const c=win
 function setVal(sel,val){const e=document.querySelector(sel);if(!e)return;e.value=val??'';e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}))}
 function fingerprint(x){return [x.kode,x.item,x.nama_item,x.harga_jual,x.tipe_perhitungan,x.tipe,x.qty,x.jumlah,x.lebar,x.tinggi,x.panjang,x.tanggal_mulai,x.tanggal_selesai,x.durasi,x.subtotal].map(S).join('|')}
 async function removeExactDuplicates(d,quoteId,rows){const seen=new Set(),keep=[];for(const row of rows){const key=fingerprint(row);if(!seen.has(key)){seen.add(key);keep.push(row);continue}let z=await d.from('penawaran_jadwal').delete().eq('item_id',row.id);if(z.error)throw z.error;z=await d.from('penawaran_items').delete().eq('id',row.id).eq('penawaran_id',quoteId);if(z.error)throw z.error}return keep}
+function savedDiscountPercent(row,discount){
+  const explicit=N(row?.diskon_persen??row?.discount_percent??row?.persen_diskon);
+  if(explicit>0)return Math.max(0,Math.min(100,Math.trunc(explicit)));
+  const base=N(row?.subtotal);
+  if(base>0&&discount>0)return Math.max(0,Math.min(100,Math.trunc((discount/base)*100)));
+  const total=N(row?.total??row?.grand_total);
+  if(total>0&&discount>0){
+    const inferredBase=total+discount;
+    return Math.max(0,Math.min(100,Math.trunc((discount/inferredBase)*100)));
+  }
+  return 0;
+}
+async function restoreDiscount(row){
+  const savedDiscount=Math.max(0,N(row?.diskon));
+  const savedPct=savedDiscountPercent(row,savedDiscount);
+  const p=document.querySelector('#pmDiscPct');
+  const r=document.querySelector('#pmDisc');
+  if(p){
+    window.__PM_DISC_MODE='pct';
+    window.__pmDiscountPct=savedPct;
+    p.value=String(savedPct);
+    p.dispatchEvent(new Event('input',{bubbles:true}));
+  }
+  if(r){
+    r.value=savedDiscount;
+    r.dispatchEvent(new Event('change',{bubbles:true}));
+  }
+  window.__pmDiscountPct=savedPct;
+  window.__pmDiscountValue=savedDiscount;
+}
 async function editQuotationFixed(id){
  const d=DB();if(!d)return toast('Supabase belum terhubung.');
  try{
@@ -31,9 +62,14 @@ async function editQuotationFixed(id){
   window.items=loaded;window.__pmItems=loaded;
   if(typeof window.drawItems==='function')window.drawItems();
 
-  const savedDiscount=N(row.diskon);
-  if(document.querySelector('#pmDisc')){document.querySelector('#pmDisc').value=savedDiscount;document.querySelector('#pmDisc').dispatchEvent(new Event('input',{bubbles:true}))}
-  toast(`Mode edit aktif: ${window.__pmEditingQuotationNumber} — ${loaded.length} item dimuat. Tidak ada item kosong yang ditambahkan.`);
+  /* Restore the saved percentage as the canonical discount mode.
+     The previous implementation loaded only #pmDisc, which left #pmDiscPct at 0
+     and allowed the runtime to recalculate the quotation at the undiscounted price. */
+  await wait(40);
+  await restoreDiscount(row);
+  await wait(80);
+  await restoreDiscount(row);
+  toast(`Mode edit aktif: ${window.__pmEditingQuotationNumber} — ${loaded.length} item dimuat. Diskon ${savedDiscountPercent(row,N(row.diskon))}% dipulihkan.`);
  }catch(e){window.__pmEditingQuotationId=null;console.error('Edit quotation fix:',e);toast('Gagal membuka penawaran: '+(e.message||e))}
 }
 window.editQuotation=editQuotationFixed;window.__PRIANGAN_EDIT_QUOTATION_FIXED=true;
