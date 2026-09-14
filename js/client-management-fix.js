@@ -1,11 +1,13 @@
 /* Priangan Multimedia — Client Domain
- * Owns client CRUD and the optional quotation-contact persistence helper.
+ * Single authority for client CRUD, exact-contact deduplication and quotation autofill.
  * Quotation save itself remains owned by quotation-runtime-canonical-v2.js.
  */
 (function () {
   'use strict';
 
   const clean = (v) => String(v ?? '').trim();
+  const norm = (v) => clean(v).toLowerCase().replace(/\s+/g, '');
+  const contactKey = (v) => [norm(v.nama_client), norm(v.perusahaan), norm(v.telepon || v.whatsapp), norm(v.email)].join('|');
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, m => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[m]));
@@ -33,9 +35,16 @@
       email: clean(data.email),
       alamat: clean(data.alamat)
     };
-    const result = id
-      ? await database.from('clients').update(payload).eq('id', id).select('*').single()
-      : await database.from('clients').insert([payload]).select('*').single();
+    if (id) {
+      const result = await database.from('clients').update(payload).eq('id', id).select('*').single();
+      if (result.error) throw result.error;
+      return result.data;
+    }
+    const existingRows = await database.from('clients').select('*').order('id', { ascending: true });
+    if (existingRows.error) throw existingRows.error;
+    const existing = (existingRows.data || []).find((row) => contactKey(row) === contactKey(payload));
+    if (existing) return existing;
+    const result = await database.from('clients').insert([payload]).select('*').single();
     if (result.error) throw result.error;
     return result.data;
   }
@@ -51,15 +60,24 @@
     };
     if (!data.nama_client) throw new Error('Nama Client wajib diisi sebelum menyimpan penawaran.');
     if (!data.perusahaan) throw new Error('Perusahaan wajib diisi sebelum menyimpan penawaran.');
-    return saveOrUpdateClient(data);
+    const client = await saveOrUpdateClient(data);
+    window.__pmLastSavedClientId = client?.id || null;
+    return client;
   };
 
   window.clientsPage = function () {
     const list = Array.isArray(window.clients) ? window.clients : [];
+    const seen = new Set();
+    const unique = list.filter((row) => {
+      const key = contactKey(row);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
     document.querySelector('#content').innerHTML = `
-      <div class="head"><div><h1>Client</h1><p>Data perusahaan dan nomor WhatsApp untuk autofill.</p></div><button class="btn" type="button" onclick="clientForm()">+ Tambah Client</button></div>
+      <div class="head"><div><h1>Client</h1><p>Kontak identik digabung saat tampil; kontak berbeda dalam perusahaan tetap terpisah.</p></div><button class="btn" type="button" onclick="clientForm()">+ Tambah Client</button></div>
       <div class="card"><div class="scroll"><table class="table"><thead><tr><th>Nama</th><th>Perusahaan</th><th>Telepon / WA</th><th>Email</th><th>Aksi</th></tr></thead><tbody>
-      ${list.map(c => `<tr><td>${esc(c.nama_client)}</td><td>${esc(c.perusahaan)}</td><td>${esc(c.whatsapp || c.telepon)}</td><td>${esc(c.email)}</td><td><div class="actions"><button class="btn secondary" type="button" onclick="clientEdit(${Number(c.id)})">Edit</button><button class="btn danger" type="button" onclick="clientDelete(${Number(c.id)})">Hapus</button></div></td></tr>`).join('') || '<tr><td colspan="5" class="empty">Belum ada data client.</td></tr>'}
+      ${unique.map(c => `<tr><td>${esc(c.nama_client)}</td><td>${esc(c.perusahaan)}</td><td>${esc(c.whatsapp || c.telepon)}</td><td>${esc(c.email)}</td><td><div class="actions"><button class="btn secondary" type="button" onclick="clientEdit(${Number(c.id)})">Edit</button><button class="btn danger" type="button" onclick="clientDelete(${Number(c.id)})">Hapus</button></div></td></tr>`).join('') || '<tr><td colspan="5" class="empty">Belum ada data client.</td></tr>'}
       </tbody></table></div></div>`;
   };
 
