@@ -1,69 +1,48 @@
-/* Priangan Multimedia — Invoice module
- * Invoice is linked 1:1 to an existing quotation (penawaran).
- * It never changes master_harga or quotation item prices.
+/* Priangan Multimedia — Invoice Domain Core
+ * Single authority for invoice list, invoice editor, extra items, payments,
+ * settlement, preview/print and invoice navigation.
+ * Do not add invoice fix/final patch files. Extend this module instead.
  */
 (function () {
   'use strict';
+  if (window.__PM_INVOICE_DOMAIN_CORE) return;
+  window.__PM_INVOICE_DOMAIN_CORE = true;
 
-  const S = v => String(v ?? '').trim();
-  const N = v => {
-    const n = Number(String(v ?? '').replace(/[^0-9,.-]/g, '').replace(/\.(?=\d{3}(?:\D|$))/g, '').replace(',', '.'));
+  const S = (v) => String(v ?? '').trim();
+  const N = (v) => {
+    if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+    let s = S(v).replace(/[^0-9,.-]/g, '');
+    if (!s) return 0;
+    s = s.replace(/\.(?=\d{3}(?:\D|$))/g, '').replace(',', '.');
+    const n = Number(s);
     return Number.isFinite(n) ? n : 0;
   };
-  const E = v => S(v).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
-  const M = v => new Intl.NumberFormat('id-ID', { style:'currency', currency:'IDR', maximumFractionDigits:0 }).format(N(v));
-  const D = v => {
-    if (!v) return '-';
-    const x = new Date(String(v).slice(0,10) + 'T00:00:00');
-    return Number.isNaN(x.getTime()) ? E(v) : x.toLocaleDateString('id-ID', {day:'2-digit', month:'long', year:'numeric'});
-  };
-  const today = () => new Date().toISOString().slice(0,10);
-  const toast = t => typeof window.msg === 'function' ? window.msg(t) : alert(t);
-  const DB = () => (typeof db !== 'undefined' && db) ? db : null;
-  const getTemplate = () => {
-    try {
-      const local = JSON.parse(localStorage.getItem('PRIANGAN_TEMPLATE_BACKUP') || '{}') || {};
-      const globalTemplate = (typeof template !== 'undefined' && template) ? template : {};
-      return { ...local, ...globalTemplate };
-    } catch (_) {
-      return (typeof template !== 'undefined' && template) ? template : {};
-    }
-  };
+  const M = (v) => new Intl.NumberFormat('id-ID', { style:'currency', currency:'IDR', maximumFractionDigits:0 }).format(Math.max(0, Math.round(N(v))));
+  const E = (v) => S(v).replace(/[&<>"']/g, (m) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
+  const msg = (text) => typeof window.msg === 'function' ? window.msg(text) : console.warn('[PM]', text);
+  const DB = () => { try { if (typeof db !== 'undefined' && db) return db; } catch (_) {} return window.__PM_STABLE_DB || window.db || null; };
+  const today = () => new Date().toISOString().slice(0, 10);
+  const days = (a,b) => { if (!a || !b) return 1; const d = Math.round((new Date(S(b)+'T00:00:00') - new Date(S(a)+'T00:00:00')) / 86400000); return d >= 0 ? d + 1 : 1; };
+  const extrasKey = 'PM_INVOICE_EXTRA_ITEMS';
+  const readExtrasStore = () => { try { return JSON.parse(localStorage.getItem(extrasKey) || '{}') || {}; } catch (_) { return {}; } };
+  const writeExtrasStore = (x) => { try { localStorage.setItem(extrasKey, JSON.stringify(x)); } catch (_) {} };
+  const localExtras = (id) => readExtrasStore()[String(id)] || [];
 
   let quotations = [];
-  let currentInvoice = null;
-  let paymentsCache = {};
+  let current = null;
+  let payments = [];
 
-  function invoiceStore() {
-    try { return JSON.parse(localStorage.getItem('PM_INVOICE_FALLBACK') || '{}') || {}; }
-    catch (_) { return {}; }
-  }
-  function saveInvoiceStore(data) {
-    localStorage.setItem('PM_INVOICE_FALLBACK', JSON.stringify(data));
-  }
-
-  async function loadQuotations() {
-    const d = DB();
-    if (!d) throw new Error('Supabase belum terhubung.');
-    const r = await d.from('penawaran').select('*').order('id', { ascending:false });
-    if (r.error) throw r.error;
-    quotations = r.data || [];
-
-    // Payment totals are read from the existing payment table. If the table is
-    // not available yet, invoice creation still works and shows Rp 0 paid.
-    paymentsCache = {};
+  function template() {
     try {
-      const p = await d.from('pembayaran_penawaran').select('penawaran_id,nominal,jenis,tanggal_bayar').order('id', { ascending:true });
-      if (!p.error) {
-        (p.data || []).forEach(x => {
-          const id = String(x.penawaran_id);
-          paymentsCache[id] = (paymentsCache[id] || 0) + N(x.nominal);
-        });
-      }
-    } catch (_) {}
+      const cache = JSON.parse(localStorage.getItem('PRIANGAN_TEMPLATE_BACKUP') || '{}') || {};
+      const t = (typeof window.template === 'object' && window.template) ? window.template : {};
+      return { ...cache, ...t };
+    } catch (_) { return (typeof window.template === 'object' && window.template) ? window.template : {}; }
   }
 
-  function getInvoiceMeta(row) {
+  function invoiceStore() { try { return JSON.parse(localStorage.getItem('PM_INVOICE_FALLBACK') || '{}') || {}; } catch (_) { return {}; } }
+  function saveInvoiceStore(x) { localStorage.setItem('PM_INVOICE_FALLBACK', JSON.stringify(x)); }
+  function meta(row) {
     const local = invoiceStore()[String(row.id)] || {};
     return {
       nomor_invoice: S(row.nomor_invoice || local.nomor_invoice),
@@ -73,225 +52,138 @@
       catatan_invoice: S(row.catatan_invoice || local.catatan_invoice)
     };
   }
-
   function invoiceNumber(rows) {
     const year = new Date().getFullYear();
-    let max = 0;
-    rows.forEach(row => {
-      const n = S(getInvoiceMeta(row).nomor_invoice);
-      const m = n.match(/^INV-(\d{4})-(\d+)$/i);
-      if (m && Number(m[1]) === year) max = Math.max(max, Number(m[2]) || 0);
-    });
-    return `INV-${year}-${String(max + 1).padStart(4,'0')}`;
+    const used = rows.map(r => S(meta(r).nomor_invoice)).map(x => Number((x.match(new RegExp(`^INV-${year}-(\\d+)$`, 'i')) || [,'0'])[1]) || 0));
+    return `INV-${year}-${String(Math.max(0, ...used) + 1).padStart(4,'0')}`;
   }
-
-  function totalOf(row) { return N(row.grand_total ?? row.total); }
-  function paidOf(row) { return N(paymentsCache[String(row.id)] ?? row.total_dibayar); }
-
-  async function ensureItems(rowId) {
-    const d = DB();
-    if (!d) return [];
-    const r = await d.from('penawaran_items').select('*').eq('penawaran_id', rowId).order('id');
-    if (r.error) throw r.error;
-    return r.data || [];
-  }
-
+  function quoteTotal(row) { return Math.max(0, N(row?.grand_total ?? row?.total)); }
   function itemQtyText(i) {
-    const tipe = S(i.tipe_perhitungan).toLowerCase();
-    if (tipe === 'luas') return `${N(i.lebar)} × ${N(i.tinggi)} m²`;
-    if (tipe === 'rigging') return `${N(i.panjang)} × ${N(i.tinggi)} m`;
-    if (S(i.kode).toUpperCase() === 'LED-LVL-120-200') return `${N(i.lebar)} m`;
-    return String(N(i.qty) || 1);
+    const t = S(i?.tipe_perhitungan || i?.tipe).toLowerCase();
+    if (t === 'luas') return `${N(i.lebar)} × ${N(i.tinggi)} m²`;
+    if (t === 'rigging') return `${N(i.panjang)} × ${N(i.tinggi)} m`;
+    if (t === 'level') return `${N(i.lebar)} m`;
+    if (t === 'overtime') return `${N(i.qty)} jam`;
+    return `${N(i.qty) || 1} ${S(i.satuan || 'unit')}`;
   }
-
-  function openForm(row) {
-    currentInvoice = { row, items: [] };
-    const meta = getInvoiceMeta(row);
-    const invNo = meta.nomor_invoice || invoiceNumber(quotations);
-    const date = meta.tanggal_invoice || today();
-    const due = meta.jatuh_tempo || date;
-
-    document.getElementById('content').innerHTML = `
-      <div class="head">
-        <div><h1>${meta.nomor_invoice ? 'Edit Invoice' : 'Buat Invoice'}</h1><p>Invoice dibuat dari penawaran yang sudah tersimpan.</p></div>
-        <button class="btn secondary" type="button" onclick="invoicePage()">Kembali</button>
-      </div>
-      <div class="card">
-        <div class="grid g2">
-          <div class="field"><label>No. Invoice</label><input id="invNo" value="${E(invNo)}" readonly></div>
-          <div class="field"><label>Tanggal Invoice</label><input id="invDate" type="date" value="${E(date)}"></div>
-          <div class="field"><label>Jatuh Tempo</label><input id="invDue" type="date" value="${E(due)}"></div>
-          <div class="field"><label>Status Invoice</label><select id="invStatus"><option value="DRAFT">DRAFT</option><option value="DITERBITKAN">DITERBITKAN</option><option value="LUNAS">LUNAS</option><option value="DIBATALKAN">DIBATALKAN</option></select></div>
-        </div>
-      </div>
-      <div class="card" style="margin-top:16px">
-        <b>Referensi Penawaran</b>
-        <div class="grid g2" style="margin-top:15px">
-          <div class="field"><label>No. Penawaran</label><input value="${E(row.nomor_penawaran || row.nomor || '-')}" readonly></div>
-          <div class="field"><label>Event / Project</label><input value="${E(row.event_name || row.nama_event || row.event || '-')}" readonly></div>
-          <div class="field"><label>Client</label><input value="${E(row.nama_client || '-')}" readonly></div>
-          <div class="field"><label>Perusahaan</label><input value="${E(row.perusahaan || '-')}" readonly></div>
-        </div>
-      </div>
-      <div id="invoiceItems" class="card" style="margin-top:16px"><div class="empty">Memuat item...</div></div>
-      <div class="card" style="margin-top:16px">
-        <div class="grid g2">
-          <div class="field"><label>Catatan Invoice</label><textarea id="invNotes" rows="4" placeholder="Catatan tambahan invoice">${E(meta.catatan_invoice)}</textarea></div>
-          <div>
-            <div class="sum"><span>Total Invoice</span><b id="invTotal">${M(totalOf(row))}</b></div>
-            <div class="sum" style="margin-top:8px"><span>Sudah Dibayar</span><b style="color:#00d4a8" id="invPaid">${M(paidOf(row))}</b></div>
-            <div class="sum" style="margin-top:8px"><span>Sisa Tagihan</span><b style="color:#ffbd2e" id="invBalance">${M(Math.max(0,totalOf(row)-paidOf(row)))}</b></div>
-          </div>
-        </div>
-        <div class="actions no-print" style="margin-top:16px">
-          <button class="btn secondary" type="button" onclick="invoicePage()">Batal</button>
-          <button class="btn green" type="button" onclick="saveInvoice()">Simpan Invoice</button>
-          <button class="btn" type="button" onclick="previewInvoice()">Preview / Cetak A4</button>
-        </div>
-      </div>`;
-    document.getElementById('invStatus').value = meta.status_invoice || 'DRAFT';
-    ensureItems(row.id).then(items => {
-      currentInvoice.items = items;
-      const target = document.getElementById('invoiceItems');
-      if (!target) return;
-      target.innerHTML = `
-        <div class="scroll"><table class="table"><thead><tr><th>No.</th><th>Produk / Jasa</th><th>Qty / Dimensi</th><th>Harga</th><th>Subtotal</th></tr></thead><tbody>
-        ${items.map((i,idx)=>`<tr><td>${idx+1}</td><td><strong>${E(i.item || '-')}</strong><div style="color:var(--muted);font-size:12px">${E(i.kode || '')}</div></td><td>${E(itemQtyText(i))}</td><td>${M(i.harga_jual ?? i.harga)}</td><td><strong>${M(i.subtotal)}</strong></td></tr>`).join('') || '<tr><td colspan="5">Tidak ada item.</td></tr>'}
-        <tr><td colspan="4" style="text-align:right"><strong>GRAND TOTAL</strong></td><td><strong>${M(totalOf(row))}</strong></td></tr>
-        </tbody></table></div>`;
-    }).catch(e => {
-      console.error('Invoice items:', e);
-      const target = document.getElementById('invoiceItems');
-      if (target) target.innerHTML = '<div class="empty">Gagal memuat item penawaran.</div>';
-    });
+  function itemRule(master) {
+    const text = `${S(master?.item)} ${S(master?.kategori)}`.toLowerCase();
+    const sat = S(master?.satuan).toLowerCase().replace(/²/g,'2');
+    if (/led\s*tv|televisi|tv\s*[- ]?\d{2,3}\b/.test(text)) return 'qty';
+    if (/level/.test(text)) return 'level';
+    if (/rigging|rig/.test(text)) return 'rigging';
+    if (/videotron|led\s*(indoor|outdoor)|led\s*p\.?\d/.test(text)) return 'luas';
+    if (/m2|meter2|luas/.test(sat)) return 'luas';
+    return 'qty';
   }
-
-  async function saveInvoice() {
-    const row = currentInvoice?.row;
-    if (!row) return toast('Penawaran invoice tidak ditemukan.');
-    const no = S(document.getElementById('invNo')?.value);
-    if (!no) return toast('Nomor invoice wajib ada.');
-
-    const payload = {
-      nomor_invoice: no,
-      tanggal_invoice: document.getElementById('invDate')?.value || today(),
-      jatuh_tempo: document.getElementById('invDue')?.value || document.getElementById('invDate')?.value || today(),
-      status_invoice: document.getElementById('invStatus')?.value || 'DRAFT',
-      catatan_invoice: document.getElementById('invNotes')?.value || ''
-    };
-
-    const d = DB();
-    if (d) {
-      const r = await d.from('penawaran').update(payload).eq('id', row.id);
-      if (!r.error) {
-        toast('Invoice berhasil disimpan.');
-        await invoicePage();
-        return;
-      }
-      console.warn('DB invoice save failed; fallback local:', r.error);
-      if (!/column|schema|nomor_invoice|tanggal_invoice|jatuh_tempo/i.test(r.error.message || '')) return toast('Gagal menyimpan invoice: ' + r.error.message);
-    }
-
-    const store = invoiceStore();
-    store[String(row.id)] = payload;
-    saveInvoiceStore(store);
-    toast('Invoice tersimpan di perangkat. Jalankan migration Invoice agar tersimpan permanen di database.');
-    await invoicePage();
+  function extraCalc(o) {
+    const type = S(o.type).toLowerCase(), qty = Math.max(0,N(o.qty)), w = Math.max(0,N(o.width)), h = Math.max(0,N(o.height)), l = Math.max(0,N(o.length)), price = Math.max(0,N(o.price));
+    const dur = type === 'overtime' ? 1 : days(o.start,o.end);
+    const basis = type === 'luas' ? w*h : type === 'level' ? w : type === 'rigging' ? (l*2+h*2) : (qty || 1);
+    return { dur, basis, subtotal: basis*price*dur };
   }
+  function extraToLocal(x) {
+    return { id:String(x.id), invoice_item:true, source:S(x.source||'manual'), master_harga_id:x.master_harga_id??null, tipe:S(x.tipe||x.tipe_perhitungan||'qty'), item:S(x.item||x.nama_item||'Item Tambahan'), kode:S(x.kode||'ADD-INV'), qty:N(x.qty)||1, satuan:S(x.satuan||'unit'), harga:N(x.harga_jual??x.harga), harga_jual:N(x.harga_jual??x.harga), lebar:x.lebar==null?null:N(x.lebar), tinggi:x.tinggi==null?null:N(x.tinggi), panjang:x.panjang==null?null:N(x.panjang), tanggal_mulai:x.tanggal_mulai||null, tanggal_selesai:x.tanggal_selesai||null, durasi:N(x.durasi)||1, basis:N(x.basis), subtotal:N(x.subtotal) };
+  }
+  function extraToDb(x,id) {
+    return { penawaran_id:Number(id), master_harga_id:x.master_harga_id==null?null:Number(x.master_harga_id), kode:S(x.kode||'ADD-INV'), nama_item:S(x.item||x.nama_item||'Item Tambahan'), source:S(x.source||'manual'), tipe_perhitungan:S(x.tipe||x.tipe_perhitungan||'qty'), qty:Math.max(0,N(x.qty)||1), satuan:S(x.satuan||'unit'), harga:Math.max(0,N(x.harga_jual??x.harga)), lebar:x.lebar==null?null:N(x.lebar), tinggi:x.tinggi==null?null:N(x.tinggi), panjang:x.panjang==null?null:N(x.panjang), tanggal_mulai:x.tanggal_mulai||null, tanggal_selesai:x.tanggal_selesai||null, durasi:Math.max(1,N(x.durasi)||1), basis:Math.max(0,N(x.basis)), subtotal:Math.max(0,N(x.subtotal)), updated_at:new Date().toISOString() };
+  }
+  async function hydrateExtras(id) {
+    const d=DB(); if(!d) return localExtras(id);
+    try {
+      const r=await d.from('penawaran_invoice_items').select('*').eq('penawaran_id',Number(id)).order('id',{ascending:true});
+      if(!r.error && (r.data||[]).length){ const store=readExtrasStore(); store[String(id)]=(r.data||[]).map(extraToLocal); writeExtrasStore(store); return store[String(id)]; }
+      const local=localExtras(id);
+      if(local.length){ const ins=await d.from('penawaran_invoice_items').insert(local.map(x=>extraToDb(x,id))); if(!ins.error){ await hydrateExtras(id); } }
+    } catch (_) {}
+    return localExtras(id);
+  }
+  async function persistExtras(id) {
+    const d=DB(); if(!d) return;
+    const rows=localExtras(id); if(!rows.length) return;
+    try {
+      const r=await d.from('penawaran_invoice_items').select('id').eq('penawaran_id',Number(id));
+      if(r.error) return;
+      const remoteIds=new Set((r.data||[]).map(x=>String(x.id)));
+      const pending=rows.filter(x=>!remoteIds.has(String(x.id)));
+      if(pending.length) await d.from('penawaran_invoice_items').insert(pending.map(x=>extraToDb(x,id)));
+      await hydrateExtras(id);
+    } catch (_) {}
+  }
+  function extrasTotal(id){ return localExtras(id).reduce((s,x)=>s+N(x.subtotal),0); }
+  function totalInvoice(row,id){ return quoteTotal(row)+extrasTotal(id); }
+
+  async function loadQuotations() {
+    const d=DB(); if(!d) throw Error('Supabase belum terhubung.');
+    const r=await d.from('penawaran').select('*').order('id',{ascending:false}); if(r.error) throw r.error; quotations=r.data||[];
+    payments=[]; try { const p=await d.from('pembayaran_penawaran').select('*').order('id',{ascending:true}); if(!p.error)payments=p.data||[]; } catch (_) {}
+  }
+  function paidOf(id) { return payments.filter(p=>String(p.penawaran_id)===String(id)).reduce((s,p)=>s+N(p.nominal),0); }
 
   async function invoicePage() {
-    const c = document.getElementById('content');
-    if (!c) return;
-    document.getElementById('title').textContent = 'Invoice';
-    c.innerHTML = `<div class="head"><div><h1>Invoice</h1><p>Kelola invoice berdasarkan penawaran yang sudah dibuat.</p></div><button class="btn" type="button" onclick="invoicePage()">↻ Refresh</button></div><div class="card"><div class="empty">Memuat penawaran...</div></div>`;
-    try { await loadQuotations(); } catch (e) { console.error(e); c.innerHTML = `<div class="card"><div class="empty">Gagal membaca penawaran: ${E(e.message || e)}</div></div>`; return; }
-
-    c.innerHTML = `
-      <div class="head"><div><h1>Invoice</h1><p>Satu penawaran hanya dapat memiliki satu nomor invoice.</p></div></div>
-      <div class="card"><div class="scroll"><table class="table"><thead><tr><th>No. Invoice</th><th>Penawaran</th><th>Client</th><th>Event</th><th>Total</th><th>Dibayar</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
-      ${quotations.map(row => {
-        const meta = getInvoiceMeta(row), total = totalOf(row), paid = paidOf(row), balance = Math.max(0,total-paid);
-        const status = meta.nomor_invoice ? (meta.status_invoice || 'DRAFT') : 'BELUM DIBUAT';
-        return `<tr>
-          <td><strong>${E(meta.nomor_invoice || '-')}</strong>${meta.jatuh_tempo ? `<div style="font-size:11px;color:var(--muted)">Tempo ${D(meta.jatuh_tempo)}</div>` : ''}</td>
-          <td>${E(row.nomor_penawaran || row.nomor || '-')}</td>
-          <td>${E(row.nama_client || '-')}<div style="font-size:11px;color:var(--muted)">${E(row.perusahaan || '')}</div></td>
-          <td>${E(row.event_name || row.nama_event || row.event || '-')}</td>
-          <td>${M(total)}</td>
-          <td style="color:#00d4a8">${M(paid)}<div style="font-size:11px;color:var(--muted)">Sisa ${M(balance)}</div></td>
-          <td><span class="pm-status ${meta.nomor_invoice ? 'sent' : 'draft'}">${E(status)}</span></td>
-          <td><button class="btn sm" type="button" onclick="invoiceEdit(${Number(row.id)})">${meta.nomor_invoice ? 'Edit / Lihat' : 'Buat Invoice'}</button></td>
-        </tr>`;
-      }).join('') || '<tr><td colspan="8" class="empty">Belum ada penawaran.</td></tr>'}
-      </tbody></table></div></div>`;
+    const c=document.querySelector('#content'); if(!c)return;
+    document.querySelector('#title').textContent='Invoice';
+    c.innerHTML='<div class="head"><div><h1>Invoice</h1><p>Mengambil data dari Penawaran, Pembayaran dan Item Tambahan Invoice.</p></div><button class="btn secondary" id="pmInvoiceRefresh">↻ Refresh</button></div><div class="card"><div class="empty">Memuat invoice...</div></div>';
+    try { await loadQuotations(); } catch(e) { c.innerHTML=`<div class="card"><div class="empty">Gagal membaca database: ${E(e.message||e)}</div></div>`; return; }
+    c.innerHTML=`<div class="head"><div><h1>Invoice</h1><p>Satu penawaran menggunakan satu nomor invoice. Item tambahan hanya memengaruhi invoice.</p></div><button class="btn secondary" id="pmInvoiceRefresh2">↻ Refresh</button></div><div class="card"><div class="scroll"><table class="table"><thead><tr><th>No. Invoice</th><th>Penawaran</th><th>Client</th><th>Event</th><th>Total</th><th>Dibayar</th><th>Sisa</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${quotations.map(row=>{const m=meta(row),base=quoteTotal(row),extra=extrasTotal(row.id),total=base+extra,paid=paidOf(row.id),balance=Math.max(0,total-paid),status=m.nomor_invoice?m.status_invoice:'BELUM DIBUAT';return `<tr><td><strong>${E(m.nomor_invoice||'-')}</strong>${m.jatuh_tempo?`<div class="muted">Tempo ${E(m.jatuh_tempo)}</div>`:''}</td><td>${E(row.nomor_penawaran||row.nomor||'-')}</td><td>${E(row.nama_client||'-')}<div class="muted">${E(row.perusahaan||'')}</div></td><td>${E(row.event_name||row.nama_event||row.event||'-')}</td><td>${M(total)}${extra?`<div class="muted">Termasuk tambahan ${M(extra)}</div>`:''}</td><td>${M(paid)}</td><td>${M(balance)}</td><td><span class="pm-status ${status==='BELUM DIBUAT'?'draft':'sent'}">${E(status)}</span></td><td><div class="actions"><button class="btn sm" type="button" onclick="invoiceEdit(${Number(row.id)})">${m.nomor_invoice?'Edit / Lihat':'Buat Invoice'}</button>${m.nomor_invoice&&balance>0?`<button class="btn sm green" type="button" onclick="inputPelunasan(${Number(row.id)})">Pelunasan</button>`:''}${!m.nomor_invoice&&balance>0?`<button class="btn sm secondary" type="button" onclick="inputDP(${Number(row.id)})">Input DP</button>`:''}</div></td></tr>`}).join('')||'<tr><td colspan="9" class="empty">Belum ada penawaran.</td></tr>'}</tbody></table></div></div>`;
+    document.querySelector('#pmInvoiceRefresh')?.addEventListener('click',invoicePage); document.querySelector('#pmInvoiceRefresh2')?.addEventListener('click',invoicePage);
   }
 
-  async function previewInvoice() {
-    const row = currentInvoice?.row;
-    if (!row) return toast('Invoice belum dipilih.');
-    const meta = {
-      nomor_invoice: S(document.getElementById('invNo')?.value),
-      tanggal_invoice: S(document.getElementById('invDate')?.value) || today(),
-      jatuh_tempo: S(document.getElementById('invDue')?.value),
-      status_invoice: S(document.getElementById('invStatus')?.value) || 'DRAFT',
-      catatan_invoice: S(document.getElementById('invNotes')?.value)
-    };
-    if (!meta.nomor_invoice) return toast('Nomor invoice belum ada.');
-    const items = currentInvoice.items || await ensureItems(row.id);
-    const t = getTemplate();
-    const paid = paidOf(row), total = totalOf(row), balance = Math.max(0,total-paid);
-    const logoUrl = S(t.logo_url);
-    const ttdUrl = S(t.ttd_url);
-    const terms = S(t.ketentuan || 'DP sebesar 50% dari total nilai penawaran wajib dibayarkan sebagai tanda konfirmasi pemesanan.\nPelunasan sebesar 50% wajib dilakukan setelah seluruh unit/peralatan terpasang dan siap digunakan di lokasi acara.');
-    const telp = S(t.telepon), wa = S(t.whatsapp), email = S(t.email);
-    const contact = [telp ? `Telp ${telp}` : '', wa && wa !== telp ? `WA ${wa}` : '', email].filter(Boolean).join(' • ');
-    const rows = items.map((i,idx)=>`<tr><td class="center">${idx+1}</td><td><strong>${E(i.item || '-')}</strong><div class="code">${E(i.kode || '')}</div></td><td class="center">${E(itemQtyText(i))}</td><td class="right">${M(i.harga_jual ?? i.harga)}</td><td class="right"><strong>${M(i.subtotal)}</strong></td></tr>`).join('');
-    const old = document.getElementById('pmInvoicePreview'); if (old) old.remove();
-    const overlay = document.createElement('div'); overlay.id = 'pmInvoicePreview';
-    overlay.innerHTML = `<style>
-      #pmInvoicePreview{position:fixed;inset:0;z-index:99999;background:#050914;color:#111827;display:flex;flex-direction:column;font-family:Arial,sans-serif}.pm-inv-toolbar{height:62px;flex:0 0 62px;background:#071022;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 18px}.pm-inv-toolbar strong{font-size:16px}.pm-inv-toolbar span{display:block;color:#9fb0cc;font-size:11px;margin-top:3px}.pm-inv-actions{display:flex;gap:8px}.pm-inv-actions button{border:0;border-radius:9px;padding:10px 15px;font-weight:700;cursor:pointer}.pm-inv-close{background:#17243d;color:#fff}.pm-inv-print{background:#00c98b;color:#fff}.pm-inv-scroll{overflow:auto;flex:1;padding:18px}.pm-inv-a4{width:794px;min-height:1123px;margin:0 auto;background:#fff;box-sizing:border-box;padding:32px 42px;position:relative}.pm-inv-accent{height:5px;background:#1f4ea3;margin:-32px -42px 25px}.pm-inv-head{display:grid;grid-template-columns:1fr auto;gap:25px;border-bottom:1px solid #d8e0eb;padding-bottom:16px}.pm-inv-brand{font-size:17px;font-weight:800;color:#172b5c}.pm-inv-sub{font-size:9px;color:#65748b;letter-spacing:1.2px;margin-top:3px}.pm-inv-contact{font-size:8px;color:#667085;margin-top:8px;line-height:1.5}.pm-inv-logo{max-width:130px;max-height:55px;object-fit:contain;margin-bottom:6px}.pm-inv-doc{text-align:right}.pm-inv-doc b{display:block;color:#1f4ea3;font-size:18px;letter-spacing:1px}.pm-inv-doc strong{display:block;font-size:12px;margin-top:5px}.pm-inv-dates{margin-top:8px;font-size:8px;color:#667085;line-height:1.6}.pm-inv-info{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.pm-inv-box{border:1px solid #d8e0eb;border-radius:8px;padding:10px;font-size:9px;line-height:1.55}.pm-inv-label{font-size:7px;font-weight:800;color:#1f4ea3;letter-spacing:.7px;margin-bottom:3px}.pm-inv-client{font-size:11px;font-weight:800}.pm-inv-table{width:100%;border-collapse:collapse;margin-top:18px;font-size:8px}.pm-inv-table th{background:#172b5c;color:#fff;text-align:left;padding:7px}.pm-inv-table td{border:1px solid #d8e0eb;padding:7px}.pm-inv-table .center{text-align:center}.pm-inv-table .right{text-align:right}.pm-inv-total td{background:#edf4ff;font-weight:800}.pm-inv-pay{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}.pm-inv-paybox{border:1px solid #d8e0eb;border-radius:8px;padding:10px}.pm-inv-payrow{display:flex;justify-content:space-between;font-size:9px;margin:4px 0}.pm-inv-balance{font-size:13px;font-weight:800;color:#c78b00}.pm-inv-terms{margin-top:18px;border:1px solid #d8e0eb;border-radius:8px;padding:10px;font-size:7.5px;line-height:1.45}.pm-inv-terms ul{margin:4px 0 0;padding-left:16px}.pm-inv-sign{margin-top:25px;text-align:right;min-height:92px;font-size:9px}.pm-inv-sign img{display:block;width:auto;max-width:100px;height:42px;object-fit:contain;margin:2px 35px 0 auto}.pm-inv-line{width:120px;border-top:1px solid #374151;margin:2px 25px 4px auto}.pm-inv-footer{position:absolute;left:42px;right:42px;bottom:24px;border-top:1px solid #d8e0eb;padding-top:7px;font-size:7px;color:#7b8798;display:flex;justify-content:space-between}@media print{#pmInvoicePreview .pm-inv-toolbar{display:none}#pmInvoicePreview .pm-inv-scroll{padding:0;overflow:visible}#pmInvoicePreview .pm-inv-a4{margin:0;width:210mm;min-height:297mm;padding:11mm 14mm;box-shadow:none}#pmInvoicePreview .pm-inv-accent{margin:-11mm -14mm 9mm}}
-    </style>
-    <div class="pm-inv-toolbar"><div><strong>Preview Invoice</strong><span>A4 Portrait • ${E(meta.nomor_invoice)}</span></div><div class="pm-inv-actions"><button class="pm-inv-close" onclick="closeInvoicePreview()">Tutup</button><button class="pm-inv-print" onclick="printInvoicePreview()">Cetak / Simpan PDF</button></div></div>
-    <div class="pm-inv-scroll"><main class="pm-inv-a4" id="pmInvoiceArea">
-      <div class="pm-inv-accent"></div>
-      <header class="pm-inv-head"><div>${logoUrl ? `<img class="pm-inv-logo" src="${E(logoUrl)}" onerror="this.style.display='none'">` : ''}<div class="pm-inv-brand">${E(t.kop_text || 'PRIANGAN MULTIMEDIA')}</div><div class="pm-inv-sub">AUDIO VISUAL • MULTIMEDIA • EVENT SUPPORT</div><div class="pm-inv-contact">${E(t.alamat || '')}${t.alamat && contact ? ' • ' : ''}${E(contact)}</div></div><div class="pm-inv-doc"><b>INVOICE</b><strong>${E(meta.nomor_invoice)}</strong><div class="pm-inv-dates">Tanggal: ${D(meta.tanggal_invoice)}<br>Jatuh Tempo: ${D(meta.jatuh_tempo)}</div></div></header>
-      <section class="pm-inv-info"><div class="pm-inv-box"><div class="pm-inv-label">DITAGIHKAN KEPADA</div><div class="pm-inv-client">${E(row.nama_client || '-')}</div><div>${E(row.perusahaan || '-')}</div><div>${E(row.whatsapp || row.telepon || '')}</div><div>${E(row.email || '')}</div></div><div class="pm-inv-box"><div class="pm-inv-label">REFERENSI PENAWARAN / EVENT</div><div class="pm-inv-client">${E(row.nomor_penawaran || row.nomor || '-')}</div><div>${E(row.event_name || row.nama_event || row.event || '-')}</div><div>${D(row.tanggal_mulai)} — ${D(row.tanggal_selesai)}</div></div></section>
-      <table class="pm-inv-table"><thead><tr><th style="width:28px">No.</th><th>Produk / Jasa</th><th style="width:90px">Qty / Dimensi</th><th style="width:105px">Harga</th><th style="width:115px">Subtotal</th></tr></thead><tbody>${rows}<tr class="pm-inv-total"><td colspan="4" class="right">TOTAL INVOICE</td><td class="right">${M(total)}</td></tr></tbody></table>
-      <section class="pm-inv-pay"><div class="pm-inv-paybox"><div class="pm-inv-label">STATUS PEMBAYARAN</div><div class="pm-inv-payrow"><span>Total</span><strong>${M(total)}</strong></div><div class="pm-inv-payrow"><span>Sudah dibayar</span><strong>${M(paid)}</strong></div><div class="pm-inv-payrow"><span>Sisa tagihan</span><strong class="pm-inv-balance">${M(balance)}</strong></div></div><div class="pm-inv-paybox"><div class="pm-inv-label">PEMBAYARAN</div><div style="font-size:9px;line-height:1.55">${E(t.bank || t.rekening || t.payment_info || 'Pembayaran dilakukan melalui Bank BCA sesuai informasi pembayaran yang diberikan Priangan Multimedia.')}</div></div></section>
-      <section class="pm-inv-terms"><strong>SYARAT & KETENTUAN</strong><ul>${terms.split(/\r?\n/).filter(Boolean).map(x=>`<li>${E(x.replace(/^[-•▪●]\s*/,'').replace(/^\d+[.)]\s*/,''))}</li>`).join('')}</ul>${meta.catatan_invoice ? `<div style="margin-top:5px"><strong>Catatan:</strong> ${E(meta.catatan_invoice)}</div>` : ''}</section>
-      <section class="pm-inv-sign"><div>HORMAT KAMI,</div>${ttdUrl ? `<img src="${E(ttdUrl)}" onerror="this.style.display='none'">` : ''}<div class="pm-inv-line"></div><strong>${E(t.nama_penandatangan || '____________________________')}</strong><div>${E(t.jabatan_penandatangan || '')}</div></section>
-      <footer class="pm-inv-footer"><span>Terima kasih atas kepercayaan dan kesempatan yang diberikan.</span><strong>${E(t.kop_text || 'PRIANGAN MULTIMEDIA')}</strong></footer>
-    </main></div>`;
+  async function openForm(row) {
+    const d=DB(); current={row,items:[],extras:localExtras(row.id)};
+    await hydrateExtras(row.id); current.extras=localExtras(row.id); const m=meta(row), no=m.nomor_invoice||invoiceNumber(quotations), date=m.tanggal_invoice||today(), due=m.jatuh_tempo||date;
+    document.querySelector('#content').innerHTML=`<div class="head"><div><h1>${m.nomor_invoice?'Edit Invoice':'Buat Invoice'}</h1><p>${E(row.nomor_penawaran||row.nomor||'-')} • ${E(row.event_name||row.nama_event||row.event||'-')}</p></div><button class="btn secondary" type="button" onclick="invoicePage()">Kembali</button></div><div class="card"><div class="grid g2"><div class="field"><label>No. Invoice</label><input id="invNo" value="${E(no)}" readonly></div><div class="field"><label>Tanggal Invoice</label><input id="invDate" type="date" value="${E(date)}"></div><div class="field"><label>Jatuh Tempo</label><input id="invDue" type="date" value="${E(due)}"></div><div class="field"><label>Status</label><select id="invStatus"><option>DRAFT</option><option>DITERBITKAN</option><option>LUNAS</option><option>DIBATALKAN</option></select></div></div></div><div class="card" style="margin-top:16px"><b>Referensi Penawaran</b><div class="grid g2" style="margin-top:15px"><div class="field"><label>No. Penawaran</label><input value="${E(row.nomor_penawaran||row.nomor||'-')}" readonly></div><div class="field"><label>Client</label><input value="${E(row.nama_client||'-')}" readonly></div><div class="field"><label>Perusahaan</label><input value="${E(row.perusahaan||'-')}" readonly></div><div class="field"><label>Event / Project</label><input value="${E(row.event_name||row.nama_event||row.event||'-')}" readonly></div></div></div><div class="card" style="margin-top:16px"><div class="actions" style="justify-content:space-between"><b>Item Invoice</b><div class="actions"><button class="btn sm" type="button" onclick="invoiceAddItem()">+ Tambah Item</button><button class="btn sm secondary" type="button" onclick="invoiceAddOvertime()">+ Overtime</button></div></div><div id="invoiceItems" style="margin-top:12px"></div></div><div class="card" style="margin-top:16px"><div class="grid g2"><div class="field"><label>Catatan Invoice</label><textarea id="invNotes" rows="4">${E(m.catatan_invoice)}</textarea></div><div><div class="sum"><span>Total Penawaran</span><b>${M(quoteTotal(row))}</b></div><div class="sum" style="margin-top:8px"><span>Tambahan Invoice</span><b id="invExtraTotal">${M(extrasTotal(row.id))}</b></div><div class="sum" style="margin-top:8px"><span>Total Invoice</span><b id="invTotal">${M(totalInvoice(row,row.id))}</b></div><div class="sum" style="margin-top:8px"><span>Sudah Dibayar</span><b id="invPaid">${M(paidOf(row.id))}</b></div><div class="sum" style="margin-top:8px"><span>Sisa Tagihan</span><b id="invBalance">${M(Math.max(0,totalInvoice(row,row.id)-paidOf(row.id)))}</b></div></div></div><div class="actions no-print" style="margin-top:16px"><button class="btn secondary" type="button" onclick="invoicePage()">Batal</button><button class="btn green" type="button" onclick="saveInvoice()">Simpan Invoice</button><button class="btn" type="button" onclick="previewInvoice()">Preview / Cetak A4</button></div></div>`;
+    document.querySelector('#invStatus').value=m.status_invoice||'DRAFT';
+    const itemRows=await loadItems(row.id); current.items=itemRows; renderItems(); refreshInvoiceTotals();
+  }
+
+  async function loadItems(id){ const d=DB(); if(!d)return[]; const r=await d.from('penawaran_items').select('*').eq('penawaran_id',id).order('id'); if(r.error)throw r.error; return r.data||[]; }
+  function refreshInvoiceTotals(){ if(!current)return; const base=quoteTotal(current.row),extra=extrasTotal(current.row.id),total=base+extra,paid=paidOf(current.row.id); document.querySelector('#invExtraTotal')&&(document.querySelector('#invExtraTotal').textContent=M(extra));document.querySelector('#invTotal')&&(document.querySelector('#invTotal').textContent=M(total));document.querySelector('#invPaid')&&(document.querySelector('#invPaid').textContent=M(paid));document.querySelector('#invBalance')&&(document.querySelector('#invBalance').textContent=M(Math.max(0,total-paid))); }
+  function renderItems(){
+    const target=document.querySelector('#invoiceItems'); if(!target||!current)return; const baseItems=current.items||[], adds=current.extras||[];
+    target.innerHTML=`<div class="scroll"><table class="table"><thead><tr><th>No.</th><th>Produk / Jasa</th><th>Qty / Dimensi</th><th>Harga</th><th>Subtotal</th><th>Aksi</th></tr></thead><tbody>${baseItems.map((i,n)=>`<tr><td>${n+1}</td><td><strong>${E(i.item||'-')}</strong><div class="muted">${E(i.kode||'')}</div></td><td>${E(itemQtyText(i))}</td><td>${M(i.harga_jual??i.harga)}</td><td><strong>${M(i.subtotal)}</strong></td><td class="muted">Penawaran</td></tr>`).join('')}${adds.map(i=>`<tr><td>+</td><td><strong>${E(i.item)}</strong><div class="muted">${E(i.kode)} • Invoice only</div></td><td>${E(itemQtyText(i))}</td><td>${M(i.harga_jual??i.harga)}</td><td><strong>${M(i.subtotal)}</strong></td><td><button class="btn sm secondary" type="button" onclick="invoiceRemoveItem('${E(i.id)}')">Hapus</button></td></tr>`).join('')||''}${!baseItems.length&&!adds.length?'<tr><td colspan="6" class="empty">Tidak ada item.</td></tr>':''}<tr><td colspan="5" style="text-align:right"><strong>GRAND TOTAL</strong></td><td><strong>${M(quoteTotal(current.row)+adds.reduce((s,x)=>s+N(x.subtotal),0))}</strong></td></tr></tbody></table></div>`;
+  }
+  function openAddItem(mode='master') {
+    if(!current)return msg('Invoice belum dipilih.'); document.getElementById('pmInvoiceAddDialog')?.remove();
+    const state=current.row, masters=Array.isArray(window.masters)?window.masters.filter(m=>m&&m.aktif!==false&&String(m.aktif).toUpperCase()!=='FALSE'):[], start=S(state.tanggal_mulai), end=S(state.tanggal_selesai), overtime=mode==='overtime';
+    const el=document.createElement('div');el.id='pmInvoiceAddDialog';el.innerHTML=`<div class="pmx"><h3>${overtime?'Tambah Overtime':'Tambah Item ke Invoice'}</h3><p class="pmx-help">${overtime?'Jumlah jam × harga per jam.':'Item tambahan hanya masuk invoice dan tidak mengubah Penawaran.'}</p><div class="pmx-grid"><div class="pmx-field"><label>Jenis</label><select id="pmxSource"><option value="master">Master Harga</option><option value="manual">Manual</option><option value="overtime">Overtime</option></select></div><div class="pmx-field ${overtime?'pmx-hide':''}" id="pmxMasterWrap"><label>Item Master Harga</label><select id="pmxMaster"><option value="">— Pilih —</option>${masters.map(m=>`<option value="${E(m.kode)}" data-id="${E(m.id)}" data-item="${E(m.item)}" data-price="${N(m.harga_jual)}">${E(m.kode)} — ${E(m.item)} (${M(m.harga_jual)})</option>`).join('')}</select></div><div class="pmx-field pmx-wide"><label>Nama / Keterangan</label><input id="pmxName" value="${overtime?'Overtime':''}"></div><div class="pmx-field"><label>Tipe</label><select id="pmxType"><option value="qty">Qty</option><option value="luas">Luas (m²)</option><option value="level">Level (m)</option><option value="rigging">Rigging</option></select></div><div class="pmx-field"><label>Harga Jual ${overtime?'/ Jam':''}</label><input id="pmxPrice" type="number" min="0" step="1000" value="0"></div><div class="pmx-field"><label>Tanggal Mulai</label><input id="pmxStart" type="date" value="${E(start)}"></div><div class="pmx-field"><label>Tanggal Selesai</label><input id="pmxEnd" type="date" value="${E(end)}"></div><div class="pmx-field"><label>Jumlah / Jam</label><input id="pmxQty" type="number" min="0" step="${overtime?'0.5':'1'}" value="${overtime?'0':'1'}"></div><div class="pmx-field"><label>Lebar (m)</label><input id="pmxWidth" type="number" min="0" step="0.01" value="0"></div><div class="pmx-field"><label>Tinggi (m)</label><input id="pmxHeight" type="number" min="0" step="0.01" value="0"></div><div class="pmx-field"><label>Panjang Rigging (m)</label><input id="pmxLength" type="number" min="0" step="0.01" value="0"></div></div><div class="pmx-calc"><div><span>Durasi</span><b id="pmxDuration">1 hari</b></div><div><span>Dasar Perhitungan</span><b id="pmxBasis">1 unit</b></div><div><span>Subtotal</span><b id="pmxSubtotal">Rp 0</b></div></div><div class="pmx-actions"><button class="btn secondary" type="button" id="pmxCancel">Batal</button><button class="btn green" type="button" id="pmxSave">Tambahkan ke Invoice</button></div></div>`;
+    document.body.appendChild(el);
+    const q=(id)=>el.querySelector(id),source=q('#pmxSource'),master=q('#pmxMaster'),name=q('#pmxName'),type=q('#pmxType'),price=q('#pmxPrice'),st=q('#pmxStart'),en=q('#pmxEnd'),qty=q('#pmxQty'),w=q('#pmxWidth'),h=q('#pmxHeight'),len=q('#pmxLength'); source.value=overtime?'overtime':'master'; if(overtime){type.disabled=true;type.value='qty';}
+    const refresh=()=>{const t=source.value==='overtime'?'overtime':type.value,c=extraCalc({type:t,qty:qty.value,width:w.value,height:h.value,length:len.value,price:price.value,start:st.value,end:en.value});q('#pmxDuration').textContent=t==='overtime'?`${N(qty.value)} jam`:`${c.dur} hari`;q('#pmxBasis').textContent=t==='luas'?`${c.basis} m²`:t==='level'?`${c.basis} m`:t==='rigging'?`${c.basis} m`:t==='overtime'?`${N(qty.value)} jam`:`${N(qty.value)||1} unit`;q('#pmxSubtotal').textContent=M(c.subtotal);};
+    master?.addEventListener('change',()=>{const o=master.selectedOptions[0];name.value=o.dataset.item||'';price.value=N(o.dataset.price);const m=masters.find(x=>S(x.kode)===S(master.value));type.value=itemRule(m);refresh();}); source.addEventListener('change',()=>{const ov=source.value==='overtime';document.querySelector('#pmxMasterWrap').classList.toggle('pmx-hide',ov);if(ov){name.value='Overtime';type.value='qty';type.disabled=true;qty.value=1;st.value='';en.value='';w.value=0;h.value=0;len.value=0;price.value=0;}else type.disabled=false;refresh();}); [type,price,st,en,qty,w,h,len].forEach(x=>x?.addEventListener('input',refresh)); q('#pmxCancel').onclick=()=>el.remove(); q('#pmxSave').onclick=async()=>{const src=S(source.value), mt=master?.selectedOptions?.[0], mm=mt?.value?{id:mt.dataset.id,kode:mt.value,item:mt.dataset.item,price:N(mt.dataset.price)}:null, nm=S(name.value)||(src==='overtime'?'Overtime':'Item Tambahan'),tp=src==='overtime'?'overtime':S(type.value),pr=Math.max(0,N(price.value)),qq=Math.max(0,N(qty.value)),ww=Math.max(0,N(w.value)),hh=Math.max(0,N(h.value)),ll=Math.max(0,N(len.value)),ss=S(st.value)||null,ee=S(en.value)||null;if(src==='master'&&!mm)return msg('Pilih item dari Master Harga terlebih dahulu.');if(src==='overtime'&&qq<=0)return msg('Kelebihan jam harus lebih dari 0.');if(tp==='qty'&&qq<=0)return msg('Jumlah Qty harus lebih dari 0.');const c=extraCalc({type:tp,qty:qq,width:ww,height:hh,length:ll,price:pr,start:ss,end:ee});if(['luas','level','rigging'].includes(tp)&&c.basis<=0)return msg('Lengkapi dimensi sesuai tipe perhitungan.');const item=extraToLocal({id:'INVADD-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),source:src,master_harga_id:mm?.id||null,tipe:tp,item:nm,kode:src==='overtime'?'OVERTIME':(mm?.kode||'ADD-INV'),qty:qq||1,satuan:src==='overtime'?'jam':tp==='luas'?'m²':tp==='level'?'m':tp==='rigging'?'m':'unit',harga:pr,harga_jual:pr,lebar:ww||null,tinggi:hh||null,panjang:ll||null,tanggal_mulai:ss,tanggal_selesai:ee,durasi:c.dur,basis:c.basis,subtotal:c.subtotal});const store=readExtrasStore(),key=String(current.row.id);store[key]=[...(store[key]||[]),item];writeExtrasStore(store);current.extras=localExtras(current.row.id);el.remove();await persistExtras(current.row.id);renderItems();refreshInvoiceTotals();msg('Item berhasil ditambahkan ke invoice.');}; refresh();
+  }
+  async function removeExtra(id){ if(!current)return; const key=String(current.row.id),store=readExtrasStore();store[key]=(store[key]||[]).filter(x=>String(x.id)!==String(id));writeExtrasStore(store);const d=DB();try{if(d&&/^[0-9]+$/.test(String(id)))await d.from('penawaran_invoice_items').delete().eq('id',Number(id)).eq('penawaran_id',Number(current.row.id));}catch(_){}current.extras=localExtras(current.row.id);renderItems();refreshInvoiceTotals(); }
+  async function saveInvoice(){
+    if(!current)return msg('Invoice belum dipilih.'); const m=meta(current.row),payload={nomor_invoice:S(document.querySelector('#invNo')?.value),tanggal_invoice:S(document.querySelector('#invDate')?.value)||today(),jatuh_tempo:S(document.querySelector('#invDue')?.value)||today(),status_invoice:S(document.querySelector('#invStatus')?.value)||'DRAFT',catatan_invoice:S(document.querySelector('#invNotes')?.value)}; if(!payload.nomor_invoice)return msg('Nomor invoice wajib ada.'); const d=DB(); if(!d)return msg('Supabase belum terhubung.'); const r=await d.from('penawaran').update(payload).eq('id',current.row.id); if(r.error&&!/column|schema|invoice/i.test(r.error.message||''))return msg('Gagal menyimpan invoice: '+r.error.message); if(r.error){const store=invoiceStore();store[String(current.row.id)]=payload;saveInvoiceStore(store);} await persistExtras(current.row.id); msg('Invoice berhasil disimpan.'); await invoicePage();
+  }
+  function previewInvoice(){
+    if(!current)return msg('Invoice belum dipilih.'); const row=current.row,m=meta(row),t=template(),extras=current.extras||[],base=quoteTotal(row),total=base+extras.reduce((s,x)=>s+N(x.subtotal),0),paid=paidOf(row.id),balance=Math.max(0,total-paid),logo=S(t.logo_url),ttd=S(t.ttd_url),terms=S(t.ketentuan||'Pembayaran dilakukan sesuai kesepakatan dengan client.');
+    document.getElementById('pmInvoicePreview')?.remove(); const overlay=document.createElement('div');overlay.id='pmInvoicePreview'; const contact=[S(t.telepon)?`Telp ${S(t.telepon)}`:'',S(t.whatsapp)?`WA ${S(t.whatsapp)}`:'',S(t.email)].filter(Boolean).join(' • ');
+    const itemRows=[...(current.items||[]).map((i,n)=>`<tr><td>${n+1}</td><td><strong>${E(i.item||'-')}</strong><div class="code">${E(i.kode||'')}</div></td><td>${E(itemQtyText(i))}</td><td class="right">${M(i.harga_jual??i.harga)}</td><td class="right">${M(i.subtotal)}</td></tr>`),...extras.map(i=>`<tr><td>+</td><td><strong>${E(i.item)}</strong><div class="code">${E(i.kode)} • Invoice only</div></td><td>${E(itemQtyText(i))}</td><td class="right">${M(i.harga_jual??i.harga)}</td><td class="right">${M(i.subtotal)}</td></tr>`)].join('');
+    overlay.innerHTML=`<div class="pm-inv-toolbar"><div><strong>Preview Invoice</strong><span>A4 Portrait • ${E(m.nomor_invoice)}</span></div><div class="pm-inv-actions"><button type="button" class="pm-inv-close" onclick="closeInvoicePreview()">Tutup</button><button type="button" class="pm-inv-print" onclick="printInvoicePreview()">Cetak / Simpan PDF</button></div></div><div class="pm-inv-scroll"><main class="pm-inv-a4" id="pmInvoiceArea"><div class="pm-inv-accent"></div><header class="pm-inv-head"><div>${logo?`<img class="pm-inv-logo" src="${E(logo)}" alt="Logo">`:''}<div class="pm-inv-brand">${E(t.kop_text||'PRIANGAN MULTIMEDIA')}</div><div class="pm-inv-sub">AUDIO VISUAL • MULTIMEDIA • EVENT SUPPORT</div><div class="pm-inv-contact">${E(t.alamat||'')}${t.alamat&&contact?' • ':''}${E(contact)}</div></div><div class="pm-inv-doc"><b>INVOICE</b><strong>${E(m.nomor_invoice)}</strong><div class="pm-inv-dates">Tanggal: ${E(m.tanggal_invoice||today())}<br>Jatuh Tempo: ${E(m.jatuh_tempo||'-')}</div></div></header><section class="pm-inv-info"><div class="pm-inv-box"><div class="pm-inv-label">DITAGIHKAN KEPADA</div><div class="pm-inv-client">${E(row.nama_client||'-')}</div><div>${E(row.perusahaan||'-')}</div><div>${E(row.whatsapp||row.telepon||'')}</div><div>${E(row.email||'')}</div></div><div class="pm-inv-box"><div class="pm-inv-label">REFERENSI PENAWARAN / EVENT</div><div class="pm-inv-client">${E(row.nomor_penawaran||row.nomor||'-')}</div><div>${E(row.event_name||row.nama_event||row.event||'-')}</div><div>${E(row.tanggal_mulai||'-')} — ${E(row.tanggal_selesai||'-')}</div></div></section><table class="pm-inv-table"><thead><tr><th>No.</th><th>Produk / Jasa</th><th>Qty / Dimensi</th><th>Harga</th><th>Subtotal</th></tr></thead><tbody>${itemRows}${extras.length?`<tr class="pm-inv-extra-total"><td colspan="4" class="right">Tambahan Invoice</td><td class="right">${M(extras.reduce((s,x)=>s+N(x.subtotal),0))}</td></tr>`:''}<tr class="pm-inv-total"><td colspan="4" class="right">TOTAL INVOICE</td><td class="right">${M(total)}</td></tr></tbody></table><section class="pm-inv-pay"><div class="pm-inv-paybox"><div class="pm-inv-label">STATUS PEMBAYARAN</div><div class="pm-inv-payrow"><span>Total</span><strong>${M(total)}</strong></div><div class="pm-inv-payrow"><span>Sudah dibayar</span><strong>${M(paid)}</strong></div><div class="pm-inv-payrow"><span>Sisa tagihan</span><strong class="pm-inv-balance">${M(balance)}</strong></div></div><div class="pm-inv-paybox"><div class="pm-inv-label">PEMBAYARAN</div><div style="font-size:9px;line-height:1.55">${E(t.bank||t.rekening||t.payment_info||'Pembayaran dilakukan sesuai informasi pembayaran Priangan Multimedia.')}</div></div></section><section class="pm-inv-terms"><strong>SYARAT & KETENTUAN</strong><ul>${terms.split(/\r?\n/).filter(Boolean).map(x=>`<li>${E(x.replace(/^[-•▪●]\s*/,'').replace(/^\d+[.)]\s*/,''))}</li>`).join('')}</ul>${m.catatan_invoice?`<div style="margin-top:5px"><strong>Catatan:</strong> ${E(m.catatan_invoice)}</div>`:''}</section><section class="pm-inv-sign"><div>HORMAT KAMI,</div>${ttd?`<img src="${E(ttd)}" alt="TTD">`:''}<div class="pm-inv-line"></div><strong>${E(t.nama_penandatangan||'____________________________')}</strong><div>${E(t.jabatan_penandatangan||'')}</div></section><footer class="pm-inv-footer"><span>Terima kasih atas kepercayaan dan kesempatan yang diberikan.</span><strong>${E(t.kop_text||'PRIANGAN MULTIMEDIA')}</strong></footer></main></div>`;
     document.body.appendChild(overlay);
   }
-
-  function closeInvoicePreview() { document.getElementById('pmInvoicePreview')?.remove(); }
-  function printInvoicePreview() { window.print(); }
-
-  function installNav() {
-    const nav = document.querySelector('.sidebar nav');
-    if (!nav || nav.querySelector('[data-p="invoice"]')) return;
-    const b = document.createElement('button');
-    b.className = 'nav'; b.dataset.p = 'invoice'; b.type = 'button'; b.textContent = '▤ Invoice';
-    nav.insertBefore(b, nav.querySelector('[data-p="finance"]') || null);
-    b.addEventListener('click', () => {
-      document.querySelectorAll('.nav').forEach(x => x.classList.toggle('active', x === b));
-      invoicePage();
-      document.querySelector('.sidebar')?.classList.remove('open');
-    });
+  function closeInvoicePreview(){document.getElementById('pmInvoicePreview')?.remove();}
+  function printInvoicePreview(){const root=document.getElementById('pmInvoiceArea');if(!root)return msg('Area invoice tidak ditemukan.');const no=S(root.querySelector('.pm-inv-doc strong')?.textContent||'Invoice');document.title=`Invoice - ${no}`;window.print();}
+  async function openPayment(id,type){
+    const d=DB();if(!d)return msg('Supabase belum terhubung.'); id=Number(id);type=type==='PELUNASAN'?'PELUNASAN':'DP'; const q=await d.from('penawaran').select('*').eq('id',id).single();if(q.error)return msg('Penawaran tidak ditemukan.'); const p=await d.from('pembayaran_penawaran').select('*').eq('penawaran_id',id).order('tanggal_bayar',{ascending:false}).order('id',{ascending:false}); if(p.error)return msg('Gagal membaca pembayaran: '+p.error.message); const rows=p.data||[],total=quoteTotal(q.data)+extrasTotal(id),paid=rows.reduce((s,x)=>s+N(x.nominal),0),balance=Math.max(0,total-paid);if(balance<=0)return msg('Invoice ini sudah lunas.');
+    document.getElementById('pmPaymentModal')?.remove();const el=document.createElement('div');el.id='pmPaymentModal';const dp=type==='DP';el.innerHTML=`<div class="pm-pay-backdrop"><div class="pm-pay-modal"><div class="pm-pay-head"><div><div class="pm-pay-kicker">${dp?'PEMBAYARAN AWAL':'PEMBAYARAN AKHIR'}</div><h2>${dp?'Input DP':'Input Pelunasan'}</h2><p>${E(q.data.nomor_penawaran||q.data.nomor||'-')} · ${E(q.data.nama_client||'-')} · ${E(q.data.event_name||q.data.nama_event||'-')}</p></div><button class="pm-pay-close" type="button">×</button></div><div class="pm-pay-summary"><span><small>Total Invoice</small><b>${M(total)}</b></span><span><small>Sudah Dibayar</small><b>${M(paid)}</b></span><span><small>Sisa</small><b>${M(balance)}</b></span></div><div class="grid g2"><div class="field"><label>Tanggal Pembayaran</label><input id="pmPayDate" type="date" value="${today()}"></div><div class="field"><label>Nominal ${dp?'DP':'Pelunasan'}</label><input id="pmPayAmount" type="number" min="1" max="${balance}" value="${dp?'':balance}"></div><div class="field"><label>Metode</label><select id="pmPayMethod"><option>Transfer BCA</option><option>Transfer Bank</option><option>Cash</option><option>QRIS</option><option>Lainnya</option></select></div><div class="field"><label>Catatan</label><input id="pmPayNote" value="${dp?'DP diterima':'Pelunasan diterima'}"></div></div><div class="pm-pay-actions"><button class="btn secondary pm-pay-close" type="button">Batal</button><button class="btn green" id="pmPaySave" type="button">Simpan ${dp?'DP':'Pelunasan'}</button></div><div class="card" style="margin-top:16px"><b>Riwayat Pembayaran</b><div class="scroll"><table class="table"><thead><tr><th>Tanggal</th><th>Jenis</th><th>Nominal</th><th>Metode</th><th>Catatan</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${E(x.tanggal_bayar||'-')}</td><td>${E(x.jenis||'-')}</td><td>${M(x.nominal)}</td><td>${E(x.metode||'-')}</td><td>${E(x.catatan||'-')}</td></tr>`).join('')||'<tr><td colspan="5">Belum ada pembayaran.</td></tr>'}</tbody></table></div></div></div></div>`;document.body.appendChild(el);el.querySelectorAll('.pm-pay-close').forEach(b=>b.onclick=()=>el.remove());el.querySelector('#pmPaySave').onclick=async()=>{const amount=N(el.querySelector('#pmPayAmount').value),date=S(el.querySelector('#pmPayDate').value),method=S(el.querySelector('#pmPayMethod').value),note=S(el.querySelector('#pmPayNote').value);if(!date)return msg('Tanggal pembayaran wajib diisi.');if(amount<=0||amount>balance)return msg('Nominal pembayaran tidak valid atau melebihi sisa tagihan.');const b=el.querySelector('#pmPaySave');b.disabled=true;b.textContent='Menyimpan...';try{const ins=await d.from('pembayaran_penawaran').insert({penawaran_id:id,tanggal_bayar:date,jenis:type,nominal:amount,metode:method,catatan:note});if(ins.error)throw ins.error;const latest=await d.from('pembayaran_penawaran').select('nominal').eq('penawaran_id',id);const newPaid=!latest.error?(latest.data||[]).reduce((s,x)=>s+N(x.nominal),0):paid+amount;const newBal=Math.max(0,total-newPaid);await d.from('penawaran').update({total_dibayar:newPaid,sisa_pembayaran:newBal,status_pembayaran:newBal<=0?'LUNAS':'DP DITERIMA'}).eq('id',id);el.remove();msg(`${dp?'DP':'Pelunasan'} berhasil disimpan.`);await invoicePage();}catch(e){console.error('[PM] payment',e);msg('Gagal menyimpan pembayaran: '+(e.message||e));}finally{b.disabled=false;b.textContent=`Simpan ${dp?'DP':'Pelunasan'}`;}};
   }
 
-  window.invoicePage = invoicePage;
-  window.invoiceEdit = id => {
-    const row = quotations.find(x => Number(x.id) === Number(id));
-    if (row) openForm(row); else toast('Penawaran tidak ditemukan.');
-  };
-  window.saveInvoice = saveInvoice;
-  window.previewInvoice = previewInvoice;
-  window.closeInvoicePreview = closeInvoicePreview;
-  window.printInvoicePreview = printInvoicePreview;
+  window.invoicePage=invoicePage;
+  window.invoiceEdit=async(id)=>{const row=quotations.find(x=>Number(x.id)===Number(id));if(row)await openForm(row);else{await loadQuotations();const fresh=quotations.find(x=>Number(x.id)===Number(id));if(fresh)openForm(fresh);else msg('Penawaran tidak ditemukan.');}};
+  window.saveInvoice=saveInvoice; window.previewInvoice=previewInvoice; window.closeInvoicePreview=closeInvoicePreview; window.printInvoicePreview=printInvoicePreview;
+  window.invoiceAddItem=()=>openAddItem('master'); window.invoiceAddOvertime=()=>openAddItem('overtime'); window.invoiceCloseAddItem=()=>document.getElementById('pmInvoiceAddDialog')?.remove(); window.invoiceSaveAddItem=async()=>{}; window.invoiceRemoveItem=removeExtra;
+  window.inputDP=id=>openPayment(id,'DP'); window.inputPelunasan=id=>openPayment(id,'PELUNASAN'); window.addPayment=id=>openPayment(id,'DP'); window.openPayment=id=>openPayment(id,'DP');
 
-  installNav();
-  const navObserver = new MutationObserver(installNav);
-  navObserver.observe(document.body, { childList:true, subtree:true });
+  function installNav(){
+    const b=document.querySelector('.nav[data-p="invoice"]'); if(!b||b.dataset.pmInvoiceCore)return; b.dataset.pmInvoiceCore='1'; b.addEventListener('click',(e)=>{e.preventDefault();e.stopImmediatePropagation();invoicePage();document.querySelector('.sidebar')?.classList.remove('open');},true);
+  }
+  function style(){
+    if(document.getElementById('pmInvoiceDomainStyle'))return; const s=document.createElement('style');s.id='pmInvoiceDomainStyle';s.textContent=`#pmInvoiceAddDialog,#pmPaymentModal,#pmInvoicePreview{font-family:Arial,sans-serif}#pmInvoiceAddDialog{position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto}.pmx{width:min(760px,100%);max-height:94vh;overflow:auto;background:#10192d;border:1px solid #2b3a5c;border-radius:16px;padding:20px;color:#fff;box-shadow:0 24px 80px rgba(0,0,0,.5)}.pmx h3{margin:0}.pmx-help{color:#9fb0cc;font-size:12px;margin:6px 0 14px}.pmx-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.pmx-field label{display:block;font-size:12px;color:#aebbd2;margin:9px 0 6px}.pmx-field input,.pmx-field select{width:100%;box-sizing:border-box;background:#071022;color:#fff;border:1px solid #2b3a5c;border-radius:9px;padding:11px;min-height:42px}.pmx-wide{grid-column:1/-1}.pmx-hide{display:none!important}.pmx-calc{margin-top:14px;padding:12px;border:1px solid #243556;border-radius:10px;background:#0b1427}.pmx-calc div{display:flex;justify-content:space-between;margin:4px 0}.pmx-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.pmx-actions .btn{border-radius:9px;padding:10px 15px}.muted,.code{font-size:11px;color:var(--muted)}#pmInvoicePreview{position:fixed;inset:0;z-index:99999;background:#050914;color:#111827;display:flex;flex-direction:column} .pm-inv-toolbar{height:62px;flex:0 0 62px;background:#071022;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 18px}.pm-inv-toolbar span{display:block;color:#9fb0cc;font-size:11px;margin-top:3px}.pm-inv-actions{display:flex;gap:8px}.pm-inv-actions button{border:0;border-radius:9px;padding:10px 15px;font-weight:700;cursor:pointer}.pm-inv-close{background:#17243d;color:#fff}.pm-inv-print{background:#00c98b;color:#fff}.pm-inv-scroll{overflow:auto;flex:1;padding:18px}.pm-inv-a4{width:794px;min-height:1123px;margin:0 auto;background:#fff;box-sizing:border-box;padding:32px 42px;position:relative}.pm-inv-accent{height:5px;background:#1f4ea3;margin:-32px -42px 25px}.pm-inv-head{display:grid;grid-template-columns:1fr auto;gap:25px;border-bottom:1px solid #d8e0eb;padding-bottom:16px}.pm-inv-brand{font-size:17px;font-weight:800;color:#172b5c}.pm-inv-sub{font-size:9px;color:#65748b;letter-spacing:1.2px;margin-top:3px}.pm-inv-contact{font-size:8px;color:#667085;margin-top:8px;line-height:1.5}.pm-inv-logo{max-width:130px;max-height:55px;object-fit:contain;margin-bottom:6px}.pm-inv-doc{text-align:right}.pm-inv-doc b{display:block;color:#1f4ea3;font-size:18px;letter-spacing:1px}.pm-inv-doc strong{display:block;font-size:12px;margin-top:5px}.pm-inv-dates{margin-top:8px;font-size:8px;color:#667085;line-height:1.6}.pm-inv-info{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}.pm-inv-box{border:1px solid #d8e0eb;border-radius:8px;padding:10px;font-size:9px;line-height:1.55}.pm-inv-label{font-size:7px;font-weight:800;color:#1f4ea3;letter-spacing:.7px;margin-bottom:3px}.pm-inv-client{font-size:11px;font-weight:800}.pm-inv-table{width:100%;border-collapse:collapse;margin-top:18px;font-size:8px}.pm-inv-table th{background:#172b5c;color:#fff;text-align:left;padding:7px}.pm-inv-table td{border:1px solid #d8e0eb;padding:7px}.pm-inv-table .right{text-align:right}.pm-inv-total td{background:#edf4ff;font-weight:800}.pm-inv-extra-total td{background:#f5f8fc;font-weight:700}.pm-inv-pay{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}.pm-inv-paybox{border:1px solid #d8e0eb;border-radius:8px;padding:10px}.pm-inv-payrow{display:flex;justify-content:space-between;font-size:9px;margin:4px 0}.pm-inv-balance{font-size:13px;font-weight:800;color:#c78b00}.pm-inv-terms{margin-top:18px;border:1px solid #d8e0eb;border-radius:8px;padding:10px;font-size:7.5px;line-height:1.45}.pm-inv-terms ul{margin:4px 0 0;padding-left:16px}.pm-inv-sign{margin-top:25px;text-align:right;min-height:92px;font-size:9px}.pm-inv-sign img{display:block;width:auto;max-width:100px;height:42px;object-fit:contain;margin:2px 35px 0 auto}.pm-inv-line{width:120px;border-top:1px solid #374151;margin:2px 25px 4px auto}.pm-inv-footer{position:absolute;left:42px;right:42px;bottom:24px;border-top:1px solid #d8e0eb;padding-top:7px;font-size:7px;color:#7b8798;display:flex;justify-content:space-between}.pm-pay-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.68);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}.pm-pay-modal{width:min(800px,96vw);max-height:92vh;overflow:auto;background:var(--card,#101722);border:1px solid var(--border,#263246);border-radius:18px;padding:22px;color:#fff}.pm-pay-head{display:flex;justify-content:space-between;gap:15px}.pm-pay-head h2{margin:2px 0}.pm-pay-head p{margin:6px 0;color:var(--muted)}.pm-pay-kicker{font-size:11px;font-weight:800;color:#4d8dff}.pm-pay-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.pm-pay-summary span{padding:13px;border:1px solid var(--border);border-radius:12px}.pm-pay-summary small{display:block;color:var(--muted)}.pm-pay-close{border:0;background:transparent;color:inherit;cursor:pointer}.pm-pay-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}@media(max-width:650px){.pmx-grid,.pm-inv-info,.pm-inv-pay,.pm-pay-summary{grid-template-columns:1fr}.pmx-wide{grid-column:auto}.pm-inv-a4{width:100%;padding:24px}.pm-inv-accent{margin:-24px -24px 18px}.pm-inv-footer{left:24px;right:24px}}
+@media print{#pmInvoicePreview .pm-inv-toolbar{display:none!important}#pmInvoicePreview .pm-inv-scroll{padding:0!important;overflow:visible!important}#pmInvoicePreview .pm-inv-a4{width:210mm!important;min-height:297mm!important;margin:0!important;padding:11mm 14mm!important;box-shadow:none!important}#pmInvoicePreview .pm-inv-accent{margin:-11mm -14mm 9mm!important}}
+`;document.head.appendChild(s);
+  }
+  style(); installNav();
+  const navObserver=new MutationObserver(installNav); navObserver.observe(document.body,{childList:true,subtree:true});
 })();
