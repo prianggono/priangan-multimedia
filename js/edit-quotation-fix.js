@@ -2,6 +2,8 @@
  * Loads saved quotation items directly into the normal quotation state.
  * Removes only exact accidental duplicate item rows before loading.
  * Restores both saved discount percentage and nominal discount when editing.
+ * Also persists the discount explicitly after save because the core save payload
+ * historically omitted diskon/diskon_persen fields.
  */
 (function(){
 'use strict';
@@ -24,14 +26,40 @@ function savedDiscountPercent(row,discount){
   }
   return 0;
 }
+function readDiscountState(){
+  const p=N(document.querySelector('#pmDiscPct')?.value);
+  const r=N(document.querySelector('#pmDisc')?.value);
+  const base=Math.max(0,N(window.__pmDiscountBase));
+  let pct=p;
+  let discount=r;
+  if(window.__PM_DISC_MODE==='pct'&&base>0)discount=Math.round(base*Math.max(0,Math.min(100,p))/100);
+  else if(!discount&&base>0&&p>0)discount=Math.round(base*Math.max(0,Math.min(100,p))/100);
+  if(!pct&&base>0&&discount>0)pct=discount/base*100;
+  return {base,discount:Math.max(0,discount),pct:Math.max(0,Math.min(100,pct)),total:Math.max(0,base-discount)};
+}
+async function persistSavedDiscount(d,id,state){
+  if(!d||!id)return;
+  const payload={
+    subtotal:state.base,
+    diskon:state.discount,
+    diskon_persen:state.pct,
+    diskon_nominal:state.discount,
+    total:state.total,
+    grand_total:state.total
+  };
+  const r=await d.from('penawaran').update(payload).eq('id',id);
+  if(r.error)throw r.error;
+}
 async function restoreDiscount(row){
-  const savedDiscount=Math.max(0,N(row?.diskon));
+  const savedDiscount=Math.max(0,N(row?.diskon??row?.diskon_nominal));
   const savedPct=savedDiscountPercent(row,savedDiscount);
   const p=document.querySelector('#pmDiscPct');
   const r=document.querySelector('#pmDisc');
+  window.__PM_DISC_MODE='pct';
+  window.__pmDiscountPct=savedPct;
+  window.__pmDiscountValue=savedDiscount;
+  window.__pmDiscountBase=Math.max(0,N(row?.subtotal));
   if(p){
-    window.__PM_DISC_MODE='pct';
-    window.__pmDiscountPct=savedPct;
     p.value=String(savedPct);
     p.dispatchEvent(new Event('input',{bubbles:true}));
   }
@@ -54,23 +82,50 @@ async function editQuotationFixed(id){
   window.__pmEditingQuotationNumber=S(row.nomor_penawaran||row.nomor||id);
   window.go('quotation');
   await wait(180);
-  setVal('#qc',row.nama_client);setVal('#qp',row.perusahaan);setVal('#qw',row.whatsapp||row.telepon);setVal('#qe',row.email);setVal('#qeve',row.nama_event||row.event_name||row.event||row.project);setVal('#qs',row.tanggal_mulai);setVal('#qe2',row.tanggal_selesai);
+  setVal('#qc',row.nama_client);setVal('#qp',row.perusahaan);setVal('#qw',row.whatsapp||row.telepon_wa||row.telepon);setVal('#qe',row.email);setVal('#qeve',row.nama_event||row.event_name||row.event||row.project);setVal('#qs',row.tanggal_mulai);setVal('#qe2',row.tanggal_selesai);
 
-  /* Replace the whole quotation state in one operation. No addItem/pick loop,
-     so edit cannot create a blank item or reorder existing rows. */
   const loaded=saved.map(s=>({id:Date.now()+Math.random(),__savedItemId:s.id,kode:S(s.kode),item:S(s.item||s.nama_item),harga:N(s.harga_jual??s.harga),qty:N(s.qty??s.jumlah)||1,lebar:N(s.lebar),tinggi:N(s.tinggi),panjang:N(s.panjang),mulai:S(s.tanggal_mulai),selesai:S(s.tanggal_selesai),tipe:S(s.tipe_perhitungan||s.tipe||'qty').toLowerCase()||'qty'}));
   window.items=loaded;window.__pmItems=loaded;
   if(typeof window.drawItems==='function')window.drawItems();
 
-  /* Restore the saved percentage as the canonical discount mode.
-     The previous implementation loaded only #pmDisc, which left #pmDiscPct at 0
-     and allowed the runtime to recalculate the quotation at the undiscounted price. */
-  await wait(40);
-  await restoreDiscount(row);
-  await wait(80);
-  await restoreDiscount(row);
+  await wait(40); await restoreDiscount(row);
+  await wait(80); await restoreDiscount(row);
   toast(`Mode edit aktif: ${window.__pmEditingQuotationNumber} — ${loaded.length} item dimuat. Diskon ${savedDiscountPercent(row,N(row.diskon))}% dipulihkan.`);
  }catch(e){window.__pmEditingQuotationId=null;console.error('Edit quotation fix:',e);toast('Gagal membuka penawaran: '+(e.message||e))}
 }
-window.editQuotation=editQuotationFixed;window.__PRIANGAN_EDIT_QUOTATION_FIXED=true;
+function installSavePersistence(){
+  if(typeof window.saveQuote!=='function'||window.saveQuote.__pmDiscountPersistenceV1)return false;
+  const original=window.saveQuote;
+  const wrapped=async function(){
+    const d=DB();
+    const editId=N(window.__pmEditingQuotationId||window.__PM_EDIT_QUOTATION_ID);
+    const beforeState=readDiscountState();
+    const beforeIds=new Set();
+    if(d){
+      try{const q=await d.from('penawaran').select('id').order('id',{ascending:false}).limit(500);(q.data||[]).forEach(x=>beforeIds.add(String(x.id)))}catch(_){}
+    }
+    const result=await original.apply(this,arguments);
+    if(!d)return result;
+    try{
+      let targetId=editId;
+      if(!targetId){
+        const q=await d.from('penawaran').select('id,nomor_penawaran').order('id',{ascending:false}).limit(20);
+        const fresh=(q.data||[]).find(x=>!beforeIds.has(String(x.id)))||q.data?.[0];
+        targetId=N(fresh?.id);
+      }
+      if(targetId)await persistSavedDiscount(d,targetId,beforeState);
+    }catch(e){
+      console.error('[PM] discount persistence:',e);
+      toast('Penawaran tersimpan, tetapi sinkronisasi diskon gagal: '+(e.message||e));
+    }
+    return result;
+  };
+  wrapped.__pmDiscountPersistenceV1=true;
+  window.saveQuote=wrapped;
+  return true;
+}
+window.editQuotation=editQuotationFixed;
+window.__PRIANGAN_EDIT_QUOTATION_FIXED=true;
+installSavePersistence();
+[100,300,700,1500,3000,5000].forEach(ms=>setTimeout(installSavePersistence,ms));
 })();
