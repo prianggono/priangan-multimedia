@@ -1,13 +1,7 @@
 /* Priangan Multimedia — document numbering & PDF filename
- * Quotation number stays stable during normal edits.
- * PDF filename:
- *   Penawaran - [EVENT] - [QUOTATION NUMBER].pdf
- *   Penawaran - [EVENT] - [QUOTATION NUMBER] V1.pdf
- *   Penawaran - [EVENT] - [QUOTATION NUMBER] V2.pdf
- * Invoice:
- *   Invoice - [EVENT] - [INVOICE NUMBER].pdf
- *
- * A revision suffix is added ONLY when quotation business data actually changes.
+ * One cross-cutting numbering service for stable quotation numbers,
+ * quotation revisions and invoice filenames.
+ * It does not replace the domain print engines.
  */
 (function(){
   'use strict';
@@ -31,7 +25,6 @@
     return s.slice(-6).padStart(6,'0');
   }
   function baseNumber(eventName,seed,sourceNo){return `PM-${slug(eventName)}-${new Date().getFullYear()}-${digitsFromNumber(sourceNo,seed)}`}
-  function splitRevision(no){const m=S(no).match(/^(.*?)(?:\s+V(\d+))?$/i);return{base:m?.[1]||S(no),rev:m?.[2]?Number(m[2]):0}}
   function quoteFilename(eventName,number,revision){const r=Math.max(0,N(revision));return `Penawaran - ${cleanEvent(eventName)} - ${S(number)}${r?` V${r}`:''}.pdf`}
   function invoiceFilename(eventName,number){return `Invoice - ${cleanEvent(eventName)} - ${S(number||'Invoice')}.pdf`}
 
@@ -52,7 +45,7 @@
   }
   function revisionKey(id){return `PM_QUOTATION_REVISION_${Number(id)||0}`}
   function getRevision(id){try{return Math.max(0,N(localStorage.getItem(revisionKey(id))||0))}catch(_){return 0}}
-  function setRevision(id,value){try{localStorage.setItem(revisionKey(id),String(Math.max(0,N(value))))}catch(_){}return Math.max(0,N(value))}
+  function setRevision(id,value){try{return Math.max(0,N(localStorage.setItem(revisionKey(id),String(Math.max(0,N(value))))||value))}catch(_){return Math.max(0,N(value))}}
 
   async function normalizeSavedQuote(id,isEdit,oldRow,eventName,changed){
     const d=dbx();if(!d)return null;
@@ -64,7 +57,10 @@
     }else if(!/^PM-/i.test(number)||/^PM-\d{6}$/i.test(number)){number=baseNumber(eventName||row.nama_event,id,number)}
     const revision=isEdit?(changed?setRevision(id,getRevision(id)+1):getRevision(id)):0;
     const event=S(eventName||row.nama_event||'event');
-    window.__PM_LAST_QUOTATION_NUMBER=number;window.__PM_LAST_QUOTATION_ID=id;window.__PM_QUOTATION_REVISION=revision;window.__PM_PRINT_FILENAME=quoteFilename(event,number,revision);
+    window.__PM_LAST_QUOTATION_NUMBER=number;
+    window.__PM_LAST_QUOTATION_ID=id;
+    window.__PM_QUOTATION_REVISION=revision;
+    window.__PM_PRINT_FILENAME=quoteFilename(event,number,revision);
     return number;
   }
 
@@ -99,9 +95,11 @@
       const editing=N(window.__pmEditingQuotationId||window.__PM_EDIT_QUOTATION_ID);let number=S(window.__PM_LAST_QUOTATION_NUMBER),eventName=S(document.querySelector('#qeve')?.value),row=null;
       if(editing){row=await quoteById(editing);if(row?.nomor_penawaran)number=S(row.nomor_penawaran);if(!eventName)eventName=S(row.nama_event)}
       if(!number)number=baseNumber(eventName,Date.now());
-      const revision=Math.max(0,N(window.__PM_QUOTATION_REVISION|| (editing?getRevision(editing):0)));
-      window.__PM_PRINT_DOCUMENT_NUMBER=number;window.__PM_PRINT_FILENAME=quoteFilename(eventName,number,revision);
-      const result=await original.apply(this,arguments);const root=document.getElementById('pmPrintPreview');
+      const revision=Math.max(0,N(window.__PM_QUOTATION_REVISION||(editing?getRevision(editing):0)));
+      window.__PM_PRINT_DOCUMENT_NUMBER=number;
+      window.__PM_PRINT_FILENAME=quoteFilename(eventName,number,revision);
+      const result=await original.apply(this,arguments);
+      const root=document.getElementById('pmPrintPreview');
       if(root){const tag=root.querySelector('.pm-doc-tag strong');if(tag)tag.textContent=number;const span=root.querySelector('.pm-print-toolbar span');if(span)span.textContent=`A4 Portrait • ${number}`}
       document.title=window.__PM_PRINT_FILENAME.replace(/\.pdf$/i,'');
       return result;
@@ -133,17 +131,9 @@
     }catch(_){return'event'}
   }
 
-  function installPrint(){
-    if(typeof window.print!=='function'||window.print.__pmDocumentNumbering)return false;
-    const original=window.print;
-    const wrapped=function(){
-      const invoice=S(window.__PM_INVOICE_PRINT_NUMBER),quote=S(window.__PM_PRINT_DOCUMENT_NUMBER),filenameNow=S(window.__PM_PRINT_FILENAME);const no=invoice&&document.getElementById('pmInvoicePreview')?invoice:quote&&document.getElementById('pmPrintPreview')?quote:'';const oldTitle=document.title;
-      if(filenameNow)document.title=filenameNow.replace(/\.pdf$/i,'');else if(no)document.title=`${invoice?'Invoice':'Penawaran'} - ${no}`;
-      try{return original.apply(this,arguments)}finally{document.title=oldTitle}
-    };
-    wrapped.__pmDocumentNumbering=true;window.print=wrapped;return true;
-  }
-
-  function boot(){installSave();installInvoiceEdit();installQuotationPrint();installInvoicePreview();installPrint()}
-  boot();const mo=new MutationObserver(()=>boot());mo.observe(document.documentElement,{childList:true,subtree:true});setTimeout(()=>mo.disconnect(),10000);
+  function boot(){installSave();installInvoiceEdit();installQuotationPrint();installInvoicePreview()}
+  boot();
+  const mo=new MutationObserver(()=>boot());
+  mo.observe(document.documentElement,{childList:true,subtree:true});
+  setTimeout(()=>mo.disconnect(),10000);
 })();
