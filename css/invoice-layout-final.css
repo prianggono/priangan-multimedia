@@ -1,7 +1,4 @@
-/* Priangan Multimedia — Invoice A4 layout final
- * Visual-only invoice preview/print polish.
- * Keeps invoice data, totals, payment logic and Supabase schema untouched.
- */
+/* Priangan Multimedia — Invoice A4 layout + payment wording */
 #pmInvoicePreview{--pm-navy:#172b5c;--pm-blue:#1f4ea3;--pm-blue-soft:#edf4ff;--pm-line:#d7dfeb;--pm-text:#172033;--pm-muted:#667085;font-family:Arial,"Helvetica Neue",sans-serif!important}
 #pmInvoicePreview .pm-inv-toolbar{height:64px!important;flex:0 0 64px!important;padding:0 22px!important}
 #pmInvoicePreview .pm-inv-scroll{padding:22px!important;background:#e9edf3!important}
@@ -43,17 +40,15 @@
 #pmInvoicePreview .pm-inv-line{width:34mm!important;border-top:1px solid #374151!important;margin:1mm auto 1.2mm!important}
 #pmInvoicePreview .pm-inv-sign strong{font-size:8px!important}
 #pmInvoicePreview .pm-inv-footer{left:14mm!important;right:14mm!important;bottom:7mm!important;padding-top:2mm!important;font-size:6.5px!important;color:#7b8798!important}
-
-/* Payment wording/content override. The Invoice core still renders the values, but the PDF wording is standardized here. */
+/* Payment wording/content: standardized for printed Invoice */
 #pmInvoicePreview .pm-inv-pay .pm-inv-payrow:nth-child(2) span:first-child{font-size:0!important}
 #pmInvoicePreview .pm-inv-pay .pm-inv-payrow:nth-child(2) span:first-child::after{content:"Downpayment";font-size:7.8px!important}
 #pmInvoicePreview .pm-inv-pay .pm-inv-paybox:nth-child(2) .pm-inv-label + div{font-size:0!important;line-height:1.5!important}
 #pmInvoicePreview .pm-inv-pay .pm-inv-paybox:nth-child(2) .pm-inv-label + div::after{content:"Bank BCA • No. Rekening 1394575278 • a.n. Ganjar Rahmadhita.";font-size:7.8px!important;line-height:1.5!important;color:var(--pm-text)!important}
-
 @media(max-width:850px){#pmInvoicePreview .pm-inv-scroll{padding:10px!important}#pmInvoicePreview .pm-inv-a4{transform-origin:top center;box-shadow:none!important}}
-@media(max-width:650px){#pmInvoicePreview .pm-inv-pay{grid-template-columns:1fr!important}}
+@media(max-width:650px){#pmInvoicePreview .pm-inv-info,#pmInvoicePreview .pm-inv-pay{grid-template-columns:1fr!important}}
 @media print{@page{size:A4 portrait;margin:0}#pmInvoicePreview .pm-inv-toolbar{display:none!important}#pmInvoicePreview .pm-inv-scroll{padding:0!important;overflow:visible!important;background:#fff!important}#pmInvoicePreview .pm-inv-a4{width:210mm!important;min-height:297mm!important;margin:0!important;box-shadow:none!important;overflow:hidden!important}#pmInvoicePreview .pm-inv-accent{margin:0 -14mm 9mm!important}}
 
-/* Keep the Invoice navigation item highlighted while the Invoice domain owns its page rendering. */
-#app:has(#content #pmInvoiceRefresh2) .sidebar .nav.active{background:transparent!important;color:var(--text,#dbe7ff)!important}
-#app:has(#content #pmInvoiceRefresh2) .sidebar .nav[data-p="invoice"]{background:linear-gradient(90deg,rgba(0,201,139,.22),rgba(77,141,255,.14))!important;color:#fff!important;border-color:rgba(77,141,255,.35)!important;box-shadow:inset 3px 0 0 #00c98b!important}
+/* Payment/wording compatibility for preview variants */
+#pmInvoicePreview .pm-inv-paybox:has(.pm-inv-balance) .pm-inv-payrow:nth-child(2) span:first-child{font-size:0!important}
+#pmInvoicePreview .pm-inv-paybox:has(.pm-inv-balance) .pm-inv-payrow:nth-child(2) span:first-child::after{content:"Downpayment";font-size:7.8px!important}
