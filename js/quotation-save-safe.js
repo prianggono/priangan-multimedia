@@ -101,7 +101,7 @@
       if(saved.error)throw saved.error;
       const rows=saved.data||[];
       if(rows.length!==source.length)throw new Error('Jumlah item tersimpan tidak sesuai.');
-      const schedules=rows.map((row,index)=>{const item=source[index];const dur=days(item.mulai,item.selesai);return{item_id:row.id,penawaran_item_id:row.id,penawaran_id:quoteId,qty:Math.max(1,N(item.qty)||1),tanggal_mulai:item.mulai,tanggal_selesai:item.selesai,durasi_hari:dur,durasi:dur,subtotal:itemSubtotal(item)};});
+      const schedules=rows.map((row,index)=>{const item=source[index];const dur=days(item.mulai,item.selesai);return{item_id:row.id,penawaran_item_id:row.id,penawaran_id:quoteId,qty:Math.max(1,N(item.qty)||1),tanggal_mulai:item.mulai,tanggal_selesai:item.selesai,durasi:dur,subtotal:itemSubtotal(item)};});
       const sched=await d.from('penawaran_jadwal').insert(schedules);
       if(sched.error)throw sched.error;
 
