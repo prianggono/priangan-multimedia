@@ -1,6 +1,7 @@
 /* Priangan Multimedia — Package Detail UI
- * Read-only UI for package contents stored in master_harga.isi_paket.
- * Does not alter master prices or quotation prices.
+ * Master Harga: package contents can be viewed in a modal.
+ * Quotation: package contents are shown inline inside the item card.
+ * Read-only with respect to package master data.
  */
 (function(){
   'use strict';
@@ -19,22 +20,15 @@
   const findMaster=code=>masters().find(m=>S(m.kode)===S(code))||null;
 
   function parseRows(raw){
-    // Supabase may return the stored newline as either a literal line break
-    // or the escaped sequence "\\n". Each record is "Komponen — Qty".
     return S(raw)
       .replace(/\\n/g,'\n')
       .split(/\r?\n/)
       .map(line=>S(line))
       .filter(Boolean)
       .map(line=>{
-        // Prefer the em dash used by isi_paket. Fall back to a spaced hyphen
-        // for older records. Everything before the separator is the component;
-        // everything after it is the quantity.
         let match=line.match(/^(.+?)\s*[—–]\s*(.*?)\s*$/);
         if(!match)match=line.match(/^(.+?)\s+-\s*(.*?)\s*$/);
-        if(match){
-          return {item:S(match[1]),qty:S(match[2])||'-'};
-        }
+        if(match)return {item:S(match[1]),qty:S(match[2])||'-'};
         return {item:line,qty:'-'};
       });
   }
@@ -87,9 +81,16 @@
     st.id='pmPackageDetailStyles';
     st.textContent=`
       .pm-package-btn{display:inline-flex!important;align-items:center;gap:5px;margin-top:6px!important;padding:5px 10px!important;font-size:12px!important}
-      .pm-package-inline{margin-top:8px;padding:10px 12px;border:1px solid rgba(93,125,255,.28);border-radius:10px;background:rgba(62,86,150,.08);display:flex;align-items:center;justify-content:space-between;gap:12px}
-      .pm-package-inline span{font-size:12px;color:var(--muted,#9aa7bd)}
-      .pm-package-inline strong{font-size:13px}
+      .pm-package-inline{margin-top:10px;padding:12px 14px;border:1px solid rgba(93,125,255,.28);border-radius:12px;background:rgba(62,86,150,.065)}
+      .pm-package-inline-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+      .pm-package-inline-title{font-size:12px;font-weight:700;letter-spacing:.03em;color:#8fb0ff;text-transform:uppercase}
+      .pm-package-inline-meta{font-size:11px;color:var(--muted,#9aa7bd)}
+      .pm-package-inline-table{width:100%;border-collapse:collapse;font-size:12px}
+      .pm-package-inline-table th,.pm-package-inline-table td{padding:7px 8px;border-top:1px solid rgba(255,255,255,.06);text-align:left}
+      .pm-package-inline-table th{font-size:11px;color:var(--muted,#9aa7bd);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+      .pm-package-inline-table th:first-child,.pm-package-inline-table td:first-child{width:42px;text-align:center}
+      .pm-package-inline-table th:last-child,.pm-package-inline-table td:last-child{width:80px;text-align:center;font-weight:600}
+      .pm-package-inline-empty{padding:10px 0;color:var(--muted,#9aa7bd);font-size:12px}
       #pmPackageDetailModal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:22px}
       .pm-package-backdrop{position:absolute;inset:0;background:rgba(1,6,18,.72);backdrop-filter:blur(5px)}
       .pm-package-dialog{position:relative;width:min(720px,calc(100vw - 30px));max-height:min(82vh,760px);overflow:auto;border:1px solid rgba(95,133,255,.35);border-radius:16px;background:var(--card,#0b1427);box-shadow:0 24px 80px rgba(0,0,0,.45);padding:20px}
@@ -107,12 +108,12 @@
       .pm-package-foot{display:flex;justify-content:flex-end;align-items:center;gap:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);margin-top:12px}
       .pm-package-foot strong{font-size:18px;color:#35e6a5}
       body.pm-package-open{overflow:hidden}
-      @media(max-width:640px){#pmPackageDetailModal{padding:10px}.pm-package-dialog{padding:15px}.pm-package-head h2{font-size:19px}}
+      @media(max-width:640px){#pmPackageDetailModal{padding:10px}.pm-package-dialog{padding:15px}.pm-package-head h2{font-size:19px}.pm-package-inline-table th,.pm-package-inline-table td{padding:6px}.pm-package-inline-table th:last-child,.pm-package-inline-table td:last-child{width:60px}}
     `;
     document.head.appendChild(st);
   }
 
-  function addQuotationButtons(){
+  function addQuotationDetails(){
     const container=document.querySelector('#items');
     if(!container)return;
     container.querySelectorAll(':scope > .item').forEach(card=>{
@@ -123,10 +124,10 @@
       if(!body||body.querySelector('.pm-package-inline'))return;
       const priceField=[...body.querySelectorAll('.field')].find(f=>S(f.querySelector('label')?.textContent).toLowerCase().includes('harga jual'));
       if(!priceField)return;
+      const rows=parseRows(master.isi_paket);
       const box=document.createElement('div');
       box.className='pm-package-inline';
-      box.innerHTML=`<span>Ini adalah paket dengan rincian komponen.</span><button type="button" class="btn secondary pm-package-btn">Lihat Isi Paket</button>`;
-      box.querySelector('button').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();modal(master);});
+      box.innerHTML=`<div class="pm-package-inline-head"><span class="pm-package-inline-title">Isi Paket</span>${master.spesifikasi?`<span class="pm-package-inline-meta">${E(master.spesifikasi)}</span>`:''}</div>${rows.length?`<table class="pm-package-inline-table"><thead><tr><th>No</th><th>Komponen</th><th>Qty</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${E(r.item)}</td><td>${E(r.qty)}</td></tr>`).join('')}</tbody></table>`:'<div class="pm-package-inline-empty">Rincian isi paket belum tersedia.</div>'}`;
       priceField.insertAdjacentElement('afterend',box);
     });
   }
@@ -151,7 +152,7 @@
   }
 
   function refresh(){
-    addQuotationButtons();
+    addQuotationDetails();
     addMasterButtons();
   }
 
