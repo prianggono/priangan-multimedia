@@ -89,9 +89,15 @@
     if(!totalEl || document.querySelector('#pmDiscount')) return;
     const sum=totalEl.closest('.sum');
     if(!sum?.parentElement) return;
+    const editId=N(window.__pmEditingQuotationId||window.__PM_EDIT_QUOTATION_ID);
+    const pendingRp=Math.max(0,N(window.__pmDiscountValue));
+    const pendingPct=Math.max(0,Math.min(100,N(window.__pmDiscountPct)));
+    const isEdit=editId>0 && (pendingRp>0 || pendingPct>0);
+    const pctValue=isEdit?pendingPct:0;
+    const rpValue=isEdit?pendingRp:0;
     const box=document.createElement('div');
     box.id='pmDiscount'; box.className='pm-quotation-discount';
-    box.innerHTML='<div class="grid g2"><div class="field"><label>Diskon (%)</label><input id="pmDiscPct" type="text" inputmode="decimal" autocomplete="off" value="0"></div><div class="field"><label>Diskon (Rp)</label><input id="pmDisc" type="text" inputmode="numeric" autocomplete="off" value="Rp 0"></div></div><div class="sum" style="margin-top:10px"><span>Grand Total</span><b id="pmGrand">Rp 0</b></div>';
+    box.innerHTML=`<div class="grid g2"><div class="field"><label>Diskon (%)</label><input id="pmDiscPct" type="text" inputmode="decimal" autocomplete="off" value="${pctValue}"></div><div class="field"><label>Diskon (Rp)</label><input id="pmDisc" type="text" inputmode="numeric" autocomplete="off" value="${rpValue?M(rpValue):'Rp 0'}"></div></div><div class="sum" style="margin-top:10px"><span>Grand Total</span><b id="pmGrand">Rp 0</b></div>`;
     sum.parentElement.insertBefore(box,sum.nextSibling);
     const p=box.querySelector('#pmDiscPct'),r=box.querySelector('#pmDisc');
     p.addEventListener('input',()=>{window.__PM_DISC_MODE='pct';sync();});
@@ -99,6 +105,7 @@
     p.addEventListener('blur',()=>{p.value=String(Math.max(0,Math.min(100,N(p.value))));sync();});
     r.addEventListener('focus',()=>{r.value=String(N(r.value)||'');});
     r.addEventListener('input',()=>{window.__PM_DISC_MODE='rp';sync();});
+    r.addEventListener('change',()=>{window.__PM_DISC_MODE='rp';sync();});
     r.addEventListener('blur',()=>{r.value=M(r.value);sync();});
   }
 
