@@ -24,23 +24,41 @@
 #content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat{min-height:120px}
 #content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat strong{font-size:28px}
 
-/* Dashboard-aligned KPI colors */
-#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(1)>.stat:nth-child(1){--accent:var(--cyan);--value:var(--cyan)}
-#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(1)>.stat:nth-child(2){--accent:var(--purple);--value:var(--purple)}
-#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(1)>.stat:nth-child(3){--accent:var(--green);--value:var(--green)}
-#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(1)>.stat:nth-child(4){--accent:var(--yellow);--value:var(--yellow)}
-#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(2)>.stat:nth-child(1){--accent:var(--pink);--value:var(--pink)}
-#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(2)>.stat:nth-child(2){--accent:var(--yellow);--value:var(--yellow)}
-#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(2)>.stat:nth-child(3){--accent:var(--cyan);--value:var(--cyan)}
-#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(2)>.stat:nth-child(4){--accent:var(--purple);--value:var(--purple)}
-#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(3)>.stat:nth-child(1){--accent:var(--cyan);--value:var(--cyan)}
-#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(3)>.stat:nth-child(2){--accent:var(--purple);--value:var(--purple)}
-#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(3)>.stat:nth-child(3){--accent:var(--green);--value:var(--green)}
-#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(3)>.stat:nth-child(4){--accent:var(--pink);--value:var(--pink)}
-#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(4)>.stat:nth-child(1){--accent:var(--red);--value:var(--red)}
-#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(4)>.stat:nth-child(2){--accent:var(--cyan);--value:var(--cyan)}
-#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(4)>.stat:nth-child(3){--accent:var(--yellow);--value:var(--yellow)}
-#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(4)>.stat:nth-child(4){--accent:var(--green);--value:var(--green)}
+/* KPI color mapping — direct-child positions, independent of :nth-of-type counting */
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(3)>.stat:nth-child(1){--accent:var(--cyan);--value:var(--cyan)}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(3)>.stat:nth-child(2){--accent:var(--purple);--value:var(--purple)}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(3)>.stat:nth-child(3){--accent:var(--green);--value:var(--green)}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(3)>.stat:nth-child(4){--accent:var(--yellow);--value:var(--yellow)}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(4)>.stat:nth-child(1){--accent:var(--pink);--value:var(--pink)}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(4)>.stat:nth-child(2){--accent:var(--yellow);--value:var(--yellow)}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(4)>.stat:nth-child(3){--accent:var(--cyan);--value:var(--cyan)}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(4)>.stat:nth-child(4){--accent:var(--purple);--value:var(--purple)}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(5)>.stat:nth-child(1){--accent:var(--cyan);--value:var(--cyan)}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(5)>.stat:nth-child(2){--accent:var(--purple);--value:var(--purple)}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(5)>.stat:nth-child(3){--accent:var(--green);--value:var(--green)}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(5)>.stat:nth-child(4){--accent:var(--pink);--value:var(--pink)}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(6)>.stat:nth-child(1){--accent:var(--red);--value:var(--red)}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(6)>.stat:nth-child(2){--accent:var(--purple);--value:var(--purple)}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(6)>.stat:nth-child(3){--accent:var(--yellow);--value:var(--yellow)}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(6)>.stat:nth-child(4){--accent:var(--green);--value:var(--green)}
+
+/* Hard fallback: apply the intended value colors directly to the KPI values. */
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(3)>.stat:nth-child(1)>strong{color:var(--cyan)!important}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(3)>.stat:nth-child(2)>strong{color:var(--purple)!important}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(3)>.stat:nth-child(3)>strong{color:var(--green)!important}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(3)>.stat:nth-child(4)>strong{color:var(--yellow)!important}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(4)>.stat:nth-child(1)>strong{color:var(--pink)!important}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(4)>.stat:nth-child(2)>strong{color:var(--yellow)!important}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(4)>.stat:nth-child(3)>strong{color:var(--cyan)!important}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(4)>.stat:nth-child(4)>strong{color:var(--purple)!important}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(5)>.stat:nth-child(1)>strong{color:var(--cyan)!important}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(5)>.stat:nth-child(2)>strong{color:var(--purple)!important}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(5)>.stat:nth-child(3)>strong{color:var(--green)!important}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(5)>.stat:nth-child(4)>strong{color:var(--pink)!important}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(6)>.stat:nth-child(1)>strong{color:var(--red)!important}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(6)>.stat:nth-child(2)>strong{color:var(--purple)!important}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(6)>.stat:nth-child(3)>strong{color:var(--yellow)!important}
+#content:has(#pmFinanceRefresh) > .grid.g4:nth-child(6)>.stat:nth-child(4)>strong{color:var(--green)!important}
 
 #content:has(#pmFinanceRefresh) > .card:last-child{padding:18px 18px 10px}
 #content:has(#pmFinanceRefresh) > .card:last-child > b{display:block;font-size:14px;color:#f4fbff!important;margin-bottom:2px;letter-spacing:.2px}
