@@ -57,11 +57,6 @@
     set('qe2',q.tanggal_selesai||q.tanggal_selesai_event||'');
   }
 
-  /*
-   * Quotation item UX lives here only as a global interaction bridge because
-   * the quotation DOM is rendered dynamically. No extra JS file is created.
-   * The quotation core still owns the actual toggle/collapse state.
-   */
   function installQuotationHeaderUX(){
     if(document.getElementById('pmHistoryQuotationUX')) return;
     const style=document.createElement('style');
@@ -102,14 +97,17 @@
       ss.forEach(s=>map.set(String(s.penawaran_item_id??s.item_id),s));
       window.items=(ir.data||[]).map((r,i)=>{
         const s=map.get(String(r.id))||ss[i]||{};
+        // `harga` is the negotiated quotation price. `harga_jual` is kept as a
+        // compatibility fallback for legacy rows that did not store `harga`.
+        const quotePrice = N(r.harga ?? r.harga_jual);
         return {
           id:Date.now()+Math.random()+i,
           db_id:r.id,
           kode:S(r.kode||r.kode_item),
           item:S(r.item||r.nama_item),
           nama_item:S(r.nama_item||r.item),
-          harga:N(r.harga_jual??r.harga),
-          harga_jual:N(r.harga_jual??r.harga),
+          harga:quotePrice,
+          harga_jual:quotePrice,
           harga_modal:N(r.harga_modal),
           qty:Math.max(1,N(r.qty??r.jumlah??s.qty)||1),
           jumlah:Math.max(1,N(r.jumlah??r.qty??s.qty)||1),
@@ -136,7 +134,6 @@
       if(typeof window.go==='function') window.go('quotation');
       else if(typeof window.quotationPage==='function') window.quotationPage();
 
-      /* quotationPage renders synchronously; restore all header values after it exists. */
       populateEditedQuotationHeader(q);
       setTimeout(()=>{
         populateEditedQuotationHeader(q);
