@@ -19,14 +19,24 @@
   const findMaster=code=>masters().find(m=>S(m.kode)===S(code))||null;
 
   function parseRows(raw){
-    return S(raw).split(/\\n|\r?\n/).map(x=>S(x)).filter(Boolean).map(line=>{
-      const parts=line.split(/\\s+—\\s+|\\s+-\\s+|\s+–\s+/);
-      if(parts.length>=2){
-        const qty=S(parts.pop());
-        return {item:S(parts.join(' — ')),qty};
-      }
-      return {item:line,qty:''};
-    });
+    // Supabase may return the stored newline as either a literal line break
+    // or the escaped sequence "\\n". Each record is "Komponen — Qty".
+    return S(raw)
+      .replace(/\\n/g,'\n')
+      .split(/\r?\n/)
+      .map(line=>S(line))
+      .filter(Boolean)
+      .map(line=>{
+        // Prefer the em dash used by isi_paket. Fall back to a spaced hyphen
+        // for older records. Everything before the separator is the component;
+        // everything after it is the quantity.
+        let match=line.match(/^(.+?)\s*[—–]\s*(.*?)\s*$/);
+        if(!match)match=line.match(/^(.+?)\s+-\s*(.*?)\s*$/);
+        if(match){
+          return {item:S(match[1]),qty:S(match[2])||'-'};
+        }
+        return {item:line,qty:'-'};
+      });
   }
 
   function modal(master){
@@ -93,6 +103,7 @@
       .pm-package-table{width:100%}
       .pm-package-table th:first-child,.pm-package-table td:first-child{width:54px;text-align:center}
       .pm-package-table th:last-child,.pm-package-table td:last-child{width:110px;text-align:center}
+      .pm-package-table td:last-child{font-variant-numeric:tabular-nums;font-weight:600}
       .pm-package-foot{display:flex;justify-content:flex-end;align-items:center;gap:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);margin-top:12px}
       .pm-package-foot strong{font-size:18px;color:#35e6a5}
       body.pm-package-open{overflow:hidden}
