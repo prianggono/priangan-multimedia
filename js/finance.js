@@ -1,257 +1,38 @@
-/*
- * Laporan Keuangan internal Priangan Multimedia.
- * Harga modal NEVER ditampilkan di surat/preview client.
- * Data dihitung dari penawaran + penawaran_items + master_harga.
+/* Priangan Multimedia — Finance Domain Core
+ * Single authority for read-only financial reconciliation/reporting.
+ * Do not add finance fix/final patch files. Extend this module instead.
  */
-(function () {
-  'use strict';
-
-  const clean = (v) => String(v ?? '').trim();
-  const num = (v) => {
-    if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
-    const n = Number(String(v ?? '').replace(/[^0-9,.-]/g, '').replace(/\.(?=\d{3}(?:\D|$))/g, '').replace(',', '.'));
-    return Number.isFinite(n) ? n : 0;
-  };
-  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (m) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[m]);
-  const money = (v) => new Intl.NumberFormat('id-ID', { style:'currency', currency:'IDR', maximumFractionDigits:0 }).format(num(v));
-  const pct = (v) => `${num(v).toFixed(2)}%`;
-  const q = (s) => document.querySelector(s);
-
-  function getDb() {
-    if (typeof db !== 'undefined' && db) return db;
-    const cfg = window.PRIANGAN_CONFIG || {};
-    const url = clean(localStorage.getItem('SUPABASE_URL') || cfg.SUPABASE_URL);
-    const key = clean(localStorage.getItem('SUPABASE_ANON_KEY') || cfg.SUPABASE_ANON_KEY);
-    if (!url || !key || !window.supabase?.createClient) return null;
-    if (!window.__PM_FINANCE_DB) window.__PM_FINANCE_DB = window.supabase.createClient(url, key);
-    return window.__PM_FINANCE_DB;
-  }
-
-  function dateValue(row) {
-    return row.tanggal_penawaran || row.tanggal || row.created_at || row.tanggal_mulai || '';
-  }
-
-  function dateText(value) {
-    if (!value) return '-';
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return String(value).slice(0, 10);
-    return d.toLocaleDateString('id-ID', { day:'2-digit', month:'2-digit', year:'numeric' });
-  }
-
-  function startOfMonth() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`;
-  }
-
-  function endOfMonth() {
-    const d = new Date();
-    const last = new Date(d.getFullYear(), d.getMonth()+1, 0);
-    return `${last.getFullYear()}-${String(last.getMonth()+1).padStart(2,'0')}-${String(last.getDate()).padStart(2,'0')}`;
-  }
-
-  function calcItemCost(item, master) {
-    const cost = num(item.harga_modal ?? item.modal ?? master?.harga_modal);
-    if (!cost) return 0;
-
-    const tipe = clean(item.tipe_perhitungan || item.tipe).toLowerCase();
-    const qty = Math.max(1, num(item.qty ?? item.jumlah ?? 1));
-    const lebar = num(item.lebar);
-    const tinggi = num(item.tinggi);
-    const panjang = num(item.panjang);
-    const durasi = Math.max(1, num(item.durasi || 1));
-
-    if (tipe === 'luas') return lebar * tinggi * cost * durasi;
-    if (tipe === 'rigging') return ((panjang * 2) + (tinggi * 2)) * cost * durasi;
-    if (tipe === 'level') return lebar * tinggi * cost * durasi;
-    return qty * cost * durasi;
-  }
-
-  async function fetchData() {
-    const database = getDb();
-    if (!database) throw new Error('Supabase belum terhubung.');
-
-    const [quotesResult, itemsResult, mastersResult] = await Promise.all([
-      database.from('penawaran').select('*').order('id', { ascending:false }),
-      database.from('penawaran_items').select('*').order('id'),
-      database.from('master_harga').select('*').order('id')
-    ]);
-
-    if (quotesResult.error) throw quotesResult.error;
-    if (itemsResult.error) throw itemsResult.error;
-    if (mastersResult.error) throw mastersResult.error;
-
-    return {
-      quotes: quotesResult.data || [],
-      items: itemsResult.data || [],
-      masters: mastersResult.data || []
-    };
-  }
-
-  function buildRows(data, fromDate, toDate) {
-    const masterMap = new Map(data.masters.map((m) => [clean(m.kode), m]));
-    const itemsByQuote = new Map();
-    data.items.forEach((item) => {
-      const id = String(item.penawaran_id ?? '');
-      if (!itemsByQuote.has(id)) itemsByQuote.set(id, []);
-      itemsByQuote.get(id).push(item);
-    });
-
-    const from = fromDate || '';
-    const to = toDate || '';
-
-    return data.quotes.filter((quote) => {
-      const d = String(dateValue(quote)).slice(0,10);
-      return (!from || d >= from) && (!to || d <= to);
-    }).map((quote) => {
-      const quoteItems = itemsByQuote.get(String(quote.id)) || [];
-      const detail = quoteItems.map((item) => {
-        const master = masterMap.get(clean(item.kode));
-        const modal = num(item.harga_modal ?? master?.harga_modal);
-        const cost = calcItemCost(item, master);
-        return { item, master, modal, cost };
-      });
-
-      const omzetBeforeDiscount = num(quote.subtotal ?? quote.total_sebelum_diskon ?? quote.grand_total ?? quote.total_harga ?? quote.total);
-      const discount = num(quote.discount ?? quote.diskon ?? quote.discount_amount);
-      const omzet = num(quote.total ?? quote.grand_total ?? quote.total_harga) || Math.max(0, omzetBeforeDiscount - discount);
-      const modal = detail.reduce((s, x) => s + x.cost, 0);
-      const laba = omzet - modal;
-      const margin = omzet > 0 ? (laba / omzet) * 100 : 0;
-
-      return {
-        quote,
-        detail,
-        nomor: quote.nomor_penawaran || quote.nomor || quote.no_penawaran || '-',
-        client: quote.nama_client || quote.client_name || quote.client || '-',
-        perusahaan: quote.perusahaan || quote.nama_perusahaan || quote.company || '-',
-        event: quote.nama_event || quote.event_name || quote.event || quote.project || '-',
-        status: String(quote.status || 'DRAFT').toUpperCase(),
-        tanggal: dateValue(quote),
-        omzetBeforeDiscount,
-        discount,
-        omzet,
-        modal,
-        laba,
-        margin
-      };
-    });
-  }
-
-  function summary(rows) {
-    const omzet = rows.reduce((s,r) => s+r.omzet,0);
-    const modal = rows.reduce((s,r) => s+r.modal,0);
-    const laba = omzet-modal;
-    const discount = rows.reduce((s,r) => s+r.discount,0);
-    const margin = omzet > 0 ? laba/omzet*100 : 0;
-    return { omzet, modal, laba, discount, margin, count:rows.length };
-  }
-
-  function renderPage(rows, from, to, errorText = '') {
-    const s = summary(rows);
-    const avgMargin = s.margin;
-    const statusCount = rows.reduce((map,r) => { map[r.status]=(map[r.status]||0)+1; return map; }, {});
-
-    q('#title').textContent = 'Laporan Keuangan';
-    document.querySelectorAll('.nav').forEach((b) => b.classList.toggle('active', b.dataset.p === 'finance'));
-    q('#content').innerHTML = `
-      <div class="head">
-        <div><h1>Laporan Keuangan</h1><p>Data internal: omzet, harga modal, laba kotor dan margin.</p></div>
-        <button class="btn secondary" type="button" onclick="financePage()">↻ Refresh</button>
-      </div>
-
-      ${errorText ? `<div class="card" style="border-color:#b42318;color:#ffb4ab;margin-bottom:16px">${esc(errorText)}</div>` : ''}
-
-      <div class="card" style="margin-bottom:16px">
-        <div class="grid g2">
-          <div class="field"><label>Dari Tanggal</label><input id="financeFrom" type="date" value="${esc(from)}"></div>
-          <div class="field"><label>Sampai Tanggal</label><input id="financeTo" type="date" value="${esc(to)}"></div>
-        </div>
-        <div class="actions"><button class="btn" type="button" onclick="applyFinanceFilter()">Terapkan Filter</button><button class="btn secondary" type="button" onclick="financeCurrentMonth()">Bulan Ini</button></div>
-      </div>
-
-      <div class="grid g4">
-        <div class="card stat"><small>Omzet</small><strong>${money(s.omzet)}</strong></div>
-        <div class="card stat"><small>Total Modal</small><strong>${money(s.modal)}</strong></div>
-        <div class="card stat"><small>Laba Kotor</small><strong style="color:#00e0a4">${money(s.laba)}</strong></div>
-        <div class="card stat"><small>Margin</small><strong>${pct(avgMargin)}</strong></div>
-      </div>
-
-      <div class="grid g4" style="margin-top:16px">
-        <div class="card stat"><small>Penawaran</small><strong>${s.count}</strong></div>
-        <div class="card stat"><small>Total Diskon</small><strong>${money(s.discount)}</strong></div>
-        <div class="card stat"><small>DRAFT</small><strong>${statusCount.DRAFT || 0}</strong></div>
-        <div class="card stat"><small>TERKIRIM / DEAL</small><strong>${(statusCount.SENT||0)+(statusCount.DELIVERED||0)+(statusCount.DEAL||0)+(statusCount.PUBLISHED||0)}</strong></div>
-      </div>
-
-      <div class="card" style="margin-top:16px">
-        <div class="scroll">
-          <table class="table">
-            <thead><tr><th>Tanggal</th><th>No</th><th>Client</th><th>Event</th><th>Status</th><th>Omzet</th><th>Modal</th><th>Laba</th><th>Margin</th></tr></thead>
-            <tbody>
-              ${rows.map((r) => `
-                <tr>
-                  <td>${esc(dateText(r.tanggal))}</td>
-                  <td>${esc(r.nomor)}</td>
-                  <td>${esc(r.client)}</td>
-                  <td>${esc(r.event)}</td>
-                  <td>${esc(r.status)}</td>
-                  <td>${money(r.omzet)}</td>
-                  <td>${money(r.modal)}</td>
-                  <td><b>${money(r.laba)}</b></td>
-                  <td><b>${pct(r.margin)}</b></td>
-                </tr>`).join('') || '<tr><td colspan="9" class="empty">Belum ada data pada periode ini.</td></tr>'}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:16px">
-        <b>Catatan internal</b>
-        <p style="color:var(--muted);margin:8px 0 0">Harga modal hanya digunakan untuk laporan internal. Modul surat penawaran/preview A4 tetap hanya menggunakan harga jual.</p>
-      </div>`;
-  }
-
-  async function loadFinance(from = startOfMonth(), to = endOfMonth()) {
-    try {
-      const data = await fetchData();
-      const rows = buildRows(data, from, to);
-      renderPage(rows, from, to);
-    } catch (error) {
-      console.error('Finance error:', error);
-      renderPage([], from, to, error?.message || String(error));
-    }
-  }
-
-  window.financePage = function () { loadFinance(); };
-  window.applyFinanceFilter = function () {
-    loadFinance(q('#financeFrom')?.value || '', q('#financeTo')?.value || '');
-  };
-  window.financeCurrentMonth = function () { loadFinance(startOfMonth(), endOfMonth()); };
-
-  function installNavigation() {
-    const originalGo = window.go;
-    if (originalGo && !window.__PM_FINANCE_GO) {
-      window.__PM_FINANCE_GO = originalGo;
-      window.go = function (nextPage) {
-        if (nextPage === 'finance') return window.financePage();
-        return window.__PM_FINANCE_GO(nextPage);
-      };
-    }
-
-    const nav = document.querySelector('[data-p="finance"]');
-    if (nav && !nav.dataset.financeCapture) {
-      nav.dataset.financeCapture = '1';
-      nav.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        window.financePage();
-        document.querySelectorAll('.nav').forEach((b) => b.classList.toggle('active', b.dataset.p === 'finance'));
-        document.querySelector('.sidebar')?.classList.remove('open');
-      }, true);
-    }
-  }
-
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', installNavigation);
-  else setTimeout(installNavigation, 0);
-  setTimeout(installNavigation, 500);
+(function(){
+'use strict';
+if(window.__PM_FINANCE_DOMAIN_CORE)return;window.__PM_FINANCE_DOMAIN_CORE=true;
+const S=v=>String(v??'').trim();
+const N=v=>{if(typeof v==='number')return Number.isFinite(v)?v:0;const s=S(v).replace(/[^0-9,.-]/g,'');if(!s)return 0;const n=Number(s.replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.'));return Number.isFinite(n)?n:0};
+const M=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(N(v));
+const P=v=>N(v).toFixed(2)+'%';
+const E=v=>S(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const D=v=>{if(!v)return'-';const x=new Date(S(v).slice(0,10)+'T00:00:00');return Number.isNaN(x.getTime())?E(v):x.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'})};
+function DB(){try{if(typeof db!=='undefined'&&db)return db}catch(_){}return window.db||window.__PM_STABLE_DB||window.__PRIANGAN_QUOTE_DB||null}
+function days(a,b){if(!a||!b)return 1;const x=new Date(S(a).slice(0,10)+'T00:00:00'),y=new Date(S(b).slice(0,10)+'T00:00:00');const n=Math.round((y-x)/86400000);return n>=0?n+1:1}
+function masterFor(i,ms){const code=S(i.kode||i.kode_item||i.code).toLowerCase(),name=S(i.item||i.nama_item||i.nama||i.name).toLowerCase();return ms.find(x=>S(x.kode||x.kode_item||x.code).toLowerCase()===code)||ms.find(x=>name&&S(x.item||x.nama_item||x.nama||x.name).toLowerCase()===name)||ms.find(x=>name&&S(x.item||x.nama_item||x.nama||x.name).toLowerCase().includes(name))||null}
+function unitCost(i,m){const own=N(i.harga_modal??i.modal??i.harga_beli??i.harga_cost);return own>0?own:N(m?.harga_modal??m?.modal??m?.harga_beli??m?.harga_cost)}
+function typeOf(i,m){const sat=S(m?.satuan||i?.satuan).toLowerCase().replace(/\s+/g,'');if(['unit','units','pcs','pc','buah','set'].includes(sat))return'qty';if(['m2','m²','meter2','meterpersegi','luas'].includes(sat))return'luas';const t=(S(m?.item)+' '+S(m?.kategori)+' '+S(m?.kode)+' '+S(i?.item)+' '+S(i?.kategori)).toLowerCase();if(/rigging|rig/.test(t))return'rigging';if(/level/.test(t))return'level';if(/led|videotron/.test(t))return'luas';return'qty'}
+function itemCost(i,m,schedules){const unit=unitCost(i,m);if(unit<=0)return 0;const t=typeOf(i,m),rows=(schedules||[]).filter(s=>String(s.penawaran_item_id??s.item_id)===String(i.id));const calc=s=>{const dur=Math.max(1,N(s?.durasi)||days(s?.tanggal_mulai??i.tanggal_mulai??i.mulai,s?.tanggal_selesai??i.tanggal_selesai??i.selesai)),qty=Math.max(1,N(s?.qty??s?.jumlah??i.qty??i.jumlah??1)),w=N(i.lebar),h=N(i.tinggi),len=N(i.panjang);if(t==='luas')return w*h*unit*dur;if(t==='level')return w*unit*dur;if(t==='rigging')return(len*2+h*2)*unit*dur;return qty*unit*dur};return rows.length?rows.reduce((a,s)=>a+calc(s),0):calc(null)}
+function extras(id){try{const x=JSON.parse(localStorage.getItem('PM_INVOICE_EXTRA_ITEMS')||'{}')||{};return Array.isArray(x[String(id)])?x[String(id)]:[]}catch(_){return[]}}
+function invMeta(r){let x={};try{x=(JSON.parse(localStorage.getItem('PM_INVOICE_FALLBACK')||'{}')||{})[String(r.id)]||{}}catch(_){}return{no:S(r.nomor_invoice||x.nomor_invoice),status:S(r.status_invoice||x.status_invoice),date:S(r.tanggal_invoice||x.tanggal_invoice),due:S(r.jatuh_tempo||x.jatuh_tempo)}}
+function isSold(r,paid,meta){const st=S(r.status).toUpperCase();return !!meta.no||!!meta.status||!!meta.date||paid>0||/DEAL|ACC|APPROVED|DISETUJUI|TERKIRIM|SENT|PUBLISHED|DELIVERED|INVOICE|LUNAS/.test(st)}
+async function load(from='',to=''){
+ const d=DB();if(!d)throw Error('Supabase belum terhubung.');
+ const [qr,ir,mr,sr,pr,cr]=await Promise.all([d.from('penawaran').select('*').order('id',{ascending:false}),d.from('penawaran_items').select('*').order('id'),d.from('master_harga').select('*').order('id'),d.from('penawaran_jadwal').select('*').order('id'),d.from('pembayaran_penawaran').select('*').order('id'),d.from('clients').select('*').order('id')]);
+ if(qr.error)throw qr.error;if(ir.error)throw ir.error;if(mr.error)throw mr.error;if(sr.error)throw sr.error;if(pr.error)throw pr.error;
+ const qs=qr.data||[],its=ir.data||[],ms=mr.data||[],ss=sr.data||[],ps=pr.data||[],cs=cr.error?[]:(cr.data||[]),byQ=new Map(),paid=new Map();
+ its.forEach(i=>{const k=S(i.penawaran_id);if(!byQ.has(k))byQ.set(k,[]);byQ.get(k).push(i)});ps.forEach(p=>{const k=S(p.penawaran_id);paid.set(k,(paid.get(k)||0)+N(p.nominal))});
+ const rows=qs.filter(r=>{const st=S(r.status).toUpperCase();if(/BATAL|CANCEL|DIBATALKAN/.test(st))return false;const dt=S(r.tanggal_penawaran||r.created_at||r.tanggal_mulai).slice(0,10);return(!from||dt>=from)&&(!to||dt<=to)}).map(r=>{const qits=byQ.get(S(r.id))||[],detail=qits.map(i=>{const m=masterFor(i,ms);return{item:i,master:m,cost:itemCost(i,m,ss)}}),subtotal=Math.max(0,N(r.subtotal)||qits.reduce((a,i)=>a+N(i.subtotal),0)),discount=Math.max(0,Math.min(subtotal,N(r.diskon??r.discount??r.discount_amount))),quoteTotal=Math.max(0,N(r.total??r.grand_total??r.total_harga)||subtotal-discount),pay=N(paid.get(S(r.id))),meta=invMeta(r),ex=extras(r.id),extra=ex.reduce((a,x)=>a+N(x.subtotal),0),invoiceTotal=(meta.no||meta.status||meta.date)?quoteTotal+extra:0,sold=isSold(r,pay,meta),modal=detail.reduce((a,x)=>a+x.cost,0),profit=quoteTotal-modal,margin=quoteTotal?profit/quoteTotal*100:0,balance=invoiceTotal>0?Math.max(0,invoiceTotal-pay):0,overpaid=invoiceTotal>0?Math.max(0,pay-invoiceTotal):0;return{r,qits,detail,subtotal,discount,quoteTotal,pay,meta,extra,invoiceTotal,sold,modal,profit,margin,balance,overpaid,client:cs.find(c=>String(c.id)===String(r.client_id))||null}});
+ const sales=rows.filter(x=>x.sold),revenue=sales.reduce((a,x)=>a+x.quoteTotal,0),modal=sales.reduce((a,x)=>a+x.modal,0),profit=sales.reduce((a,x)=>a+x.profit,0),discount=sales.reduce((a,x)=>a+x.discount,0),cash=rows.reduce((a,x)=>a+x.pay,0),invoiceValue=sales.reduce((a,x)=>a+x.invoiceTotal,0),receivable=sales.reduce((a,x)=>a+x.balance,0),extra=sales.reduce((a,x)=>a+x.extra,0),overpaid=sales.reduce((a,x)=>a+x.overpaid,0),pipeline=rows.filter(x=>!x.sold).reduce((a,x)=>a+x.quoteTotal,0),margin=revenue?profit/revenue*100:0;
+ render(rows,{revenue,modal,profit,discount,cash,invoiceValue,receivable,extra,overpaid,pipeline,margin},from,to);
+}
+function render(rows,k,from,to){const c=document.querySelector('#content');if(!c)return;document.querySelector('#title').textContent='Laporan Keuangan';document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.p==='finance'));const inv=rows.filter(x=>x.meta.no||x.meta.status||x.meta.date),unpaid=inv.filter(x=>x.balance>0).length,lunas=inv.filter(x=>x.invoiceTotal>0&&x.balance<=0).length,missing=rows.filter(x=>x.sold&&x.qits.length&&x.modal<=0);c.innerHTML=`<div class="head"><div><h1>Laporan Keuangan</h1><p>Rekonsiliasi Penawaran, Item, Jadwal, Master Harga, Invoice dan Pembayaran menggunakan sumber data yang sama.</p></div><button class="btn secondary" id="pmFinanceRefresh">↻ Refresh</button></div><div class="card" style="margin-bottom:16px"><div class="grid g2"><div class="field"><label>Dari Tanggal</label><input id="pmFinanceFrom" type="date" value="${E(from)}"></div><div class="field"><label>Sampai Tanggal</label><input id="pmFinanceTo" type="date" value="${E(to)}"></div></div><div class="actions"><button class="btn" id="pmFinanceApply">Terapkan Filter</button><button class="btn secondary" id="pmFinanceAll">Semua Data</button></div></div><div class="grid g4"><div class="card stat"><small>Penjualan Bersih</small><strong>${M(k.revenue)}</strong><span>setelah diskon</span></div><div class="card stat"><small>Total Modal</small><strong>${M(k.modal)}</strong><span>harga modal + Master Harga</span></div><div class="card stat"><small>Laba Kotor</small><strong style="color:#00e0a4">${M(k.profit)}</strong></div><div class="card stat"><small>Margin Kotor</small><strong>${P(k.margin)}</strong></div></div><div class="grid g4" style="margin-top:16px"><div class="card stat"><small>Kas Masuk</small><strong>${M(k.cash)}</strong></div><div class="card stat"><small>Piutang</small><strong>${M(k.receivable)}</strong></div><div class="card stat"><small>Total Diskon</small><strong>${M(k.discount)}</strong></div><div class="card stat"><small>Pipeline</small><strong>${M(k.pipeline)}</strong></div></div><div class="grid g4" style="margin-top:16px"><div class="card stat"><small>Nilai Invoice</small><strong>${M(k.invoiceValue)}</strong></div><div class="card stat"><small>Invoice Belum Lunas</small><strong>${unpaid}</strong></div><div class="card stat"><small>Invoice Lunas</small><strong>${lunas}</strong></div><div class="card stat"><small>Nilai Tambahan Invoice</small><strong>${M(k.extra)}</strong></div></div><div class="grid g4" style="margin-top:16px"><div class="card stat"><small>Lebih Bayar</small><strong>${M(k.overpaid)}</strong></div><div class="card stat"><small>Event Terjual</small><strong>${salesCount(rows)}</strong></div><div class="card stat"><small>Modal Belum Terbaca</small><strong>${missing.length}</strong></div><div class="card stat"><small>Kontrol</small><strong>${missing.length?'PERIKSA':'OK'}</strong></div></div><div class="card" style="margin-top:16px"><b>Rekonsiliasi per Transaksi</b><div class="scroll" style="margin-top:12px"><table class="table"><thead><tr><th>Tanggal</th><th>Penawaran</th><th>Invoice</th><th>Client</th><th>Event</th><th>Bruto</th><th>Diskon</th><th>Net</th><th>Modal</th><th>Laba</th><th>Margin</th><th>Invoice Total</th><th>Dibayar</th><th>Piutang</th><th>Status</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${D(x.r.tanggal_penawaran||x.r.created_at||x.r.tanggal_mulai)}</td><td>${E(x.r.nomor_penawaran||x.r.nomor||'-')}</td><td>${E(x.meta.no||'-')}</td><td>${E(x.r.nama_client||x.r.client_name||x.client?.nama_client||x.client?.nama||'-')}</td><td>${E(x.r.event_name||x.r.nama_event||x.r.event||'-')}</td><td>${M(x.subtotal)}</td><td>${M(x.discount)}</td><td>${M(x.quoteTotal)}</td><td>${x.sold?M(x.modal):'-'}</td><td>${x.sold?M(x.profit):'-'}</td><td>${x.sold?P(x.margin):'-'}</td><td>${x.invoiceTotal?M(x.invoiceTotal):'-'}</td><td>${x.pay?M(x.pay):'-'}</td><td>${x.invoiceTotal?M(x.balance):'-'}</td><td>${x.meta.no?(x.balance<=0?'LUNAS':'BELUM LUNAS'):x.sold?'TERJUAL':'PIPELINE'}</td></tr>`).join('')||'<tr><td colspan="15" class="empty">Belum ada data.</td></tr>'}</tbody></table></div></div>`;document.querySelector('#pmFinanceApply').onclick=()=>load(S(document.querySelector('#pmFinanceFrom').value),S(document.querySelector('#pmFinanceTo').value));document.querySelector('#pmFinanceAll').onclick=()=>load('','');document.querySelector('#pmFinanceRefresh').onclick=()=>load(S(document.querySelector('#pmFinanceFrom').value),S(document.querySelector('#pmFinanceTo').value))}
+function salesCount(rows){return rows.filter(x=>x.sold).length}
+async function financePage(from='',to=''){await load(S(from),S(to))}
+window.financePage=financePage;window.financePageStable=financePage;
+const nav=document.querySelector('[data-p="finance"]');if(nav&&!nav.dataset.pmFinanceCore){nav.dataset.pmFinanceCore='1';nav.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();financePage('','')},true)}
 })();
