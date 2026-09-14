@@ -5,3 +5,16 @@ input[type="date"]{color:#fff;color-scheme:dark;background:#060d1d}
 input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(2);opacity:1;cursor:pointer}
 input[type="date"]::-webkit-datetime-edit,input[type="date"]::-webkit-datetime-edit-fields-wrapper,input[type="date"]::-webkit-datetime-edit-text,input[type="date"]::-webkit-datetime-edit-month-field,input[type="date"]::-webkit-datetime-edit-day-field,input[type="date"]::-webkit-datetime-edit-year-field{color:#fff}
 input[type="date"]::-webkit-calendar-picker-indicator:hover{filter:invert(1) brightness(2.4);opacity:1}
+
+/* GLOBAL ACTION CONTRAST */
+.btn{min-height:40px;cursor:pointer;background:#2563eb!important;color:#fff!important;border:1px solid #4d7cff!important;box-shadow:0 0 0 1px rgba(77,124,255,.12),0 4px 14px rgba(0,0,0,.22);transition:filter .15s ease,transform .15s ease,box-shadow .15s ease}
+.btn:hover{filter:brightness(1.12);transform:translateY(-1px);box-shadow:0 0 16px rgba(0,229,255,.16),0 5px 16px rgba(0,0,0,.25)}
+.btn:active{transform:translateY(0);filter:brightness(1)}
+.btn.secondary{background:#243b72!important;color:#fff!important;border-color:#5879d8!important}
+.btn.green{background:#00d98b!important;color:#04140d!important;border-color:#00f5a0!important}
+.btn.red{background:#ff3b68!important;color:#fff!important;border-color:#ff7897!important}
+.btn:disabled{opacity:.55!important;cursor:not-allowed;filter:none!important;transform:none!important;box-shadow:none!important}
+button:focus-visible,.btn:focus-visible{outline:2px solid #00e5ff!important;outline-offset:2px}
+.nav.active{background:linear-gradient(90deg,#0969ff,#5b38e8)!important;color:#fff!important;box-shadow:0 0 16px rgba(0,229,255,.16)}
+.nav:hover{background:#10264a;color:#fff}
+.badge.ok{background:#063c2c!important;color:#00f5a0!important;border:1px solid #0a7554}.badge.warn{background:#3b2d08!important;color:#ffd166!important;border:1px solid #80621a}
