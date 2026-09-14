@@ -2,10 +2,11 @@
  * Master Harga: package contents can be viewed in a modal.
  * Quotation: package contents are shown inline inside the item card.
  * Read-only with respect to package master data.
+ * Event-driven: no document.body MutationObserver and no duplicate Invoice loader.
  */
 (function(){
   'use strict';
-  if(window.__PM_PACKAGE_DETAIL_UI__) return;
+  if(window.__PM_PACKAGE_DETAIL_UI__)return;
   window.__PM_PACKAGE_DETAIL_UI__=true;
 
   const S=v=>String(v??'').trim();
@@ -48,80 +49,37 @@
           <button type="button" class="pm-package-close" data-close-package="1" aria-label="Tutup">×</button>
         </div>
         ${spec||note?`<div class="pm-package-meta">${spec?`<span><b>Spesifikasi:</b> ${E(spec)}</span>`:''}${note?`<span><b>Keterangan:</b> ${E(note)}</span>`:''}</div>`:''}
-        <div class="pm-package-table-wrap">
-          <table class="table pm-package-table">
-            <thead><tr><th>No</th><th>Komponen</th><th>Qty</th></tr></thead>
-            <tbody>${rows.length?rows.map((r,i)=>`<tr><td>${i+1}</td><td>${E(r.item)}</td><td>${E(r.qty)}</td></tr>`).join(''):`<tr><td colspan="3" class="empty">Rincian isi paket belum tersedia.</td></tr>`}</tbody>
-          </table>
-        </div>
-        <div class="pm-package-foot">
-          <span>Harga Paket</span><strong>${money(master?.harga_jual)}</strong>
-        </div>
+        <div class="pm-package-table-wrap"><table class="table pm-package-table"><thead><tr><th>No</th><th>Komponen</th><th>Qty</th></tr></thead><tbody>${rows.length?rows.map((r,i)=>`<tr><td>${i+1}</td><td>${E(r.item)}</td><td>${E(r.qty)}</td></tr>`).join(''):`<tr><td colspan="3" class="empty">Rincian isi paket belum tersedia.</td></tr>`}</tbody></table></div>
+        <div class="pm-package-foot"><span>Harga Paket</span><strong>${money(master?.harga_jual)}</strong></div>
       </div>`;
-    document.body.appendChild(overlay);
-    document.body.classList.add('pm-package-open');
+    document.body.appendChild(overlay);document.body.classList.add('pm-package-open');
     overlay.addEventListener('click',e=>{if(e.target.closest('[data-close-package]'))closeModal();});
     document.addEventListener('keydown',escClose,{once:true});
   }
   function escClose(e){if(e.key==='Escape')closeModal();}
   function closeModal(){document.getElementById('pmPackageDetailModal')?.remove();document.body.classList.remove('pm-package-open');}
 
-  function isPackage(master){
-    return !!(master && (S(master.isi_paket)||S(master.satuan).toLowerCase()==='paket'));
-  }
+  function isPackage(master){return !!(master&&(S(master.isi_paket)||S(master.satuan).toLowerCase()==='paket'));}
 
   function installStyles(){
     if(document.getElementById('pmPackageDetailStyles'))return;
-    const st=document.createElement('style');
-    st.id='pmPackageDetailStyles';
-    st.textContent=`
+    const st=document.createElement('style');st.id='pmPackageDetailStyles';st.textContent=`
       .pm-package-btn{display:inline-flex!important;align-items:center;gap:5px;margin-top:6px!important;padding:5px 10px!important;font-size:12px!important}
       .pm-package-inline{margin-top:10px;padding:12px 14px;border:1px solid rgba(93,125,255,.28);border-radius:12px;background:rgba(62,86,150,.065)}
-      .pm-package-inline-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
-      .pm-package-inline-title{font-size:12px;font-weight:700;letter-spacing:.03em;color:#8fb0ff;text-transform:uppercase}
-      .pm-package-inline-meta{font-size:11px;color:var(--muted,#9aa7bd)}
-      .pm-package-inline-table{width:100%;border-collapse:collapse;font-size:12px}
-      .pm-package-inline-table th,.pm-package-inline-table td{padding:7px 8px;border-top:1px solid rgba(255,255,255,.06);text-align:left}
-      .pm-package-inline-table th{font-size:11px;color:var(--muted,#9aa7bd);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
-      .pm-package-inline-table th:first-child,.pm-package-inline-table td:first-child{width:42px;text-align:center}
-      .pm-package-inline-table th:last-child,.pm-package-inline-table td:last-child{width:80px;text-align:center;font-weight:600}
-      .pm-package-inline-empty{padding:10px 0;color:var(--muted,#9aa7bd);font-size:12px}
-      #pmPackageDetailModal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:22px}
-      .pm-package-backdrop{position:absolute;inset:0;background:rgba(1,6,18,.72);backdrop-filter:blur(5px)}
-      .pm-package-dialog{position:relative;width:min(720px,calc(100vw - 30px));max-height:min(82vh,760px);overflow:auto;border:1px solid rgba(95,133,255,.35);border-radius:16px;background:var(--card,#0b1427);box-shadow:0 24px 80px rgba(0,0,0,.45);padding:20px}
-      .pm-package-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:14px}
-      .pm-package-eyebrow{font-size:11px;letter-spacing:.16em;color:#7ea1ff;font-weight:700;margin-bottom:5px}
-      .pm-package-head h2{margin:0;font-size:23px}
-      .pm-package-code{margin-top:4px;color:var(--muted,#9aa7bd);font-size:12px}
-      .pm-package-close{border:0;background:transparent;color:#fff;font-size:28px;line-height:1;cursor:pointer;padding:0 4px}
-      .pm-package-meta{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.035);font-size:12px;color:var(--muted,#aeb9cc)}
-      .pm-package-table-wrap{overflow:auto;margin-top:10px}
-      .pm-package-table{width:100%}
-      .pm-package-table th:first-child,.pm-package-table td:first-child{width:54px;text-align:center}
-      .pm-package-table th:last-child,.pm-package-table td:last-child{width:110px;text-align:center}
-      .pm-package-table td:last-child{font-variant-numeric:tabular-nums;font-weight:600}
-      .pm-package-foot{display:flex;justify-content:flex-end;align-items:center;gap:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);margin-top:12px}
-      .pm-package-foot strong{font-size:18px;color:#35e6a5}
-      body.pm-package-open{overflow:hidden}
+      .pm-package-inline-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}.pm-package-inline-title{font-size:12px;font-weight:700;letter-spacing:.03em;color:#8fb0ff;text-transform:uppercase}.pm-package-inline-meta{font-size:11px;color:var(--muted,#9aa7bd)}
+      .pm-package-inline-table{width:100%;border-collapse:collapse;font-size:12px}.pm-package-inline-table th,.pm-package-inline-table td{padding:7px 8px;border-top:1px solid rgba(255,255,255,.06);text-align:left}.pm-package-inline-table th{font-size:11px;color:var(--muted,#9aa7bd);font-weight:700;text-transform:uppercase;letter-spacing:.04em}.pm-package-inline-table th:first-child,.pm-package-inline-table td:first-child{width:42px;text-align:center}.pm-package-inline-table th:last-child,.pm-package-inline-table td:last-child{width:80px;text-align:center;font-weight:600}
+      .pm-package-inline-empty{padding:10px 0;color:var(--muted,#9aa7bd);font-size:12px}#pmPackageDetailModal{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:22px}.pm-package-backdrop{position:absolute;inset:0;background:rgba(1,6,18,.72);backdrop-filter:blur(5px)}.pm-package-dialog{position:relative;width:min(720px,calc(100vw - 30px));max-height:min(82vh,760px);overflow:auto;border:1px solid rgba(95,133,255,.35);border-radius:16px;background:var(--card,#0b1427);box-shadow:0 24px 80px rgba(0,0,0,.45);padding:20px}.pm-package-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:14px}.pm-package-eyebrow{font-size:11px;letter-spacing:.16em;color:#7ea1ff;font-weight:700;margin-bottom:5px}.pm-package-head h2{margin:0;font-size:23px}.pm-package-code{margin-top:4px;color:var(--muted,#9aa7bd);font-size:12px}.pm-package-close{border:0;background:transparent;color:#fff;font-size:28px;line-height:1;cursor:pointer;padding:0 4px}.pm-package-meta{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.035);font-size:12px;color:var(--muted,#aeb9cc)}.pm-package-table-wrap{overflow:auto;margin-top:10px}.pm-package-table{width:100%}.pm-package-table th:first-child,.pm-package-table td:first-child{width:54px;text-align:center}.pm-package-table th:last-child,.pm-package-table td:last-child{width:110px;text-align:center}.pm-package-table td:last-child{font-variant-numeric:tabular-nums;font-weight:600}.pm-package-foot{display:flex;justify-content:flex-end;align-items:center;gap:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.08);margin-top:12px}.pm-package-foot strong{font-size:18px;color:#35e6a5}body.pm-package-open{overflow:hidden}
       @media(max-width:640px){#pmPackageDetailModal{padding:10px}.pm-package-dialog{padding:15px}.pm-package-head h2{font-size:19px}.pm-package-inline-table th,.pm-package-inline-table td{padding:6px}.pm-package-inline-table th:last-child,.pm-package-inline-table td:last-child{width:60px}}
-    `;
-    document.head.appendChild(st);
+    `;document.head.appendChild(st);
   }
 
   function addQuotationDetails(){
-    const container=document.querySelector('#items');
-    if(!container)return;
+    const container=document.querySelector('#items');if(!container)return;
     container.querySelectorAll(':scope > .item').forEach(card=>{
-      const code=card.querySelector('select')?.value;
-      const master=findMaster(code);
-      if(!isPackage(master))return;
-      const body=card.querySelector('.pm-item-body');
-      if(!body||body.querySelector('.pm-package-inline'))return;
-      const priceField=[...body.querySelectorAll('.field')].find(f=>S(f.querySelector('label')?.textContent).toLowerCase().includes('harga jual'));
-      if(!priceField)return;
-      const rows=parseRows(master.isi_paket);
-      const box=document.createElement('div');
-      box.className='pm-package-inline';
+      const code=card.querySelector('select')?.value,master=findMaster(code);if(!isPackage(master))return;
+      const body=card.querySelector('.pm-item-body');if(!body||body.querySelector('.pm-package-inline'))return;
+      const priceField=[...body.querySelectorAll('.field')].find(f=>S(f.querySelector('label')?.textContent).toLowerCase().includes('harga jual'));if(!priceField)return;
+      const rows=parseRows(master.isi_paket),box=document.createElement('div');box.className='pm-package-inline';
       box.innerHTML=`<div class="pm-package-inline-head"><span class="pm-package-inline-title">Isi Paket</span>${master.spesifikasi?`<span class="pm-package-inline-meta">${E(master.spesifikasi)}</span>`:''}</div>${rows.length?`<table class="pm-package-inline-table"><thead><tr><th>No</th><th>Komponen</th><th>Qty</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${E(r.item)}</td><td>${E(r.qty)}</td></tr>`).join('')}</tbody></table>`:'<div class="pm-package-inline-empty">Rincian isi paket belum tersedia.</div>'}`;
       priceField.insertAdjacentElement('afterend',box);
     });
@@ -129,45 +87,27 @@
 
   function addMasterButtons(){
     if(String(window.page||'')!=='master')return;
-    const table=document.querySelector('#content .table');
-    if(!table)return;
-    const rows=table.querySelectorAll('tbody tr');
-    rows.forEach(tr=>{
-      const code=S(tr.children?.[0]?.textContent);
-      const master=findMaster(code);
-      if(!isPackage(master)||tr.querySelector('.pm-package-btn'))return;
-      const actions=tr.lastElementChild;
-      if(!actions)return;
-      const wrap=actions.firstElementChild||actions;
-      const btn=document.createElement('button');
-      btn.type='button';btn.className='btn sm secondary pm-package-btn';btn.textContent='Isi Paket';
-      btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();modal(master);});
-      wrap.appendChild(btn);
+    const table=document.querySelector('#content .table');if(!table)return;
+    table.querySelectorAll('tbody tr').forEach(tr=>{
+      const code=S(tr.children?.[0]?.textContent),master=findMaster(code);if(!isPackage(master)||tr.querySelector('.pm-package-btn'))return;
+      const actions=tr.lastElementChild;if(!actions)return;const wrap=actions.firstElementChild||actions;
+      const btn=document.createElement('button');btn.type='button';btn.className='btn sm secondary pm-package-btn';btn.textContent='Isi Paket';
+      btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();modal(master);});wrap.appendChild(btn);
     });
   }
 
-  function refresh(){
-    addQuotationDetails();
-    addMasterButtons();
+  function refresh(){addQuotationDetails();addMasterButtons();}
+  function wrapDraw(){
+    const fn=window.drawItems;if(typeof fn!=='function'||fn.__pmPackageWrapped)return false;
+    const wrapped=function(){const r=fn.apply(this,arguments);requestAnimationFrame(addQuotationDetails);return r;};
+    wrapped.__pmPackageWrapped=true;window.drawItems=wrapped;return true;
   }
 
   installStyles();
-  const mo=new MutationObserver(()=>requestAnimationFrame(refresh));
-  mo.observe(document.body,{childList:true,subtree:true});
-  [0,150,350,700,1200,2000].forEach(ms=>setTimeout(refresh,ms));
-  window.pmShowPackageDetail=modal;
-  window.pmClosePackageDetail=closeModal;
-})();
-
-// Invoice customer-facing layout is maintained separately so the package UI
-// module remains stable. It is loaded here because this module is already part
-// of the application shell and is guaranteed to run after Invoice.
-(function(){
-  'use strict';
-  if(document.querySelector('script[data-pm-invoice-quote-sync]'))return;
-  const s=document.createElement('script');
-  s.src='js/invoice-quotation-format-sync.js?v=2';
-  s.async=false;
-  s.dataset.pmInvoiceQuoteSync='1';
-  document.head.appendChild(s);
+  function boot(){refresh();wrapDraw();}
+  boot();
+  window.addEventListener('load',boot);
+  [0,150,350,700].forEach(ms=>setTimeout(boot,ms));
+  window.__PM_PACKAGE_DETAIL_API={refresh,addQuotationDetails,addMasterButtons,wrapDraw};
+  window.pmShowPackageDetail=modal;window.pmClosePackageDetail=closeModal;
 })();
