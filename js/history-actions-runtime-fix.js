@@ -1,114 +1,24 @@
-/* PRIANGAN MULTIMEDIA — robust history actions + renderer */
+/* Priangan Multimedia — History Domain Core
+ * Single authority for quotation history rendering, publish, delete and margin indicator.
+ * Payment entry is delegated to the Invoice/Payment domain via window.inputDP.
+ */
 (function(){
 'use strict';
-if(window.__PM_HISTORY_RUNTIME_FIX_V2)return;
-window.__PM_HISTORY_RUNTIME_FIX_V2=true;
+if(window.__PM_HISTORY_DOMAIN_CORE)return;window.__PM_HISTORY_DOMAIN_CORE=true;
 const S=v=>String(v??'').trim();
-const N=v=>{if(typeof v==='number')return Number.isFinite(v)?v:0;const n=Number(String(v??'').replace(/[^0-9,.-]/g,'').replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.'));return Number.isFinite(n)?n:0};
-const M=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(N(v));
+const N=v=>{if(typeof v==='number')return Number.isFinite(v)?v:0;const s=S(v).replace(/[^0-9,.-]/g,'');if(!s)return 0;const n=Number(s.replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.'));return Number.isFinite(n)?n:0};
+const M=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Math.max(0,Math.round(N(v))));
 const E=v=>S(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const toast=t=>typeof window.msg==='function'?window.msg(t):alert(t);
-function DB(){try{if(typeof db!=='undefined'&&db)return db}catch(_){}return window.db||window.__PM_STABLE_DB||window.__PRIANGAN_QUOTE_DB||null}
-
-async function resolveId(btn){
-  const direct=S(btn.getAttribute('data-id'));
-  if(/^\d+$/.test(direct))return Number(direct);
-  const oc=S(btn.getAttribute('onclick'));
-  const m=oc.match(/\b(?:publishQuotation|inputDP|inputPelunasan|editQuotation|deleteQuotation)\s*\(\s*(\d+)\s*\)/i);
-  if(m)return Number(m[1]);
-  const tr=btn.closest('tr');
-  const no=S(tr?.children?.[0]?.textContent);
-  if(!no)return null;
-  const d=DB();if(!d)return null;
-  const r=await d.from('penawaran').select('id').eq('nomor_penawaran',no).maybeSingle();
-  if(r.error){console.error('[PM] resolve quotation id:',r.error);return null}
-  return r.data?.id?Number(r.data.id):null;
-}
-
-async function publish(id){
-  const d=DB();if(!d)return toast('Supabase belum terhubung.');
-  const q=await d.from('penawaran').select('id,status').eq('id',id).maybeSingle();
-  if(q.error)throw q.error;
-  if(!q.data)return toast('Penawaran tidak ditemukan.');
-  if(['TERKIRIM','PUBLISHED','SENT'].includes(S(q.data.status).toUpperCase()))return toast('Penawaran sudah dipublish.');
-  const r=await d.from('penawaran').update({status:'TERKIRIM'}).eq('id',id);
-  if(r.error)throw r.error;
-  toast('Penawaran berhasil dipublish.');
-  await renderHistory();
-}
-
-async function dp(id){
-  if(!Number.isFinite(Number(id)))return toast('ID penawaran tidak valid.');
-  if(typeof window.inputDP==='function'&&window.inputDP.__pmRuntimeOriginal!==true)return window.inputDP(Number(id));
-  return toast('Modul pembayaran belum siap.');
-}
-
-async function renderHistory(){
-  const d=DB();if(!d)return toast('Supabase belum terhubung.');
-  try{
-    const q=await d.from('penawaran').select('*').order('id',{ascending:false});
-    if(q.error)throw q.error;
-    const rows=q.data||[];
-    const title=document.querySelector('#title');if(title)title.textContent='Riwayat Penawaran';
-    document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.p==='history'));
-    const content=document.querySelector('#content');if(!content)return;
-    const html=rows.map(r=>{
-      const id=Number(r.id)||0;
-      const st=S(r.status||'DRAFT').toUpperCase();
-      const sent=['TERKIRIM','PUBLISHED','SENT'].includes(st);
-      return `<tr>
-        <td>${E(r.nomor_penawaran||'-')}</td>
-        <td>${E(S(r.tanggal_penawaran||r.created_at||r.tanggal_mulai).slice(0,10))}</td>
-        <td>${E(r.nama_client||'-')}</td>
-        <td>${E(r.perusahaan||'-')}</td>
-        <td>${E(r.nama_event||r.event_name||r.name_event||'-')}</td>
-        <td>${M(r.grand_total??r.total)}</td>
-        <td>${E(sent?'TERKIRIM':st)}</td>
-        <td><div class="pmHistoryActions">
-          <button class="btn sm" type="button" onclick="editQuotation(${id})">Edit</button>
-          ${sent?'':`<button class="btn green sm" type="button" data-id="${id}" onclick="publishQuotation(${id})">Publish</button>`}
-          <button class="btn secondary sm" type="button" data-id="${id}" onclick="inputDP(${id})">DP</button>
-          <button class="btn red sm" type="button" data-id="${id}" onclick="deleteQuotation(${id})">Hapus</button>
-        </div></td>
-      </tr>`;
-    }).join('');
-    content.innerHTML=`<div class="head"><div><h1>Riwayat Penawaran</h1><p>Data tersimpan di Supabase.</p></div><button class="btn" type="button" onclick="go('quotation')">+ Buat Penawaran</button></div>
-    <div class="card"><div class="scroll"><table class="table"><thead><tr><th>No</th><th>Tanggal</th><th>Client</th><th>Perusahaan</th><th>Event</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${html||'<tr><td colspan="8" class="empty">Belum ada penawaran.</td></tr>'}</tbody></table></div></div>`;
-  }catch(e){console.error('[PM] history render failed:',e);toast('Gagal membaca riwayat: '+(e.message||e));}
-}
-
-window.renderHistory=renderHistory;
-
-function scheduleRender(){
-  if(scheduleRender.timer)return;
-  scheduleRender.timer=setTimeout(()=>{scheduleRender.timer=null;const title=S(document.querySelector('#title')?.textContent);const hasActions=!!document.querySelector('#content .pmHistoryActions');if(/riwayat penawaran/i.test(title)&&!hasActions)renderHistory();},40);
-}
-
-function install(){
-  document.addEventListener('click',async e=>{
-    const btn=e.target?.closest?.('button');if(!btn)return;
-    const text=S(btn.textContent).toUpperCase();
-    if(!['PUBLISH','DP'].includes(text))return;
-    const title=S(document.querySelector('#title')?.textContent);
-    if(!/riwayat|penawaran/i.test(title))return;
-    if(btn.dataset.pmRuntimeBusy==='1')return;
-    e.preventDefault();e.stopImmediatePropagation();btn.dataset.pmRuntimeBusy='1';
-    try{
-      const id=await resolveId(btn);
-      if(!id)return toast('ID penawaran tidak ditemukan.');
-      if(text==='PUBLISH')await publish(id);else await dp(id);
-    }catch(err){console.error('[PM] history action failed:',err);toast('Gagal menjalankan '+text+': '+(err?.message||err));}
-    finally{delete btn.dataset.pmRuntimeBusy}
-  },true);
-
-  document.addEventListener('click',e=>{
-    const nav=e.target?.closest?.('[data-p="history"]');
-    if(nav)setTimeout(renderHistory,80);
-  },true);
-
-  const mo=new MutationObserver(scheduleRender);
-  if(document.body)mo.observe(document.body,{childList:true,subtree:true});
-  setTimeout(()=>{const title=S(document.querySelector('#title')?.textContent);if(/riwayat penawaran/i.test(title))renderHistory();},150);
-}
-install();
+const D=v=>{if(!v)return'-';const d=new Date(S(v).slice(0,10)+'T00:00:00');return Number.isNaN(d.getTime())?E(v):d.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'})};
+const DB=()=>{try{if(typeof db!=='undefined'&&db)return db}catch(_){}return window.db||window.__PM_STABLE_DB||window.__PRIANGAN_QUOTE_DB||null};
+const masterType=(m)=>{const sat=S(m?.satuan).toLowerCase().replace(/\s+/g,'');if(['unit','units','pcs','pc','buah','set','hari','trip','orang','lot'].includes(sat))return'qty';if(['m2','m²','meter2','meterpersegi','luas'].includes(sat))return'luas';const t=`${S(m?.item)} ${S(m?.kategori)} ${S(m?.kode)}`.toLowerCase();if(/level/.test(t))return'level';if(/rigging|rig/.test(t))return'rigging';if(/led|videotron/.test(t))return'luas';return'qty'};
+const cost=(i,m)=>{const c=N(i.harga_modal??m?.harga_modal);if(c<=0)return{value:0,missing:true};const t=S(i.tipe_perhitungan||i.tipe||masterType(m)).toLowerCase(),q=Math.max(1,N(i.qty||i.jumlah)||1),w=N(i.lebar),h=N(i.tinggi),l=N(i.panjang),d=Math.max(1,N(i.durasi)||1);if(t==='luas')return{value:w*h*c*d,missing:false};if(t==='level')return{value:w*c*d,missing:false};if(t==='rigging')return{value:(l*2+h*2)*c*d,missing:false};return{value:q*c*d,missing:false}};
+async function resolveId(btn){const direct=S(btn.dataset.id);if(/^\d+$/.test(direct))return Number(direct);const oc=S(btn.getAttribute('onclick'));const m=oc.match(/\b(?:publishQuotation|inputDP|editQuotation|deleteQuotation)\s*\(\s*(\d+)\s*\)/i);if(m)return Number(m[1]);return null}
+async function publish(id){const d=DB();if(!d)return window.msg?.('Supabase belum terhubung.');const q=await d.from('penawaran').select('id,status').eq('id',id).maybeSingle();if(q.error)throw q.error;if(!q.data)return window.msg?.('Penawaran tidak ditemukan.');if(['TERKIRIM','PUBLISHED','SENT'].includes(S(q.data.status).toUpperCase()))return window.msg?.('Penawaran sudah dipublish.');const r=await d.from('penawaran').update({status:'TERKIRIM'}).eq('id',id);if(r.error)throw r.error;window.msg?.('Penawaran berhasil dipublish.');await renderHistory()}
+async function remove(id){const d=DB();if(!d)throw Error('Supabase belum terhubung.');const qid=Number(id);const p=await d.from('pembayaran_penawaran').delete().eq('penawaran_id',qid);if(p.error)throw p.error;const ex=await d.from('penawaran_invoice_items').delete().eq('penawaran_id',qid);if(ex.error&&ex.code!=='42P01')throw ex.error;const old=await d.from('penawaran_items').select('id').eq('penawaran_id',qid);if(old.error)throw old.error;const ids=(old.data||[]).map(x=>x.id).filter(Boolean);const j=await d.from('penawaran_jadwal').delete().eq('penawaran_id',qid);if(j.error)throw j.error;if(ids.length){const j2=await d.from('penawaran_jadwal').delete().in('item_id',ids);if(j2.error)throw j2.error;const j3=await d.from('penawaran_jadwal').delete().in('penawaran_item_id',ids);if(j3.error)throw j3.error;}const i=await d.from('penawaran_items').delete().eq('penawaran_id',qid);if(i.error)throw i.error;const r=await d.from('penawaran').delete().eq('id',qid);if(r.error)throw r.error;}
+async function deleteQuotation(id){if(!confirm('Hapus penawaran ini beserta item, jadwal, item tambahan invoice, dan riwayat pembayaran? Client dan Master Harga tidak ikut dihapus.'))return;try{await remove(id);window.msg?.('Penawaran berhasil dihapus.');await renderHistory()}catch(e){console.error('[PM] history delete',e);window.msg?.('Gagal menghapus penawaran: '+(e.message||e))}}
+async function renderHistory(){const d=DB();if(!d)return window.msg?.('Supabase belum terhubung.');try{const [qr,ir,mr]=await Promise.all([d.from('penawaran').select('*').order('id',{ascending:false}),d.from('penawaran_items').select('*').order('id'),d.from('master_harga').select('*').order('id')]);if(qr.error)throw qr.error;if(ir.error)throw ir.error;if(mr.error)throw mr.error;const rows=qr.data||[],items=ir.data||[],masters=mr.data||[],byQ=new Map();items.forEach(i=>{const k=S(i.penawaran_id);if(!byQ.has(k))byQ.set(k,[]);byQ.get(k).push(i)});document.querySelector('#title').textContent='Riwayat Penawaran';document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.p==='history'));const body=rows.map(r=>{const qid=S(r.id),list=byQ.get(qid)||[],base=N(r.subtotal)||list.reduce((a,i)=>a+N(i.subtotal),0),net=N(r.grand_total??r.total),calc=list.reduce((a,i)=>{const m=masters.find(x=>S(x.kode)===S(i.kode));const c=cost(i,m);return{v:a.v+c.value,missing:a.missing||c.missing}}, {v:0,missing:false}),margin=net>0?(net-calc.v)/net*100:0,st=S(r.status||'DRAFT').toUpperCase(),sent=['TERKIRIM','PUBLISHED','SENT'].includes(st),tone=calc.missing?'warn':margin>=20?'good':'bad';return `<tr><td>${E(r.nomor_penawaran||r.nomor||'-')}</td><td>${D(r.tanggal_penawaran||r.created_at||r.tanggal_mulai)}</td><td>${E(r.nama_client||'-')}</td><td>${E(r.perusahaan||'-')}</td><td>${E(r.nama_event||r.event_name||r.event||'-')}</td><td>${M(net||base)}</td><td><span class="pm-history-margin ${tone}">${calc.missing?'—':margin.toFixed(1)+'%'}</span><small>${calc.missing?'MODAL?':margin>=20?'AMAN':'RENDAH'}</small></td><td>${E(sent?'TERKIRIM':st)}</td><td><div class="pmHistoryActions"><button class="btn sm" type="button" onclick="editQuotation(${Number(r.id)})">Edit</button>${sent?'':`<button class="btn green sm" type="button" onclick="publishQuotation(${Number(r.id)})">Publish</button>`}<button class="btn secondary sm" type="button" onclick="inputDP(${Number(r.id)})">DP</button><button class="btn red sm" type="button" onclick="deleteQuotation(${Number(r.id)})">Hapus</button></div></td></tr>`}).join('');document.querySelector('#content').innerHTML=`<div class="head"><div><h1>Riwayat Penawaran</h1><p>Penawaran tersimpan di Supabase.</p></div><button class="btn" type="button" onclick="go('quotation')">+ Buat Penawaran</button></div><div class="card"><div class="scroll"><table class="table"><thead><tr><th>No</th><th>Tanggal</th><th>Client</th><th>Perusahaan</th><th>Event</th><th>Total</th><th>Margin Internal</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${body||'<tr><td colspan="9" class="empty">Belum ada penawaran.</td></tr>'}</tbody></table></div></div>`}catch(e){console.error('[PM] history render',e);window.msg?.('Gagal membaca riwayat: '+(e.message||e))}}
+window.renderHistory=renderHistory;window.publishQuotation=publish;window.deleteQuotation=deleteQuotation;
+function installNav(){const nav=document.querySelector('.nav[data-p="history"]');if(!nav||nav.dataset.pmHistoryCore)return;nav.dataset.pmHistoryCore='1';nav.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();renderHistory();document.querySelector('.sidebar')?.classList.remove('open')},true)}
+installNav();window.addEventListener('load',installNav);
 })();
