@@ -20,17 +20,12 @@
   const findMaster=code=>masters().find(m=>S(m.kode)===S(code))||null;
 
   function parseRows(raw){
-    return S(raw)
-      .replace(/\\n/g,'\n')
-      .split(/\r?\n/)
-      .map(line=>S(line))
-      .filter(Boolean)
-      .map(line=>{
-        let match=line.match(/^(.+?)\s*[—–]\s*(.*?)\s*$/);
-        if(!match)match=line.match(/^(.+?)\s+-\s*(.*?)\s*$/);
-        if(match)return {item:S(match[1]),qty:S(match[2])||'-'};
-        return {item:line,qty:'-'};
-      });
+    return S(raw).replace(/\\n/g,'\n').split(/\r?\n/).map(line=>S(line)).filter(Boolean).map(line=>{
+      let match=line.match(/^(.+?)\s*[—–]\s*(.*?)\s*$/);
+      if(!match)match=line.match(/^(.+?)\s+-\s*(.*?)\s*$/);
+      if(match)return {item:S(match[1]),qty:S(match[2])||'-'};
+      return {item:line,qty:'-'};
+    });
   }
 
   function modal(master){
@@ -162,4 +157,17 @@
   [0,150,350,700,1200,2000].forEach(ms=>setTimeout(refresh,ms));
   window.pmShowPackageDetail=modal;
   window.pmClosePackageDetail=closeModal;
+})();
+
+// Invoice customer-facing layout is maintained separately so the package UI
+// module remains stable. It is loaded here because this module is already part
+// of the application shell and is guaranteed to run after Invoice.
+(function(){
+  'use strict';
+  if(document.querySelector('script[data-pm-invoice-quote-sync]'))return;
+  const s=document.createElement('script');
+  s.src='js/invoice-quotation-format-sync.js?v=2';
+  s.async=false;
+  s.dataset.pmInvoiceQuoteSync='1';
+  document.head.appendChild(s);
 })();
