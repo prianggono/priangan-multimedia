@@ -71,7 +71,7 @@
   function ensureUI() {
     const total = document.querySelector('#total');
     if (!total || document.querySelector('#pmDiscount')) return;
-    const sum = total.closest('.sum);
+    const sum = total.closest('.sum');
     if (!sum || !sum.parentElement) return;
     const box = document.createElement('div');
     box.id = 'pmDiscount';
