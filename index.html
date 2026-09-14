@@ -4,17 +4,4 @@
 <body>
 <div id="app"><aside class="sidebar"><div class="brand"><div class="mark">PM</div><div><b>PRIANGAN MULTIMEDIA</b><small>SALES &amp; QUOTATION</small></div></div><nav><button class="nav active" data-p="dashboard">▦ Dashboard</button><button class="nav" data-p="master">◇ Master Harga</button><button class="nav" data-p="clients">♙ Client</button><button class="nav" data-p="quotation">▣ Buat Penawaran</button><button class="nav" data-p="history">▤ Riwayat Penawaran</button><button class="nav" data-p="invoice">▤ Invoice</button><button class="nav" data-p="finance">▤ Laporan Keuangan</button><button class="nav" data-p="vendors">♧ Data Vendor</button><button class="nav" data-p="template">▧ Template Surat</button></nav><button class="nav bottom" data-p="settings">⚙ Pengaturan</button></aside><main><header><button id="menu" type="button" aria-label="Buka menu" aria-expanded="false">☰</button><div><b id="title">Dashboard</b><small>Priangan Multimedia</small></div><span id="status" class="badge warn">Belum terhubung</span></header><section id="content"></section></main></div><div id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="js/config.js?v=8"></script><script src="js/print-style.js?v=8"></script><script src="js/header-fix.js?v=4"></script><script src="js/app.js?v=16"></script><script src="js/ttd-upload-fix.js?v=1"></script><script src="js/master-cost-fix.js?v=9"></script><script src="js/csv-import.js?v=6"></script><script src="js/client-management-fix.js?v=5"></script><script src="js/finance.js?v=8"></script><script src="js/history-actions-runtime-fix.js?v=5"></script><script src="js/quotation-runtime-canonical-v2.js?v=5"></script><script src="js/quotation-price-edit-fix.js?v=3"></script><script src="js/quotation-item-discount.js?v=1"></script><script src="js/quotation-save-safe.js?v=1"></script><script src="js/quotation-save-safe-loader.js?v=1"></script><script src="js/package-detail-ui.js?v=3"></script><script src="js/invoice.js?v=7"></script><script src="js/invoice-quotation-format-sync.js?v=2"></script><script src="js/dashboard-cyberpunk-final.js?v=8"></script><script src="js/mobile-sidebar-fix.js?v=1"></script><script src="js/db-view-health.js?v=1"></script><script src="js/vendor-management.js?v=2"></script><script src="js/document-numbering-final.js?v=6"></script>
-<script>
-(function(){
-'use strict';
-function install(){
- if(typeof window.pmSetCurrentPage!=='function')return false;
- const map={dashboardPage:'dashboard',masterPage:'master',clientsPage:'clients',quotationPage:'quotation',historyPage:'history',invoicePage:'invoice',financePage:'finance',vendorsPage:'vendors',templatePage:'template',settingsPage:'settings'};
- Object.keys(map).forEach(fn=>{const original=window[fn];if(typeof original!=='function'||original.__pmNavSync)return;const wrapped=function(){window.pmSetCurrentPage(map[fn]);return original.apply(this,arguments)};wrapped.__pmNavSync=true;window[fn]=wrapped});
- window.pmSetCurrentPage(window.page||'dashboard');return true;
-}
-if(!install())[100,300,700,1200,2000].forEach(ms=>setTimeout(install,ms));
-document.addEventListener('click',function(e){const el=e.target instanceof Element?e.target.closest('.sidebar .nav[data-p]'):null;if(!el||typeof window.pmSetCurrentPage!=='function')return;window.pmSetCurrentPage(el.dataset.p)},true);
-})();
-</script>
 </body></html>
