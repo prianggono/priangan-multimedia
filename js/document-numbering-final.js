@@ -136,4 +136,9 @@
   const mo=new MutationObserver(()=>boot());
   mo.observe(document.documentElement,{childList:true,subtree:true});
   setTimeout(()=>mo.disconnect(),10000);
+
+  window.addEventListener('beforeprint',function(){
+    const filename=S(window.__PM_PRINT_FILENAME);
+    if(filename)document.title=filename.replace(/\.pdf$/i,'');
+  },true);
 })();
