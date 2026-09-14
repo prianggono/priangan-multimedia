@@ -82,6 +82,7 @@
       #pmInvoicePreview .pm-invoice-sync-period-value{font-size:7.8pt!important;color:#475569!important}
     `;document.head.appendChild(st);
   }
+
   async function transform(){
     const area=document.querySelector('#pmInvoiceArea');
     if(!area||area.dataset.pmQuoteSync==='loading'||area.dataset.pmQuoteSync==='done')return;
@@ -99,6 +100,8 @@
       const ir=await d.from('penawaran_items').select('*').eq('penawaran_id',q.id).order('id',{ascending:true});
       if(ir.error){area.dataset.pmQuoteSync='done';return;}
       const items=ir.data||[];
+      let extras=[];
+      try{const er=await d.from('penawaran_invoice_items').select('*').eq('penawaran_id',q.id).order('id',{ascending:true});if(!er.error)extras=er.data||[];}catch(_){ }
       if(boxes[0]){const label=boxes[0].querySelector('.pm-inv-label');if(label)label.textContent='DITUJUKAN KEPADA';}
       if(refBox){
         const label=refBox.querySelector('.pm-inv-label');if(label)label.textContent='EVENT / PROJECT';
@@ -113,12 +116,14 @@
         const code=S(item.kode),master=findMaster(code),sched=period(item.tanggal_mulai,item.tanggal_selesai,true);
         return `<tr class="pm-inv-sync-item"><td class="center">${i+1}</td><td><strong>${E(item.item||item.nama_item||'-')}</strong><div class="pm-inv-sync-code">${E(code)}</div></td><td class="center">${E(itemQty(item))}</td><td class="center pm-inv-sync-schedule">${E(sched)}</td><td class="right pm-inv-sync-nowrap">${M(item.harga_jual??item.harga)}</td><td class="right pm-inv-sync-nowrap">${M(item.subtotal)}</td></tr>${master&&S(master.isi_paket)?`<tr class="pm-inv-sync-package"><td colspan="6">${packageHtml(master)}</td></tr>`:''}`;
       }).join('');
-      const total=N(q.grand_total??q.total);
+      const extraHtml=extras.map((item,i)=>`<tr class="pm-inv-sync-extra"><td class="center">+</td><td><strong>${E(item.nama_item||item.item||'Item Tambahan')}</strong><div class="pm-inv-sync-code">${E(item.kode||'ADD-INV')}</div></td><td class="center">${E(item.tipe_perhitungan==='overtime'?`${N(item.qty)} jam`:`${N(item.qty)||1} ${S(item.satuan||'unit')}`)}</td><td class="center pm-inv-sync-schedule">${E(period(item.tanggal_mulai,item.tanggal_selesai,true))}</td><td class="right pm-inv-sync-nowrap">${M(item.harga)}</td><td class="right pm-inv-sync-nowrap">${M(item.subtotal)}</td></tr>`).join('');
+      const quoteTotal=N(q.grand_total??q.total),extraTotal=extras.reduce((s,x)=>s+N(x.subtotal),0),total=quoteTotal+extraTotal;
       const table=document.createElement('table');table.className='pm-inv-sync-table';
-      table.innerHTML=`<thead><tr><th>No.</th><th>Produk / Jasa</th><th>Qty / Dimensi</th><th>Jadwal</th><th>Harga</th><th>Subtotal</th></tr></thead><tbody>${rowHtml}<tr class="pm-inv-sync-total"><td colspan="5" class="right">GRAND TOTAL</td><td class="right">${M(total)}</td></tr></tbody>`;
+      table.innerHTML=`<thead><tr><th>No.</th><th>Produk / Jasa</th><th>Qty / Dimensi</th><th>Jadwal</th><th>Harga</th><th>Subtotal</th></tr></thead><tbody>${rowHtml}${extraHtml}<tr class="pm-inv-sync-total"><td colspan="5" class="right">GRAND TOTAL</td><td class="right">${M(total)}</td></tr></tbody>`;
       oldTable.replaceWith(table);area.dataset.pmQuoteSync='done';
     }catch(e){console.error('[PM] invoice quotation sync',e);area.dataset.pmQuoteSync='done';}
   }
+
   const observer=new MutationObserver(()=>{if(document.getElementById('pmInvoiceArea'))requestAnimationFrame(transform);});
   observer.observe(document.body,{childList:true,subtree:true});
   [0,250,700,1500,2500].forEach(ms=>setTimeout(()=>{if(document.getElementById('pmInvoiceArea'))transform();},ms));
