@@ -46,6 +46,8 @@
     }
     const sub=subtotalEl(card);
     if(sub?.querySelector('b')) sub.querySelector('b').textContent=M(st.net);
+    const summary=card.querySelector('.pm-item-summary b');
+    if(summary) summary.textContent=M(st.net);
     item.diskon_persen=st.pct;
     item.diskon_nominal=st.nominal;
   }
