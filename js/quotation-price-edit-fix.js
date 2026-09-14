@@ -1,9 +1,17 @@
-/* Per-quotation price editor — persist edited price to quotation state.
- * Changes only the current quotation item price in the form; master price is never updated.
- * The edited value is synchronized to window.items so the quotation save engine persists it.
+/* Priangan Multimedia — Per-quotation price editor
+ *
+ * Master Harga = default price only.
+ * penawaran item `harga` / `harga_jual` = negotiated quotation price.
+ * This editor never updates master_harga.
+ *
+ * The item is resolved by its data-item-id, never by DOM position, so editing
+ * any item remains stable after redraw/collapse/add/remove operations.
  */
 (function(){
   'use strict';
+  if(window.__PM_QUOTATION_PRICE_EDITOR_CORE__) return;
+  window.__PM_QUOTATION_PRICE_EDITOR_CORE__=true;
+
   const S=v=>String(v??'').trim();
   const N=v=>{
     if(typeof v==='number')return Number.isFinite(v)?v:0;
@@ -13,115 +21,132 @@
   };
   const money=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(N(v));
 
-  function getItems(){
-    try{
-      return Array.isArray(window.items)?window.items:[];
-    }catch(_){return[]}
+  function getItems(){return Array.isArray(window.items)?window.items:[];}
+
+  function getItemFromCard(card){
+    if(!card)return null;
+    const raw=card.getAttribute('data-item-id');
+    if(raw==null)return null;
+    return getItems().find(x=>String(x.id)===String(raw))||null;
   }
 
-  function syncPrice(input){
-    const card=input?.closest?.('#items > .item');
-    if(!card)return;
-    const cards=Array.from(document.querySelectorAll('#items > .item'));
-    const index=cards.indexOf(card);
-    if(index<0)return;
+  function calcDays(item){
+    if(!item?.mulai||!item?.selesai)return 1;
+    const a=new Date(S(item.mulai)+'T00:00:00'),b=new Date(S(item.selesai)+'T00:00:00');
+    const d=Math.round((b-a)/86400000);
+    return d>=0?d+1:1;
+  }
+
+  function calcSubtotal(item,price){
     const a=getItems();
-    const item=a[index];
-    if(!item)return;
-
-    const value=N(input.value);
-    item.harga=value;
-    item.harga_jual=value;
-    input.dataset.quotePrice=String(value);
-    input.dataset.masterPrice=input.dataset.masterPrice||String(value);
-
-    // Keep the quotation total/subtotal synchronized without destroying the
-    // currently edited input. The full redraw happens when the user presses
-    // the price-editor "Simpan" button.
-    const type=S(item.tipe).toLowerCase();
-    const qty=Math.max(1,N(item.qty)||1);
-    const days=(!item.mulai||!item.selesai)?1:Math.max(1,Math.round((new Date(S(item.selesai)+'T00:00:00')-new Date(S(item.mulai)+'T00:00:00'))/86400000)+1);
-    let subtotal=qty*value*days;
-    if(type==='luas')subtotal=N(item.lebar)*N(item.tinggi)*value*days;
-    else if(type==='rigging')subtotal=((N(item.panjang)*2)+(N(item.tinggi)*2))*value*days;
-    else if(type==='level'){
+    const value=N(price),days=calcDays(item),qty=Math.max(1,N(item.qty)||1);
+    const type=S(item.tipe||item.tipe_perhitungan).toLowerCase();
+    if(type==='luas')return N(item.lebar)*N(item.tinggi)*value*days;
+    if(type==='rigging')return ((N(item.panjang)*2)+(N(item.tinggi)*2))*value*days;
+    if(type==='level'){
       const led=a.find(x=>x!==item&&/led|videotron/i.test(S(x.item)));
-      subtotal=(led?N(led.lebar):N(item.lebar))*value*days;
+      return (led?N(led.lebar):N(item.lebar))*value*days;
     }
-    const subtotalEl=card.querySelector('.sum b');
-    if(subtotalEl)subtotalEl.textContent=money(subtotal);
+    return qty*value*days;
+  }
 
-    const base=a.filter(x=>S(x.kode)&&S(x.item)).reduce((sum,x)=>{
-      const h=N(x.harga??x.harga_jual),q=Math.max(1,N(x.qty)||1),d=(!x.mulai||!x.selesai)?1:Math.max(1,Math.round((new Date(S(x.selesai)+'T00:00:00')-new Date(S(x.mulai)+'T00:00:00'))/86400000)+1);
-      const t=S(x.tipe).toLowerCase();
-      if(t==='luas')return sum+N(x.lebar)*N(x.tinggi)*h*d;
-      if(t==='rigging')return sum+((N(x.panjang)*2)+(N(x.tinggi)*2))*h*d;
-      if(t==='level'){
-        const led=a.find(y=>y!==x&&/led|videotron/i.test(S(y.item)));
-        return sum+(led?N(led.lebar):N(x.lebar))*h*d;
-      }
-      return sum+q*h*d;
-    },0);
+  function syncTotals(){
+    const a=getItems();
+    const base=a.filter(x=>S(x.kode)&&S(x.item)).reduce((sum,x)=>sum+calcSubtotal(x,N(x.harga)),0);
     const discount=N(document.querySelector('#pmDisc')?.value);
     const net=Math.max(0,base-discount);
-    const total=document.querySelector('#total');
-    const grand=document.querySelector('#pmGrand');
+    const total=document.querySelector('#total'),grand=document.querySelector('#pmGrand');
     if(total)total.textContent=money(net);
     if(grand)grand.textContent=money(net);
     window.__pmDiscountBase=base;
     window.__pmNetTotal=net;
   }
 
-  function field(card){
+  function findPriceInput(card){
     for(const f of card.querySelectorAll('.field')){
       const label=S(f.querySelector('label')?.textContent).toLowerCase();
-      if(label.includes('harga jual')) return f.querySelector('input');
+      if(label.includes('harga jual')||label.includes('harga penawaran'))return f.querySelector('input');
     }
     return null;
   }
 
+  function commitPrice(input){
+    const card=input?.closest?.('#items > .item');
+    const item=getItemFromCard(card);
+    if(!item)return;
+    const value=Math.max(0,N(input.value));
+
+    // `harga` is the authoritative negotiated price for this quotation item.
+    // Keep `harga_jual` synchronized for compatibility with the existing
+    // penawaran_items schema and legacy readers. Master Harga is untouched.
+    item.harga=value;
+    item.harga_jual=value;
+    item.__harga_diedit=true;
+
+    input.dataset.quotePrice=String(value);
+    syncTotals();
+  }
+
   function enhance(){
     document.querySelectorAll('#items > .item').forEach(card=>{
-      const input=field(card); if(!input || input.dataset.pmPriceEditor==='1') return;
+      const input=findPriceInput(card);
+      if(!input||input.dataset.pmPriceEditor==='1')return;
       input.dataset.pmPriceEditor='1';
-      input.dataset.masterPrice=input.value||'';
+      input.dataset.quotePrice=String(N(input.value));
       input.readOnly=true;
       input.classList.add('pm-quote-price-readonly');
+
       const wrap=input.parentElement;
-      if(wrap){
-        wrap.style.position='relative';
-        const b=document.createElement('button');
-        b.type='button'; b.className='btn secondary pm-edit-price'; b.textContent='Edit';
-        b.style.marginTop='6px'; b.style.fontSize='12px'; b.style.padding='5px 10px';
-        b.addEventListener('click',e=>{
-          e.preventDefault(); e.stopPropagation();
-          const editing=input.readOnly;
-          input.readOnly=!editing;
-          b.textContent=input.readOnly?'Edit':'Simpan';
-          b.classList.toggle('pm-price-editing',!input.readOnly);
-          if(!input.readOnly){
-            input.focus(); input.select();
-          }else{
-            // Commit the edited value to window.items before redrawing.
-            syncPrice(input);
-            input.dispatchEvent(new Event('change',{bubbles:true}));
-            if(typeof window.drawItems==='function')window.drawItems();
-          }
-        });
-        wrap.appendChild(b);
-      }
-      input.addEventListener('input',()=>syncPrice(input));
-      input.addEventListener('change',()=>syncPrice(input));
+      if(!wrap)return;
+      wrap.style.position='relative';
+
+      const button=document.createElement('button');
+      button.type='button';
+      button.className='btn secondary pm-edit-price';
+      button.textContent='Edit Harga';
+      button.style.marginTop='6px';
+      button.style.fontSize='12px';
+      button.style.padding='5px 10px';
+
+      button.addEventListener('click',e=>{
+        e.preventDefault();
+        e.stopPropagation();
+        if(input.readOnly){
+          input.readOnly=false;
+          button.textContent='Simpan Harga';
+          button.classList.add('pm-price-editing');
+          input.focus();
+          input.select();
+          return;
+        }
+
+        commitPrice(input);
+        input.readOnly=true;
+        button.textContent='Edit Harga';
+        button.classList.remove('pm-price-editing');
+
+        // Redraw through the canonical quotation engine after the value has
+        // been written into window.items, so the edited amount survives.
+        input.dispatchEvent(new Event('change',{bubbles:true}));
+        if(typeof window.drawItems==='function')window.drawItems();
+      });
+
+      input.addEventListener('input',()=>commitPrice(input));
+      input.addEventListener('change',()=>commitPrice(input));
+      wrap.appendChild(button);
     });
   }
 
   const style=document.createElement('style');
+  style.id='pmQuotationPriceEditorStyles';
   style.textContent=`
     .pm-quote-price-readonly{background:rgba(255,255,255,.035)!important;cursor:default}
     .pm-edit-price{display:inline-flex!important;align-items:center;gap:5px}
     .pm-edit-price.pm-price-editing{border-color:rgba(77,141,255,.65)!important}
   `;
   document.head.appendChild(style);
+
   new MutationObserver(()=>requestAnimationFrame(enhance)).observe(document.body,{childList:true,subtree:true});
   requestAnimationFrame(enhance);
+  window.addEventListener('load',enhance);
 })();
