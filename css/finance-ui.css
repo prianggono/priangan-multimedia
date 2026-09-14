@@ -1,52 +1,65 @@
-/* Priangan Multimedia — Finance UI/UX (non-cyberpunk foundation) */
+/* Priangan Multimedia — Finance UI/UX Cyberpunk
+ * Visual layer only. Financial calculation remains in js/finance.js.
+ */
 #content:has(#pmFinanceRefresh){
-  --fin-bg:#f5f7fb;
-  --fin-panel:#ffffff;
-  --fin-panel-soft:#f8fafc;
-  --fin-line:#e3e8f0;
-  --fin-text:#172033;
-  --fin-muted:#667085;
-  --fin-blue:#2563eb;
-  --fin-green:#059669;
-  --fin-red:#dc2626;
-  --fin-orange:#d97706;
+  --fin-bg:#050814;
+  --fin-panel:#0b1222;
+  --fin-panel-2:#0f1930;
+  --fin-line:#263858;
+  --fin-text:#eaf7ff;
+  --fin-muted:#8ea6ca;
+  --cyan:#00e5ff;
+  --green:#00f5a0;
+  --pink:#ff2bd6;
+  --yellow:#ffd166;
+  --purple:#9b6cff;
+  --red:#ff4d6d;
   color:var(--fin-text);
+  max-width:1400px;
+  margin:auto;
 }
 #content:has(#pmFinanceRefresh) .head{
-  display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:18px;
+  display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:16px;
 }
-#content:has(#pmFinanceRefresh) .head h1{margin:0 0 5px;font-size:26px;line-height:1.2;color:var(--fin-text);text-shadow:none;letter-spacing:-.2px}
+#content:has(#pmFinanceRefresh) .head h1{margin:0 0 5px;font-size:28px;line-height:1.2;color:#f5fcff;text-shadow:0 0 14px #00e5ff44;letter-spacing:.2px}
 #content:has(#pmFinanceRefresh) .head p{margin:0;max-width:900px;color:var(--fin-muted);line-height:1.55}
-#content:has(#pmFinanceRefresh) .head .btn{min-width:105px}
-#content:has(#pmFinanceRefresh) > .card{border:1px solid var(--fin-line);background:var(--fin-panel);box-shadow:0 2px 8px rgba(16,24,40,.05);border-radius:14px}
-#content:has(#pmFinanceRefresh) .field label{display:block;margin-bottom:7px;font-size:12px;font-weight:700;color:#475467}
-#content:has(#pmFinanceRefresh) input[type=date]{height:42px;background:#fff;color:var(--fin-text);border:1px solid #d0d5dd;border-radius:9px;box-shadow:none}
-#content:has(#pmFinanceRefresh) input[type=date]:focus{outline:none;border-color:#84a8ff;box-shadow:0 0 0 3px rgba(37,99,235,.10)}
+#content:has(#pmFinanceRefresh) .head .btn{min-width:108px}
+#content:has(#pmFinanceRefresh) > .card{
+  border:1px solid var(--fin-line);background:linear-gradient(145deg,#0d1529,#080d19);box-shadow:0 10px 35px #0006;border-radius:15px;
+}
+#content:has(#pmFinanceRefresh) .field label{display:block;margin-bottom:7px;font-size:11px;font-weight:800;color:#9fb5d4;letter-spacing:.35px}
+#content:has(#pmFinanceRefresh) input[type=date]{height:42px;background:#071022;color:#f4fbff;border:1px solid #2b3f61;border-radius:9px;box-shadow:none;color-scheme:dark}
+#content:has(#pmFinanceRefresh) input[type=date]:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px #00e5ff16,0 0 16px #00e5ff22}
 #content:has(#pmFinanceRefresh) .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
-#content:has(#pmFinanceRefresh) .btn{border-radius:9px;font-weight:700;min-height:40px}
-#content:has(#pmFinanceRefresh) .btn:not(.secondary){background:var(--fin-blue);box-shadow:none}
-#content:has(#pmFinanceRefresh) .btn.secondary{background:#eef2f7;border:1px solid #d8dee8;color:#344054}
-#content:has(#pmFinanceRefresh) .grid.g4{gap:14px}
-#content:has(#pmFinanceRefresh) .grid.g4>.stat{position:relative;min-height:114px;padding:18px 18px 16px;border:1px solid var(--fin-line);border-radius:13px;background:var(--fin-panel);box-shadow:0 2px 8px rgba(16,24,40,.045);overflow:hidden}
-#content:has(#pmFinanceRefresh) .grid.g4>.stat::before{display:none}
-#content:has(#pmFinanceRefresh) .grid.g4>.stat small{display:block;margin-bottom:10px;color:#667085;font-size:12px;font-weight:700;letter-spacing:.1px;text-transform:none}
-#content:has(#pmFinanceRefresh) .grid.g4>.stat strong{display:block;color:var(--fin-text);font-size:25px;line-height:1.15;font-variant-numeric:tabular-nums;text-shadow:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#content:has(#pmFinanceRefresh) .grid.g4>.stat span{display:block;margin-top:7px;color:#98a2b3;font-size:11px}
-#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat{min-height:126px}
-#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat strong{font-size:29px}
-#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat:nth-child(1){border-top:3px solid #2563eb}
-#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat:nth-child(2){border-top:3px solid #7c3aed}
-#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat:nth-child(3){border-top:3px solid #059669}
-#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat:nth-child(4){border-top:3px solid #d97706}
-#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat:nth-child(3) strong{color:var(--fin-green)!important}
+#content:has(#pmFinanceRefresh) .btn{border-radius:9px;font-weight:800;min-height:40px;border:1px solid #294766}
+#content:has(#pmFinanceRefresh) .btn:not(.secondary){background:linear-gradient(90deg,#086dff,#00bfff);box-shadow:0 0 18px #008cff2a;border:0;color:#fff}
+#content:has(#pmFinanceRefresh) .btn.secondary{background:#0b1930;border:1px solid #294766;color:#dffaff}
+#content:has(#pmFinanceRefresh) .grid.g4{gap:13px}
+#content:has(#pmFinanceRefresh) .grid.g4>.stat{
+  position:relative;min-height:112px;padding:16px 16px 15px;border:1px solid #263858;border-radius:14px;background:linear-gradient(145deg,#0d1529,#080d19);box-shadow:0 10px 30px #0005;overflow:hidden;
+}
+#content:has(#pmFinanceRefresh) .grid.g4>.stat::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent,var(--cyan));box-shadow:0 0 12px var(--accent,var(--cyan))}
+#content:has(#pmFinanceRefresh) .grid.g4>.stat small{display:block;margin-bottom:10px;color:#8fa7ca;font-size:10px;font-weight:900;letter-spacing:1px;text-transform:uppercase}
+#content:has(#pmFinanceRefresh) .grid.g4>.stat strong{display:block;color:#f1faff;font-size:24px;line-height:1.15;font-variant-numeric:tabular-nums;text-shadow:0 0 9px #b9ebff18;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#content:has(#pmFinanceRefresh) .grid.g4>.stat span{display:block;margin-top:7px;color:#6f86ab;font-size:10px}
+#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat{min-height:120px}
+#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat strong{font-size:28px}
+#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat:nth-child(1){--accent:var(--cyan)}
+#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat:nth-child(2){--accent:var(--purple)}
+#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat:nth-child(3){--accent:var(--green)}
+#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat:nth-child(4){--accent:var(--yellow)}
+#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(3)>.stat:nth-child(1){--accent:var(--pink)}
+#content:has(#pmFinanceRefresh) .grid.g4:nth-of-type(4)>.stat:nth-child(1){--accent:var(--red)}
+#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat:nth-child(3) strong{color:var(--green)!important}
+#content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat:nth-child(4) strong{color:#fff2b8!important}
 #content:has(#pmFinanceRefresh) > .card:last-child{padding:18px 18px 10px}
-#content:has(#pmFinanceRefresh) > .card:last-child > b{display:block;font-size:15px;color:var(--fin-text);margin-bottom:2px}
-#content:has(#pmFinanceRefresh) .scroll{border:1px solid var(--fin-line);border-radius:10px;background:#fff;overflow:auto}
-#content:has(#pmFinanceRefresh) .table{min-width:1250px;background:#fff;border-collapse:separate;border-spacing:0}
-#content:has(#pmFinanceRefresh) .table th{position:sticky;top:0;z-index:2;padding:11px 12px;background:#f8fafc;color:#475467;border-bottom:1px solid var(--fin-line);font-size:11px;font-weight:800;letter-spacing:.1px;text-shadow:none;white-space:nowrap}
-#content:has(#pmFinanceRefresh) .table td{padding:11px 12px;border-bottom:1px solid #edf0f4;color:#344054;font-size:12px;white-space:nowrap}
+#content:has(#pmFinanceRefresh) > .card:last-child > b{display:block;font-size:14px;color:#f4fbff;margin-bottom:2px;letter-spacing:.2px}
+#content:has(#pmFinanceRefresh) .scroll{border:1px solid #233655;border-radius:10px;background:#071022;overflow:auto}
+#content:has(#pmFinanceRefresh) .table{min-width:1250px;background:#071022;border-collapse:separate;border-spacing:0}
+#content:has(#pmFinanceRefresh) .table th{position:sticky;top:0;z-index:2;padding:11px 12px;background:#0d1830;color:#7390ba;border-bottom:1px solid #263858;font-size:10px;font-weight:900;letter-spacing:.45px;text-transform:uppercase;text-shadow:none;white-space:nowrap}
+#content:has(#pmFinanceRefresh) .table td{padding:11px 12px;border-bottom:1px solid #17243b;color:#cbd9eb;font-size:11px;white-space:nowrap}
+#content:has(#pmFinanceRefresh) .table tbody tr:hover{background:#0b1730;box-shadow:inset 0 0 22px #00e5ff0d}
 #content:has(#pmFinanceRefresh) .table tbody tr:last-child td{border-bottom:0}
-#content:has(#pmFinanceRefresh) .table tbody tr:hover{background:#f8fbff;box-shadow:none}
 #content:has(#pmFinanceRefresh) .table td:nth-child(6),
 #content:has(#pmFinanceRefresh) .table td:nth-child(8),
 #content:has(#pmFinanceRefresh) .table td:nth-child(9),
@@ -54,16 +67,15 @@
 #content:has(#pmFinanceRefresh) .table td:nth-child(12),
 #content:has(#pmFinanceRefresh) .table td:nth-child(13),
 #content:has(#pmFinanceRefresh) .table td:nth-child(14){font-variant-numeric:tabular-nums}
-#content:has(#pmFinanceRefresh) .empty{text-align:center!important;padding:28px!important;color:#98a2b3!important}
+#content:has(#pmFinanceRefresh) .empty{text-align:center!important;padding:28px!important;color:#6f86ab!important}
 @media(max-width:900px){
   #content:has(#pmFinanceRefresh) .head{align-items:stretch;flex-direction:column}
   #content:has(#pmFinanceRefresh) .head .btn{align-self:flex-start}
   #content:has(#pmFinanceRefresh) .grid.g4{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-  #content:has(#pmFinanceRefresh) .grid.g4:first-of-type>.stat{min-height:112px}
 }
 @media(max-width:560px){
   #content:has(#pmFinanceRefresh) .grid.g4{grid-template-columns:1fr}
-  #content:has(#pmFinanceRefresh) .grid.g4>.stat strong{font-size:23px}
+  #content:has(#pmFinanceRefresh) .grid.g4>.stat strong{font-size:22px}
   #content:has(#pmFinanceRefresh) > .card{padding:14px!important}
   #content:has(#pmFinanceRefresh) .actions{justify-content:stretch}
   #content:has(#pmFinanceRefresh) .actions .btn{flex:1}
