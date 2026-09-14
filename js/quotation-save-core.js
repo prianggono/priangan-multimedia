@@ -111,6 +111,8 @@
     const sourceRows = rows().filter((x) => x && S(x.kode) && S(x.item));
     if (!client || !company || !eventName) return toast('Client, Perusahaan, dan Nama Event wajib diisi.');
     if (!sourceRows.length) return toast('Tambahkan minimal 1 item.');
+    if (sourceRows.some((x) => !x.mulai || !x.selesai)) return toast('Tanggal mulai dan selesai wajib diisi untuk semua item.');
+
     const state = syncUI();
     const editId = N(window.__pmEditingQuotationId || window.__PM_EDIT_QUOTATION_ID);
     const number = S(window.__pmEditingQuotationNumber || window.__PM_EDIT_QUOTATION_NUMBER) || ('PM-' + Date.now().toString().slice(-6));
@@ -122,6 +124,7 @@
       subtotal: state.base, diskon: state.nominal, diskon_persen: state.pct,
       diskon_nominal: state.nominal, total: state.total, grand_total: state.total, status: 'DRAFT'
     };
+
     let quoteId = editId;
     if (editId) {
       const updated = await d.from('penawaran').update(payload).eq('id', editId).select('id').single();
@@ -133,31 +136,47 @@
       if (inserted.error) throw inserted.error;
       quoteId = inserted.data?.id;
     }
+
     const itemPayload = sourceRows.map((item) => ({
-      penawaran_id: quoteId, kode: item.kode, item: item.item,
-      harga_jual: N(item.harga), harga: N(item.harga),
+      penawaran_id: quoteId, kode: item.kode, item: item.item, nama_item: item.item,
+      harga_jual: N(item.harga), harga: N(item.harga), harga_modal: N(item.harga_modal),
       tipe_perhitungan: item.tipe, tipe: item.tipe,
       qty: Math.max(1, N(item.qty) || 1), jumlah: Math.max(1, N(item.qty) || 1),
       lebar: N(item.lebar) || null, tinggi: N(item.tinggi) || null, panjang: N(item.panjang) || null,
-      tanggal_mulai: item.mulai || null, tanggal_selesai: item.selesai || null,
+      tanggal_mulai: item.mulai, tanggal_selesai: item.selesai,
       durasi: days(item.mulai, item.selesai), subtotal: itemSubtotal(item)
     }));
     const itemResult = await d.from('penawaran_items').insert(itemPayload).select('id');
     if (itemResult.error) throw itemResult.error;
+
     const savedItems = itemResult.data || [];
     const schedulePayload = savedItems.map((saved, index) => {
       const item = sourceRows[index];
-      return { item_id: saved.id, penawaran_item_id: saved.id, qty: Math.max(1, N(item.qty) || 1), tanggal_mulai: item.mulai || null, tanggal_selesai: item.selesai || null, durasi: days(item.mulai, item.selesai), subtotal: itemSubtotal(item) };
+      return {
+        item_id: saved.id, penawaran_item_id: saved.id, penawaran_id: quoteId,
+        qty: Math.max(1, N(item.qty) || 1), tanggal_mulai: item.mulai, tanggal_selesai: item.selesai,
+        durasi_hari: days(item.mulai, item.selesai), durasi: days(item.mulai, item.selesai), subtotal: itemSubtotal(item)
+      };
     });
     if (schedulePayload.length) {
       const scheduleResult = await d.from('penawaran_jadwal').insert(schedulePayload);
       if (scheduleResult.error) throw scheduleResult.error;
     }
+
+    const itemCheck = await d.from('penawaran_items').select('subtotal').eq('penawaran_id', quoteId);
+    if (itemCheck.error) throw itemCheck.error;
+    const savedItemSubtotal = (itemCheck.data || []).reduce((sum, row) => sum + N(row.subtotal), 0);
     const verify = await d.from('penawaran').select('id,subtotal,diskon,diskon_persen,diskon_nominal,total,grand_total,nama_event').eq('id', quoteId).single();
     if (verify.error) throw verify.error;
     const saved = verify.data || {};
-    const ok = Math.round(N(saved.subtotal)) === Math.round(state.base) && Math.round(N(saved.diskon_nominal)) === Math.round(state.nominal) && Math.round(N(saved.total)) === Math.round(state.total) && Math.round(N(saved.grand_total)) === Math.round(state.total) && Math.round(N(saved.diskon_persen)) === Math.round(state.pct);
-    if (!ok) throw new Error('Verifikasi database gagal: nilai subtotal/diskon/total berbeda dari form.');
+    const ok = Math.round(savedItemSubtotal) === Math.round(state.base) &&
+      Math.round(N(saved.subtotal)) === Math.round(state.base) &&
+      Math.round(N(saved.diskon_nominal)) === Math.round(state.nominal) &&
+      Math.round(N(saved.total)) === Math.round(state.total) &&
+      Math.round(N(saved.grand_total)) === Math.round(state.total) &&
+      Math.round(N(saved.diskon_persen)) === Math.round(state.pct);
+    if (!ok) throw new Error('Verifikasi database gagal: nilai item/subtotal/diskon/total berbeda dari form.');
+
     toast((editId ? 'Penawaran berhasil diperbarui: ' : 'Penawaran berhasil disimpan: ') + number);
     window.__pmEditingQuotationId = null; window.__PM_EDIT_QUOTATION_ID = null;
     window.__pmEditingQuotationNumber = null; window.__PM_EDIT_QUOTATION_NUMBER = null;
@@ -165,12 +184,29 @@
     if (typeof load === 'function') await load();
     if (typeof go === 'function') go('history'); else { window.page = 'history'; if (typeof render === 'function') render(); }
   }
+
   window.saveQuote = saveQuoteCore;
   window.__PM_QUOTATION_CORE = { subtotal, discountState, syncUI, itemSubtotal };
+  function resetNewQuotationState() {
+    window.__PM_DISC_MODE = 'rp';
+    window.__pmDiscountBase = 0;
+    window.__pmDiscountValue = 0;
+    window.__pmDiscountPct = 0;
+    window.__pmNetTotal = 0;
+    window.__pmEditingQuotationId = null;
+    window.__PM_EDIT_QUOTATION_ID = null;
+    window.__pmEditingQuotationNumber = null;
+    window.__PM_EDIT_QUOTATION_NUMBER = null;
+  }
   function boot() { ensureUI(); syncUI(); }
   boot();
   [50,150,300,600,1200].forEach((ms) => setTimeout(boot, ms));
-  document.addEventListener('click', (e) => { if (e.target.closest('[data-p="quotation"]')) setTimeout(boot, 80); });
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-p="quotation"]')) {
+      resetNewQuotationState();
+      setTimeout(boot, 80);
+    }
+  });
   const observer = new MutationObserver(() => ensureUI());
   if (document.body) observer.observe(document.body, { childList: true, subtree: true });
 })();
