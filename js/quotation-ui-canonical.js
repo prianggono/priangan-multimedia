@@ -7,157 +7,41 @@
   'use strict';
   if(window.__PM_QUOTATION_UI_CANONICAL__)return;
   window.__PM_QUOTATION_UI_CANONICAL__=true;
-
   const S=v=>String(v??'').trim();
-  const N=v=>{
-    if(typeof v==='number')return Number.isFinite(v)?v:0;
-    const s=S(v).replace(/[^0-9,.-]/g,'').replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.');
-    const n=Number(s);return Number.isFinite(n)?n:0;
-  };
+  const N=v=>{if(typeof v==='number')return Number.isFinite(v)?v:0;const s=S(v).replace(/[^0-9,.-]/g,'').replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.');const n=Number(s);return Number.isFinite(n)?n:0;};
   const M=v=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Math.max(0,Math.round(N(v))));
   const E=v=>S(v).replace(/[&<>\"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m]));
   const items=()=>Array.isArray(window.items)?window.items:[];
   const masters=()=>Array.isArray(window.masters)?window.masters:[];
   const core=()=>window.__PM_QUOTATION_CORE||{};
-
-  function masterFor(item){
-    if(typeof core().masterFor==='function')return core().masterFor(item);
-    return masters().find(m=>S(m.kode)===S(item?.kode))||null;
-  }
+  function masterFor(item){return typeof core().masterFor==='function'?core().masterFor(item):masters().find(m=>S(m.kode)===S(item?.kode))||null;}
   function mode(item){return typeof core().typeOf==='function'?core().typeOf(item):S(item?.tipe||item?.tipe_perhitungan||'qty');}
-  function days(item){
-    if(typeof core().days==='function')return Math.max(1,N(core().days(item?.mulai,item?.selesai)));
-    if(!item?.mulai||!item?.selesai)return 1;
-    const a=new Date(S(item.mulai)+'T00:00:00'),b=new Date(S(item.selesai)+'T00:00:00');
-    return Math.max(1,Math.round((b-a)/86400000)+1);
-  }
-  function isLED(item){
-    const m=masterFor(item),t=`${S(m?.item)} ${S(m?.kategori)} ${S(m?.kode)}`.toLowerCase();
-    if(/led\s*tv|televisi|tv\s*[- ]?\d{2,3}\b/.test(t))return false;
-    return /videotron|led\s*(indoor|outdoor)|\bled\s*p\.?\d/.test(t);
-  }
-  function isLevelMaster(m){
-    if(!m)return false;
-    const t=`${S(m.item)} ${S(m.kategori)} ${S(m.kode)}`.toLowerCase();
-    return /level/.test(t)&&!/led\s*tv|televisi/.test(t);
-  }
-  function levelMaster(item){
-    const id=item?.level_master_harga_id;
-    return id!=null?masters().find(m=>String(m.id)===String(id)&&isLevelMaster(m))||null:null;
-  }
-  function levelSubtotal(item){
-    if(!item?.level_enabled)return 0;
-    const lm=levelMaster(item);if(!lm)return 0;
-    return N(item.lebar)*N(item.level_harga||lm.harga_jual)*Math.max(1,N(item.qty)||1)*days(item);
-  }
+  function days(item){if(typeof core().days==='function')return Math.max(1,N(core().days(item?.mulai,item?.selesai)));if(!item?.mulai||!item?.selesai)return 1;const a=new Date(S(item.mulai)+'T00:00:00'),b=new Date(S(item.selesai)+'T00:00:00');return Math.max(1,Math.round((b-a)/86400000)+1);}
+  function isLED(item){const m=masterFor(item),t=`${S(m?.item)} ${S(m?.kategori)} ${S(m?.kode)}`.toLowerCase();if(/led\s*tv|televisi|tv\s*[- ]?\d{2,3}\b/.test(t))return false;return /videotron|led\s*(indoor|outdoor)|\bled\s*p\.?\d/.test(t);}
+  function isLevelMaster(m){if(!m)return false;const t=`${S(m.item)} ${S(m.kategori)} ${S(m.kode)}`.toLowerCase();return /level/.test(t)&&!/led\s*tv|televisi/.test(t);}
+  function levelMaster(item){const id=item?.level_master_harga_id;return id!=null?masters().find(m=>String(m.id)===String(id)&&isLevelMaster(m))||null:null;}
+  function levelSubtotal(item){if(!item?.level_enabled)return 0;const lm=levelMaster(item);if(!lm)return 0;return N(item.lebar)*N(item.level_harga||lm.harga_jual)*Math.max(1,N(item.qty)||1)*days(item);}
   function ledBase(item){return Math.max(0,N(item.lebar)*N(item.tinggi)*N(item.harga??item.harga_jual)*Math.max(1,N(item.qty)||1)*days(item));}
   const originalSubtotal=typeof core().itemSubtotal==='function'?core().itemSubtotal:null;
-  function baseSubtotal(item){
-    if(isLED(item))return ledBase(item)+levelSubtotal(item);
-    const t=mode(item).toLowerCase();
-    if(t==='level')return 0;
-    return originalSubtotal?Math.max(0,N(originalSubtotal(item))):0;
-  }
-  function patchCore(){
-    const c=core();if(!c.itemSubtotal)return false;
-    if(!c.__pmUnifiedBaseSubtotal)c.__pmUnifiedBaseSubtotal=c.itemSubtotal;
-    const base=c.__pmUnifiedBaseSubtotal;
-    c.itemSubtotal=function(item){return baseSubtotal(item) ?? Math.max(0,N(base(item)));};
-    c.__pmQuotationUiSubtotalPatched=true;
-    return true;
-  }
-  function discount(item){
-    const base=baseSubtotal(item),pct=Math.max(0,Math.min(100,N(item.diskon_persen)));
-    const rp=pct>0?Math.min(base,Math.round(base*pct/100)):Math.min(base,Math.max(0,N(item.diskon_nominal)));
-    return{base,pct,rp,net:Math.max(0,base-rp)};
-  }
-  function displayName(item){
-    const base=S(item?.item)||'Item belum dipilih';
-    if(!isLED(item)||!item?.level_enabled)return base;
-    const lm=levelMaster(item);
-    return lm?`${base} + ${S(lm.item)}`:`${base} + Level`;
-  }
+  function baseSubtotal(item){if(isLED(item))return ledBase(item)+levelSubtotal(item);const t=mode(item).toLowerCase();if(t==='level')return 0;return originalSubtotal?Math.max(0,N(originalSubtotal(item))):0;}
+  function patchCore(){const c=core();if(!c.itemSubtotal)return false;if(!c.__pmUnifiedBaseSubtotal)c.__pmUnifiedBaseSubtotal=c.itemSubtotal;const base=c.__pmUnifiedBaseSubtotal;c.itemSubtotal=function(item){return baseSubtotal(item);};c.__pmQuotationUiSubtotalPatched=true;return true;}
+  function discount(item){const base=baseSubtotal(item),pct=Math.max(0,Math.min(100,N(item.diskon_persen))),rp=pct>0?Math.min(base,Math.round(base*pct/100)):Math.min(base,Math.max(0,N(item.diskon_nominal)));return{base,pct,rp,net:Math.max(0,base-rp)};}
+  function displayName(item){const base=S(item?.item)||'Item belum dipilih';if(!item?.level_enabled)return base;const lm=levelMaster(item);return lm?`${base} + ${S(lm.item)}`:base;}
+  function hideLevelProducts(){document.querySelectorAll('#items > .item select').forEach(select=>{[...select.options].forEach(o=>{const m=masters().find(x=>S(x.kode)===S(o.value));if(isLevelMaster(m))o.hidden=true;});});}
   function priceInput(card){return [...card.querySelectorAll('.field')].find(f=>/harga\s*(jual|penawaran)/i.test(S(f.querySelector('label')?.textContent)))?.querySelector('input')||null;}
   function subtotalEl(card){return [...card.querySelectorAll('.pm-item-body > .sum')].find(e=>/subtotal/i.test(S(e.querySelector('span')?.textContent)))||null;}
-
-  function updateTotal(){
-    patchCore();
-    const rows=items().filter(x=>S(x.kode)&&S(x.item));
-    const base=rows.reduce((s,x)=>s+discount(x).base,0),disc=rows.reduce((s,x)=>s+discount(x).rp,0),global=Math.max(0,N(window.__pmDiscountValue)),total=Math.max(0,base-disc-global);
-    const totalEl=document.querySelector('#total'),grand=document.querySelector('#pmGrand');
-    if(totalEl)totalEl.textContent=M(total);if(grand)grand.textContent=M(total);
-    window.__pmDiscountBase=base-disc;window.__pmItemDiscountTotal=disc;window.__pmNetTotal=total;
-    return{base,disc,global,total};
-  }
-
-  function addSet(card,item){
-    if(!isLED(item))return;
-    const dim=card.querySelector('.pm-item-body .dim');if(!dim||dim.querySelector('.pm-led-set-field'))return;
-    const f=document.createElement('div');f.className='field pm-led-set-field';
-    f.innerHTML=`<label>Set LED (Titik)</label><input class="pm-led-set-input" type="number" min="1" step="1" value="${Math.max(1,N(item.qty)||1)}">`;
-    dim.appendChild(f);
-    const input=f.querySelector('input');
-    input.addEventListener('input',()=>{item.qty=Math.max(1,Math.round(N(input.value)||1));updateCard(card,item);updateTotal();});
-  }
-
+  function updateTotal(){patchCore();const rows=items().filter(x=>S(x.kode)&&S(x.item));const base=rows.reduce((s,x)=>s+discount(x).base,0),disc=rows.reduce((s,x)=>s+discount(x).rp,0),global=Math.max(0,N(window.__pmDiscountValue)),total=Math.max(0,base-disc-global);const totalEl=document.querySelector('#total'),grand=document.querySelector('#pmGrand');if(totalEl)totalEl.textContent=M(total);if(grand)grand.textContent=M(total);window.__pmDiscountBase=base-disc;window.__pmItemDiscountTotal=disc;window.__pmNetTotal=total;return{base,disc,global,total};}
+  function addSet(card,item){if(!isLED(item))return;const dim=card.querySelector('.pm-item-body .dim');if(!dim||dim.querySelector('.pm-led-set-field'))return;const f=document.createElement('div');f.className='field pm-led-set-field';f.innerHTML=`<label>Set LED (Titik)</label><input class="pm-led-set-input" type="number" min="1" step="1" value="${Math.max(1,N(item.qty)||1)}">`;dim.appendChild(f);const input=f.querySelector('input');input.addEventListener('input',()=>{item.qty=Math.max(1,Math.round(N(input.value)||1));updateCard(card,item);updateTotal();});}
   function levelOptions(selected){return `<option value="">Tanpa Level</option>`+masters().filter(isLevelMaster).map(m=>`<option value="${E(m.id)}" ${String(m.id)===String(selected??'')?'selected':''}>[${E(m.kode)}] ${E(m.item)}</option>`).join('');}
-  function addLevel(card,item){
-    if(!isLED(item))return;
-    if(card.querySelector('.pm-led-level-box')){syncLevel(card,item);return;}
-    const dim=card.querySelector('.pm-item-body .dim');if(!dim)return;
-    const box=document.createElement('div');box.className='pm-led-level-box';
-    box.innerHTML=`<div class="pm-led-level-head"><label class="pm-led-level-toggle"><input type="checkbox" class="pm-led-level-enabled" ${item.level_enabled?'checked':''}> <span>Gunakan Level</span></label><span class="pm-led-level-note">Opsional</span></div><div class="pm-led-level-fields" style="display:${item.level_enabled?'grid':'none'}"><div class="field"><label>Jenis Level</label><select class="pm-led-level-master">${levelOptions(item.level_master_harga_id)}</select></div><div class="field"><label>Lebar Level</label><input class="pm-led-level-width" value="${N(item.lebar)} m" readonly></div><div class="field"><label>Tinggi Level (informasi, m)</label><input class="pm-led-level-height" type="number" min="0" step="0.01" value="${N(item.level_tinggi)}"></div><div class="field"><label>Harga Level / m</label><input class="pm-led-level-price" readonly value="${item.level_harga?M(item.level_harga):''}"></div></div><div class="pm-led-level-total" style="display:${item.level_enabled?'flex':'none'}"><span>Subtotal Level</span><b class="pm-led-level-subtotal">Rp 0</b></div>`;
-    dim.insertAdjacentElement('afterend',box);
-    const toggle=box.querySelector('.pm-led-level-enabled'),sel=box.querySelector('.pm-led-level-master'),h=box.querySelector('.pm-led-level-height');
-    toggle.addEventListener('change',()=>{item.level_enabled=toggle.checked;if(!toggle.checked){item.level_master_harga_id=null;item.level_harga=0;item.level_tinggi=0;}syncLevel(card,item);updateCard(card,item);updateTotal();});
-    sel.addEventListener('change',()=>{item.level_master_harga_id=sel.value?Number(sel.value):null;const lm=levelMaster(item);item.level_harga=lm?N(lm.harga_jual):0;syncLevel(card,item);updateCard(card,item);updateTotal();});
-    h.addEventListener('input',()=>{item.level_tinggi=Math.max(0,N(h.value));updateTotal();});
-    syncLevel(card,item);
-  }
-  function syncLevel(card,item){
-    const box=card.querySelector('.pm-led-level-box');if(!box)return;
-    const on=!!item.level_enabled,fields=box.querySelector('.pm-led-level-fields'),total=box.querySelector('.pm-led-level-total'),sel=box.querySelector('.pm-led-level-master'),w=box.querySelector('.pm-led-level-width'),p=box.querySelector('.pm-led-level-price'),b=box.querySelector('.pm-led-level-subtotal');
-    if(fields)fields.style.display=on?'grid':'none';if(total)total.style.display=on?'flex':'none';if(sel)sel.value=item.level_master_harga_id?String(item.level_master_harga_id):'';if(w)w.value=`${N(item.lebar)} m`;
-    const lm=levelMaster(item);if(p)p.value=item.level_enabled&&lm?M(item.level_harga||lm.harga_jual):'';
-    if(b)b.textContent=M(levelSubtotal(item));
-  }
-  function addDiscount(card,item){
-    if(card.querySelector('.pm-item-discount'))return;
-    const sub=subtotalEl(card);if(!sub)return;
-    const box=document.createElement('div');box.className='pm-item-discount';
-    box.innerHTML=`<div class="pm-item-discount-grid"><div class="field"><label>Diskon (%)</label><input class="pm-item-discount-pct" type="number" min="0" max="100" step="0.01" value="${N(item.diskon_persen)}"></div><div class="field"><label>Diskon (Rp)</label><input class="pm-item-discount-rp" value="Rp 0" readonly></div></div>`;
-    sub.insertAdjacentElement('beforebegin',box);
-    const p=box.querySelector('.pm-item-discount-pct');p.addEventListener('input',()=>{item.diskon_persen=Math.max(0,Math.min(100,N(p.value)));item.diskon_nominal=0;updateCard(card,item);updateTotal();});
-  }
-  function addPriceEditor(card,item){
-    const input=priceInput(card);if(!input||input.dataset.pmUnifiedPrice==='1')return;
-    input.dataset.pmUnifiedPrice='1';input.readOnly=true;
-    const wrap=input.parentElement;if(!wrap)return;
-    const btn=document.createElement('button');btn.type='button';btn.className='btn secondary pm-edit-price';btn.textContent='Edit Harga';btn.style.marginTop='6px';btn.style.fontSize='12px';btn.style.padding='5px 10px';
-    btn.addEventListener('click',()=>{if(input.readOnly){input.readOnly=false;btn.textContent='Simpan Harga';input.focus();input.select();return;}const v=Math.max(0,N(input.value));item.harga=v;item.harga_jual=v;item.__harga_diedit=true;input.readOnly=true;btn.textContent='Edit Harga';input.value=M(v);updateCard(card,item);updateTotal();});
-    wrap.appendChild(btn);input.value=M(item.harga);
-  }
-  function updateCard(card,item){
-    const d=discount(item),sub=subtotalEl(card);if(sub?.querySelector('b'))sub.querySelector('b').textContent=M(d.net);
-    const p=card.querySelector('.pm-item-discount-pct'),r=card.querySelector('.pm-item-discount-rp');if(p&&document.activeElement!==p)p.value=String(Number(d.pct.toFixed(2)));if(r)r.value=M(d.rp);
-    const summary=card.querySelector('.pm-item-summary');if(summary){const b=summary.querySelector('b');if(b)b.textContent=M(d.net);const sp=summary.querySelector('.pm-summary-main span');if(sp){const t=mode(item).toLowerCase();let metric='';if(t==='luas')metric=`${N(item.lebar)} × ${N(item.tinggi)} m • ${Math.max(1,N(item.qty)||1)} set`;else if(t==='rigging')metric=`Rigging ${N(item.panjang)} × ${N(item.tinggi)} m`;else if(t==='level')metric=`Level ${N(item.lebar)||'-'} m`;else metric=`Qty ${Math.max(1,N(item.qty)||1)}`;sp.textContent=`${metric}${item.mulai&&item.selesai?' • '+S(item.mulai)+' → '+S(item.selesai):''}${isLED(item)&&item.level_enabled?' • Level aktif':''}`;}}
-    const nameEl=card.querySelector('.pm-item-body .pm-item-display-name');if(nameEl)nameEl.textContent=displayName(item);
-  }
+  function addLevel(card,item){if(!isLED(item))return;if(card.querySelector('.pm-led-level-box')){syncLevel(card,item);return;}const dim=card.querySelector('.pm-item-body .dim');if(!dim)return;const box=document.createElement('div');box.className='pm-led-level-box';box.innerHTML=`<div class="pm-led-level-head"><label class="pm-led-level-toggle"><input type="checkbox" class="pm-led-level-enabled" ${item.level_enabled?'checked':''}> <span>Gunakan Level</span></label><span class="pm-led-level-note">Opsional</span></div><div class="pm-led-level-fields" style="display:${item.level_enabled?'grid':'none'}"><div class="field"><label>Jenis Level</label><select class="pm-led-level-master">${levelOptions(item.level_master_harga_id)}</select></div><div class="field"><label>Lebar Level</label><input class="pm-led-level-width" value="${N(item.lebar)} m" readonly></div><div class="field"><label>Tinggi Level (informasi, m)</label><input class="pm-led-level-height" type="number" min="0" step="0.01" value="${N(item.level_tinggi)}"></div><div class="field"><label>Harga Level / m</label><input class="pm-led-level-price" readonly value="${item.level_harga?M(item.level_harga):''}"></div></div><div class="pm-led-level-total" style="display:${item.level_enabled?'flex':'none'}"><span>Subtotal Level</span><b class="pm-led-level-subtotal">Rp 0</b></div>`;dim.insertAdjacentElement('afterend',box);const toggle=box.querySelector('.pm-led-level-enabled'),sel=box.querySelector('.pm-led-level-master'),h=box.querySelector('.pm-led-level-height');toggle.addEventListener('change',()=>{item.level_enabled=toggle.checked;if(!toggle.checked){item.level_master_harga_id=null;item.level_harga=0;item.level_tinggi=0;}syncLevel(card,item);updateCard(card,item);updateTotal();});sel.addEventListener('change',()=>{item.level_master_harga_id=sel.value?Number(sel.value):null;const lm=levelMaster(item);item.level_harga=lm?N(lm.harga_jual):0;syncLevel(card,item);updateCard(card,item);updateTotal();});h.addEventListener('input',()=>{item.level_tinggi=Math.max(0,N(h.value));updateTotal();});syncLevel(card,item);}
+  function syncLevel(card,item){const box=card.querySelector('.pm-led-level-box');if(!box)return;const on=!!item.level_enabled&&!!levelMaster(item),fields=box.querySelector('.pm-led-level-fields'),total=box.querySelector('.pm-led-level-total'),sel=box.querySelector('.pm-led-level-master'),w=box.querySelector('.pm-led-level-width'),p=box.querySelector('.pm-led-level-price'),b=box.querySelector('.pm-led-level-subtotal');if(fields)fields.style.display=on?'grid':'none';if(total)total.style.display=on?'flex':'none';if(sel)sel.value=item.level_master_harga_id?String(item.level_master_harga_id):'';if(w)w.value=`${N(item.lebar)} m`;const lm=levelMaster(item);if(p)p.value=on?M(item.level_harga||lm.harga_jual):'';if(b)b.textContent=M(levelSubtotal(item));if(!levelMaster(item)&&item.level_enabled){item.level_enabled=false;}}
+  function addDiscount(card,item){if(card.querySelector('.pm-item-discount'))return;const sub=subtotalEl(card);if(!sub)return;const box=document.createElement('div');box.className='pm-item-discount';box.innerHTML=`<div class="pm-item-discount-grid"><div class="field"><label>Diskon (%)</label><input class="pm-item-discount-pct" type="number" min="0" max="100" step="0.01" value="${N(item.diskon_persen)}"></div><div class="field"><label>Diskon (Rp)</label><input class="pm-item-discount-rp" value="Rp 0" readonly></div></div>`;sub.insertAdjacentElement('beforebegin',box);const p=box.querySelector('.pm-item-discount-pct');p.addEventListener('input',()=>{item.diskon_persen=Math.max(0,Math.min(100,N(p.value)));item.diskon_nominal=0;updateCard(card,item);updateTotal();});}
+  function addPriceEditor(card,item){const input=priceInput(card);if(!input||input.dataset.pmUnifiedPrice==='1')return;input.dataset.pmUnifiedPrice='1';input.readOnly=true;const wrap=input.parentElement;if(!wrap)return;const btn=document.createElement('button');btn.type='button';btn.className='btn secondary pm-edit-price';btn.textContent='Edit Harga';btn.style.marginTop='6px';btn.style.fontSize='12px';btn.style.padding='5px 10px';btn.addEventListener('click',()=>{if(input.readOnly){input.readOnly=false;btn.textContent='Simpan Harga';input.focus();input.select();return;}const v=Math.max(0,N(input.value));item.harga=v;item.harga_jual=v;item.__harga_diedit=true;input.readOnly=true;btn.textContent='Edit Harga';input.value=M(v);updateCard(card,item);updateTotal();});wrap.appendChild(btn);input.value=M(item.harga);}
+  function updateCard(card,item){const d=discount(item),sub=subtotalEl(card);if(sub?.querySelector('b'))sub.querySelector('b').textContent=M(d.net);const p=card.querySelector('.pm-item-discount-pct'),r=card.querySelector('.pm-item-discount-rp');if(p&&document.activeElement!==p)p.value=String(Number(d.pct.toFixed(2)));if(r)r.value=M(d.rp);const summary=card.querySelector('.pm-item-summary');if(summary){const b=summary.querySelector('b');if(b)b.textContent=M(d.net);const sp=summary.querySelector('.pm-summary-main span');if(sp){const t=mode(item).toLowerCase();let metric='';if(t==='luas')metric=`${N(item.lebar)} × ${N(item.tinggi)} m • ${Math.max(1,N(item.qty)||1)} set`;else if(t==='rigging')metric=`Rigging ${N(item.panjang)} × ${N(item.tinggi)} m`;else if(t==='level')metric=`Level ${N(item.lebar)||'-'} m`;else metric=`Qty ${Math.max(1,N(item.qty)||1)}`;sp.textContent=`${metric}${item.mulai&&item.selesai?' • '+S(item.mulai)+' → '+S(item.selesai):''}${isLED(item)&&levelMaster(item)?' • '+S(levelMaster(item).item):''}`;}}const nameEl=card.querySelector('.pm-item-body .pm-item-display-name');if(nameEl)nameEl.textContent=displayName(item);}
   function attachPackageDetails(){if(typeof window.__PM_PACKAGE_DETAIL_API?.addQuotationDetails==='function')window.__PM_PACKAGE_DETAIL_API.addQuotationDetails();}
-  function enhance(){
-    const container=document.querySelector('#items');if(!container)return;
-    patchCore();
-    container.querySelectorAll(':scope > .item').forEach(card=>{const item=items().find(x=>String(x.id)===String(card.dataset.itemId));if(!item)return;addPriceEditor(card,item);addDiscount(card,item);addSet(card,item);addLevel(card,item);updateCard(card,item);});
-    updateTotal();attachPackageDetails();
-  }
-  function wrapDraw(){
-    const fn=window.drawItems;if(typeof fn!=='function'||fn.__pmUnifiedDraw)return false;
-    const wrapped=function(){const r=fn.apply(this,arguments);requestAnimationFrame(enhance);return r;};wrapped.__pmUnifiedDraw=true;window.drawItems=wrapped;return true;
-  }
-  function wrapPrint(){
-    const fn=window.printQuote;if(typeof fn!=='function'||fn.__pmUnifiedPrint)return false;
-    const wrapped=function(){const r=fn.apply(this,arguments);requestAnimationFrame(()=>{const area=document.querySelector('#pmPrintArea');if(!area)return;[...area.querySelectorAll('.pm-items tbody tr')].forEach(row=>{const strong=row.querySelector('td:nth-child(2) strong');if(!strong)return;const item=items().find(x=>S(x.item)===S(strong.textContent)||S(x.item)===S(strong.parentElement?.querySelector('strong')?.textContent));if(!item||!isLED(item))return;strong.textContent=displayName(item);const q=row.querySelector('td:nth-child(3)'),sub=row.querySelector('td:nth-child(6)');if(q)q.textContent=`${N(item.lebar)} × ${N(item.tinggi)} m² • ${Math.max(1,N(item.qty)||1)} set`;if(sub)sub.textContent=M(discount(item).net);});});return r;};wrapped.__pmUnifiedPrint=true;window.printQuote=wrapped;return true;
-  }
+  function enhance(){const container=document.querySelector('#items');if(!container)return;patchCore();hideLevelProducts();container.querySelectorAll(':scope > .item').forEach(card=>{const item=items().find(x=>String(x.id)===String(card.dataset.itemId));if(!item)return;addPriceEditor(card,item);addDiscount(card,item);addSet(card,item);addLevel(card,item);updateCard(card,item);});updateTotal();attachPackageDetails();}
+  function wrapDraw(){const fn=window.drawItems;if(typeof fn!=='function'||fn.__pmUnifiedDraw)return false;const wrapped=function(){const r=fn.apply(this,arguments);requestAnimationFrame(enhance);return r;};wrapped.__pmUnifiedDraw=true;window.drawItems=wrapped;return true;}
+  function wrapPrint(){const fn=window.printQuote;if(typeof fn!=='function'||fn.__pmUnifiedPrint)return false;const wrapped=function(){const r=fn.apply(this,arguments);requestAnimationFrame(()=>{const area=document.querySelector('#pmPrintArea');if(!area)return;[...area.querySelectorAll('.pm-items tbody tr')].forEach(row=>{const strong=row.querySelector('td:nth-child(2) strong');if(!strong)return;const item=items().find(x=>S(x.item)===S(strong.textContent));if(!item||!isLED(item))return;strong.textContent=displayName(item);const q=row.querySelector('td:nth-child(3)'),sub=row.querySelector('td:nth-child(6)');if(q)q.textContent=`${N(item.lebar)} × ${N(item.tinggi)} m² • ${Math.max(1,N(item.qty)||1)} set`;if(sub)sub.textContent=M(discount(item).net);});});return r;};wrapped.__pmUnifiedPrint=true;window.printQuote=wrapped;return true;}
   const st=document.createElement('style');st.id='pmUnifiedQuotationUIStyles';st.textContent='#content .pm-item-discount{margin:12px 0 0;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)}#content .pm-item-discount-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}#content .pm-item-discount label{font-size:12px;color:var(--muted,#9aa7bd)}#content .pm-item-discount-rp{background:rgba(255,255,255,.035)!important;color:#35e6a5!important;font-weight:700}#content .pm-led-set-field{margin-top:12px}#content .pm-led-set-input{font-weight:700}#content .pm-led-level-box{margin-top:12px;padding:12px 14px;border:1px solid rgba(77,124,255,.28);border-radius:12px;background:rgba(64,89,150,.06)}#content .pm-led-level-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.pm-led-level-toggle{display:flex;align-items:center;gap:8px;font-weight:700}.pm-led-level-toggle input{width:auto}.pm-led-level-note{font-size:11px;color:var(--muted,#9aa7bd)}#content .pm-led-level-fields{grid-template-columns:1.4fr .8fr .8fr 1fr;gap:12px;margin-top:10px}.pm-led-level-width{color:#9fb5ff!important}.pm-led-level-price{color:#35e6a5!important;font-weight:700}.pm-led-level-total{justify-content:flex-end;align-items:center;gap:12px;margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.07)}.pm-led-level-total b{color:#35e6a5}@media(max-width:800px){#content .pm-led-level-fields{grid-template-columns:1fr 1fr}}@media(max-width:520px){#content .pm-led-level-fields{grid-template-columns:1fr}}';document.head.appendChild(st);
   document.addEventListener('change',e=>{if(e.target?.closest?.('#items'))requestAnimationFrame(enhance);},true);
   [0,100,300,700].forEach(ms=>setTimeout(()=>{wrapDraw();wrapPrint();enhance();},ms));
