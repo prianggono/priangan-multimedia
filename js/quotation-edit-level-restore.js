@@ -1,6 +1,6 @@
 /* Priangan Multimedia — Restore LED Level state when editing saved quotations.
- * Keeps the existing History edit flow intact, then rehydrates optional Level
- * fields from penawaran_items before the quotation is redrawn.
+ * Supabase penawaran_items is the source of truth. Rehydrate Level fields
+ * after the quotation has been rendered, with a few safe post-render retries.
  */
 (function(){
   'use strict';
@@ -12,9 +12,12 @@
 
   async function restore(qid){
     const d=DB();
-    if(!d||!qid||!Array.isArray(window.items)||!window.items.length)return;
+    if(!d||!qid||!Array.isArray(window.items)||!window.items.length)return false;
     const r=await d.from('penawaran_items').select('id,level_enabled,level_master_harga_id,level_tinggi,level_harga').eq('penawaran_id',Number(qid)).order('id',{ascending:true});
-    if(r.error||!Array.isArray(r.data))return;
+    if(r.error||!Array.isArray(r.data)){
+      console.error('[PM] restore saved LED Level query',r.error||'invalid data');
+      return false;
+    }
     const rows=r.data||[];
     const byDbId=new Map(rows.map(x=>[String(x.id),x]));
     window.items.forEach((item,index)=>{
@@ -25,8 +28,16 @@
       item.level_tinggi=saved.level_tinggi==null?0:N(saved.level_tinggi);
       item.level_harga=saved.level_harga==null?0:N(saved.level_harga);
     });
-    if(typeof window.drawItems==='function') window.drawItems();
-    if(typeof window.__PM_QUOTATION_UI_API?.enhance==='function') requestAnimationFrame(()=>window.__PM_QUOTATION_UI_API.enhance());
+    if(typeof window.__PM_QUOTATION_UI_API?.enhance==='function'){
+      requestAnimationFrame(()=>window.__PM_QUOTATION_UI_API.enhance());
+    }else if(typeof window.drawItems==='function'){
+      requestAnimationFrame(()=>window.drawItems());
+    }
+    return true;
+  }
+
+  async function restoreAndRefresh(qid){
+    try{await restore(Number(qid));}catch(e){console.error('[PM] restore saved LED Level',e);}
   }
 
   let installed=false;
@@ -35,8 +46,11 @@
     const original=window.editQuotation;
     if(original.__pmLevelRestoreWrapped){installed=true;return true;}
     async function wrapped(id){
+      const qid=Number(id);
       const result=await original.apply(this,arguments);
-      try{await restore(Number(id));}catch(e){console.error('[PM] restore saved LED Level',e);}
+      window.__PM_LAST_EDITED_QUOTATION_ID=qid;
+      await restoreAndRefresh(qid);
+      [80,250,600].forEach(ms=>setTimeout(()=>restoreAndRefresh(qid),ms));
       return result;
     }
     wrapped.__pmLevelRestoreWrapped=true;
@@ -47,5 +61,5 @@
 
   [0,100,300,700,1200,2000].forEach(ms=>setTimeout(install,ms));
   window.addEventListener('load',install);
-  window.__PM_QUOTATION_EDIT_LEVEL_RESTORE_API={restore,install};
+  window.__PM_QUOTATION_EDIT_LEVEL_RESTORE_API={restore,restoreAndRefresh,install};
 })();
