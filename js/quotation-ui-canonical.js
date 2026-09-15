@@ -1,5 +1,6 @@
 /* Priangan Multimedia — Unified Quotation UI
  * Owns negotiated price editor, LED Set, per-item discount and item totals.
+ * Optional LED Level is supplied by quotation-led-level-canonical.js.
  * Designed without document.body MutationObserver.
  */
 (function(){
@@ -20,11 +21,13 @@
   function isLED(item){const m=masterFor(item),t=`${S(m?.item)} ${S(m?.kategori)} ${S(m?.kode)}`.toLowerCase();if(/led\s*tv|televisi|tv\s*[- ]?\d{2,3}\b/.test(t))return false;return /videotron|led\s*(indoor|outdoor)|\bled\s*p\.?\d/.test(t);}
   function days(item){return typeof core().days==='function'?Math.max(1,N(core().days(item.mulai,item.selesai))):(()=>{if(!item?.mulai||!item?.selesai)return 1;const a=new Date(S(item.mulai)+'T00:00:00'),b=new Date(S(item.selesai)+'T00:00:00'),d=Math.round((b-a)/86400000);return d>=0?d+1:1})();}
   const originalSubtotal=typeof core().itemSubtotal==='function'?core().itemSubtotal:null;
+  function levelAddon(item){const api=window.__PM_LED_LEVEL_API;return api&&typeof api.levelSubtotal==='function'?Math.max(0,N(api.levelSubtotal(item))):0;}
+  function ledBase(item){return Math.max(0,N(item.lebar)*N(item.tinggi)*N(item.harga??item.harga_jual)*Math.max(1,N(item.qty)||1)*days(item));}
   function baseSubtotal(item){
-    if(isLED(item)) return Math.max(0,N(item.lebar)*N(item.tinggi)*N(item.harga??item.harga_jual)*Math.max(1,N(item.qty)||1)*days(item));
+    if(isLED(item))return ledBase(item)+levelAddon(item);
     return originalSubtotal?Math.max(0,N(originalSubtotal(item))):0;
   }
-  function patchCore(){const c=core();if(!c.itemSubtotal)return false;if(!c.__pmUiBaseSubtotal) c.__pmUiBaseSubtotal=c.itemSubtotal;const base=c.__pmUiBaseSubtotal;c.itemSubtotal=function(item){if(isLED(item))return Math.max(0,N(item.lebar)*N(item.tinggi)*N(item.harga??item.harga_jual)*Math.max(1,N(item.qty)||1)*days(item));return Math.max(0,N(base(item)));};c.__pmQuotationUiSubtotalPatched=true;return true;}
+  function patchCore(){const c=core();if(!c.itemSubtotal)return false;if(!c.__pmUiBaseSubtotal)c.__pmUiBaseSubtotal=c.itemSubtotal;const base=c.__pmUiBaseSubtotal;c.itemSubtotal=function(item){if(isLED(item))return ledBase(item)+levelAddon(item);return Math.max(0,N(base(item)));};c.__pmQuotationUiSubtotalPatched=true;return true;}
   function discount(item){const base=baseSubtotal(item),pct=Math.max(0,Math.min(100,N(item.diskon_persen))),rp=pct>0?Math.min(base,Math.round(base*pct/100)):Math.min(base,Math.max(0,N(item.diskon_nominal)));return{base,pct,rp,net:Math.max(0,base-rp)};}
   function priceInput(card){return [...card.querySelectorAll('.field')].find(f=>/harga\s*(jual|penawaran)/i.test(S(f.querySelector('label')?.textContent)))?.querySelector('input')||null;}
   function subtotalEl(card){return [...card.querySelectorAll('.pm-item-body > .sum')].find(e=>/subtotal/i.test(S(e.querySelector('span')?.textContent)))||null;}
@@ -64,7 +67,7 @@
   function updateCard(card,item){
     const d=discount(item),sub=subtotalEl(card);if(sub?.querySelector('b'))sub.querySelector('b').textContent=M(d.net);
     const p=card.querySelector('.pm-item-discount-pct'),r=card.querySelector('.pm-item-discount-rp');if(p&&document.activeElement!==p)p.value=String(Number(d.pct.toFixed(2)));if(r)r.value=M(d.rp);
-    const summary=card.querySelector('.pm-item-summary');if(summary){const b=summary.querySelector('b');if(b)b.textContent=M(d.net);if(isLED(item)){const sp=summary.querySelector('.pm-summary-main span');if(sp)sp.textContent=`${N(item.lebar)} × ${N(item.tinggi)} m • ${Math.max(1,N(item.qty)||1)} set • ${item.mulai&&item.selesai?`${item.mulai} → ${item.selesai}`:'Jadwal belum lengkap'}`;}}
+    const summary=card.querySelector('.pm-item-summary');if(summary){const b=summary.querySelector('b');if(b)b.textContent=M(d.net);if(isLED(item)){const sp=summary.querySelector('.pm-summary-main span');if(sp)sp.textContent=`${N(item.lebar)} × ${N(item.tinggi)} m • ${Math.max(1,N(item.qty)||1)} set • ${item.level_enabled?'Level aktif • ':''}${item.mulai&&item.selesai?`${item.mulai} → ${item.selesai}`:'Jadwal belum lengkap'}`;}}
   }
 
   function enhance(){
