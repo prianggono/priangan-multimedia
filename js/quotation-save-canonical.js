@@ -2,6 +2,7 @@
  * Single save authority for quotation.
  * item.harga = negotiated quotation price.
  * item discount is stored separately on penawaran_items.
+ * Optional Level is stored on the LED item itself.
  * No generated database columns are sent by the client.
  */
 (function(){
@@ -20,7 +21,7 @@
   const rawSubtotal=item=>typeof core().itemSubtotal==='function'?Math.max(0,N(core().itemSubtotal(item))):0;
   const itemDiscount=item=>{const base=rawSubtotal(item),pct=Math.max(0,Math.min(100,N(item.diskon_persen))),nom=pct>0?Math.min(base,Math.round(base*pct/100)):Math.min(base,Math.max(0,N(item.diskon_nominal)));return Math.min(base,nom);};
   const netSubtotal=item=>Math.max(0,rawSubtotal(item)-itemDiscount(item));
-  const masterFor=item=>{const ms=Array.isArray(window.masters)?window.masters:[];const id=item?.master_id??item?.masterId??item?.master_harga_id;if(id!=null){const m=ms.find(x=>String(x.id)===String(id));if(m)return m;}return ms.find(x=>S(x.kode)===S(item?.kode))||null;};
+  const masterFor=item=>{const ms=Array.isArray(window.masters)?window.masters:[];const id=item?.master_id??item?.masterId??item?.id_master??item?.master_harga_id;if(id!=null){const m=ms.find(x=>String(x.id)===String(id));if(m)return m;}return ms.find(x=>S(x.kode)===S(item?.kode))||null;};
   const typeOf=item=>typeof core().typeOf==='function'?core().typeOf(item):S(item.tipe||item.tipe_perhitungan||'qty');
   const complete=item=>{const t=typeOf(item).toLowerCase();if(!S(item.kode)||!S(item.item)||!item.mulai||!item.selesai)return false;if(t==='luas')return N(item.lebar)>0&&N(item.tinggi)>0;if(t==='rigging')return N(item.panjang)>0&&N(item.tinggi)>0;return true;};
 
@@ -63,7 +64,12 @@
         harga_jual:M(item.harga),harga:M(item.harga),harga_modal:M(item.harga_modal)||0,tipe_perhitungan:typeOf(item),tipe:typeOf(item),
         qty:Math.max(1,N(item.qty)||1),jumlah:Math.max(1,N(item.qty)||1),lebar:N(item.lebar)||null,tinggi:N(item.tinggi)||null,panjang:N(item.panjang)||null,
         tanggal_mulai:item.mulai,tanggal_selesai:item.selesai,durasi:days(item.mulai,item.selesai),
-        diskon_persen:Math.max(0,Math.min(100,N(item.diskon_persen))),diskon_nominal:itemDiscount(item),subtotal:netSubtotal(item)
+        diskon_persen:Math.max(0,Math.min(100,N(item.diskon_persen))),diskon_nominal:itemDiscount(item),subtotal:netSubtotal(item),
+        level_enabled:!!item.level_enabled,
+        level_master_harga_id:item.level_enabled&&item.level_master_harga_id?Number(item.level_master_harga_id):null,
+        level_tinggi:item.level_enabled&&N(item.level_tinggi)>0?N(item.level_tinggi):null,
+        level_harga:item.level_enabled&&N(item.level_harga)>0?N(item.level_harga):null,
+        level_subtotal:item.level_enabled?Math.max(0,N(rawSubtotal(item))-N(item.lebar)*N(item.tinggi)*N(item.harga??item.harga_jual)*Math.max(1,N(item.qty)||1)*days(item)):0
       }));
       const insItems=await d.from('penawaran_items').insert(rows);if(insItems.error)throw insItems.error;
       const saved=await d.from('penawaran_items').select('id,subtotal,diskon_persen,diskon_nominal').eq('penawaran_id',quoteId).order('id',{ascending:true});if(saved.error)throw saved.error;
@@ -80,7 +86,6 @@
     }catch(e){console.error('[PM] canonical quotation save',e);msg('Gagal menyimpan penawaran: '+(e.message||e));}
     finally{if(button){button.disabled=false;button.dataset.pmSaving='0';button.textContent=button.dataset.originalText||'Simpan Penawaran';}}
   }
-
   window.saveQuote=save;
   window.__PM_QUOTATION_SAVE_API={save};
 })();
