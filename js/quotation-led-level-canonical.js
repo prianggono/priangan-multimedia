@@ -1,7 +1,6 @@
 /* Priangan Multimedia — LED Level add-on
  * Level belongs to its LED card. It never searches for a global/first LED.
- * LED base = area x negotiated price x set x days.
- * Optional Level = LED width x level price x set x days.
+ * The quotation UI module remains the single authority for itemSubtotal.
  */
 (function(){
   'use strict';
@@ -20,12 +19,6 @@
   const days=item=>{if(typeof core().days==='function')return Math.max(1,N(core().days(item.mulai,item.selesai)));if(!item?.mulai||!item?.selesai)return 1;const a=new Date(S(item.mulai)+'T00:00:00'),b=new Date(S(item.selesai)+'T00:00:00');return Math.max(1,Math.round((b-a)/86400000)+1);};
   function levelMaster(item){const id=item?.level_master_harga_id;if(id!=null){const m=masters().find(x=>String(x.id)===String(id));if(m&&isLevelMaster(m))return m;}return null;}
   function levelSubtotal(item){if(!item?.level_enabled)return 0;const lm=levelMaster(item);if(!lm)return 0;const width=N(item.lebar),price=N(item.level_harga??lm.harga_jual),set=Math.max(1,N(item.qty)||1);return width*price*set*days(item);}
-  let baseCoreSubtotal=null;
-  function patchedSubtotal(item){
-    const base=isLED(item)?(N(item.lebar)*N(item.tinggi)*N(item.harga??item.harga_jual)*Math.max(1,N(item.qty)||1)*days(item)):(baseCoreSubtotal?Math.max(0,N(baseCoreSubtotal(item))):0);
-    return base+levelSubtotal(item);
-  }
-  function patchCore(){const c=core();if(!c.itemSubtotal)return false;if(!baseCoreSubtotal)baseCoreSubtotal=c.itemSubtotal;if(c.itemSubtotal!==patchedSubtotal)c.itemSubtotal=patchedSubtotal;c.__pmLedLevelPatched=true;return true;}
   function hideLevelProducts(){document.querySelectorAll('#items > .item select').forEach(select=>{[...select.options].forEach(o=>{const m=masters().find(x=>S(x.kode)===S(o.value));if(isLevelMaster(m))o.hidden=true;});});}
   function levelOptions(selected){return `<option value="">Tanpa Level</option>`+masters().filter(isLevelMaster).map(m=>`<option value="${S(m.id)}" ${String(m.id)===String(selected??'')?'selected':''}>[${S(m.kode)}] ${S(m.item)}</option>`).join('');}
   function addLevel(card,item){
@@ -41,12 +34,15 @@
     h.addEventListener('input',()=>{item.level_tinggi=Math.max(0,N(h.value));refreshTotals();});
     syncLevel(card,item);
   }
-  function syncLevel(card,item){const box=card.querySelector('.pm-led-level-box');if(!box)return;const on=!!item.level_enabled;const fields=box.querySelector('.pm-led-level-fields'),total=box.querySelector('.pm-led-level-total'),sel=box.querySelector('.pm-led-level-master'),w=box.querySelector('.pm-led-level-width'),p=box.querySelector('.pm-led-level-price'),b=box.querySelector('.pm-led-level-subtotal');if(fields)fields.style.display=on?'grid':'none';if(total)total.style.display=on?'flex':'none';if(sel)sel.value=item.level_master_harga_id?String(item.level_master_harga_id):'';if(w)w.value=`${N(item.lebar)} m`;if(p){const lm=levelMaster(item);if(lm&&!N(item.level_harga))item.level_harga=N(lm.harga_jual);p.value=item.level_harga?M(item.level_harga):'';}if(b)b.textContent=M(levelSubtotal(item));}
-  function refreshTotals(){patchCore();if(typeof window.__PM_QUOTATION_UI_API?.updateTotal==='function')window.__PM_QUOTATION_UI_API.updateTotal();else{const total=items().filter(x=>S(x.kode)&&S(x.item)).reduce((s,x)=>s+patchedSubtotal(x),0);const el=document.querySelector('#total');if(el)el.textContent=M(total);}document.querySelectorAll('#items > .item').forEach(card=>{const it=items().find(x=>String(x.id)===String(card.dataset.itemId));if(it&&isLED(it))syncLevel(card,it);});}
-  function enhance(){patchCore();hideLevelProducts();document.querySelectorAll('#items > .item').forEach(card=>{const item=items().find(x=>String(x.id)===String(card.dataset.itemId));if(item&&isLED(item))addLevel(card,item);});refreshTotals();}
+  function syncLevel(card,item){const box=card.querySelector('.pm-led-level-box');if(!box)return;const on=!!item.level_enabled,fields=box.querySelector('.pm-led-level-fields'),total=box.querySelector('.pm-led-level-total'),sel=box.querySelector('.pm-led-level-master'),w=box.querySelector('.pm-led-level-width'),p=box.querySelector('.pm-led-level-price'),b=box.querySelector('.pm-led-level-subtotal');if(fields)fields.style.display=on?'grid':'none';if(total)total.style.display=on?'flex':'none';if(sel)sel.value=item.level_master_harga_id?String(item.level_master_harga_id):'';if(w)w.value=`${N(item.lebar)} m`;if(p){const lm=levelMaster(item);if(lm&&!N(item.level_harga))item.level_harga=N(lm.harga_jual);p.value=item.level_harga?M(item.level_harga):'';}if(b)b.textContent=M(levelSubtotal(item));}
+  function refreshTotals(){
+    if(typeof window.__PM_QUOTATION_UI_API?.updateTotal==='function')window.__PM_QUOTATION_UI_API.updateTotal();
+    document.querySelectorAll('#items > .item').forEach(card=>{const it=items().find(x=>String(x.id)===String(card.dataset.itemId));if(it&&isLED(it))syncLevel(card,it);});
+  }
+  function enhance(){hideLevelProducts();document.querySelectorAll('#items > .item').forEach(card=>{const item=items().find(x=>String(x.id)===String(card.dataset.itemId));if(item&&isLED(item))addLevel(card,item);});refreshTotals();}
   const st=document.createElement('style');st.id='pmLedLevelStyles';st.textContent=`#content .pm-led-level-box{margin-top:12px;padding:12px 14px;border:1px solid rgba(77,124,255,.28);border-radius:12px;background:rgba(64,89,150,.06)}#content .pm-led-level-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.pm-led-level-toggle{display:flex;align-items:center;gap:8px;font-weight:700}.pm-led-level-toggle input{width:auto}.pm-led-level-note{font-size:11px;color:var(--muted,#9aa7bd)}#content .pm-led-level-fields{grid-template-columns:1.4fr .8fr .8fr 1fr;gap:12px;margin-top:10px}.pm-led-level-width{color:#9fb5ff!important}.pm-led-level-price{color:#35e6a5!important;font-weight:700}.pm-led-level-total{justify-content:flex-end;align-items:center;gap:12px;margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.07)}.pm-led-level-total b{color:#35e6a5}@media(max-width:800px){#content .pm-led-level-fields{grid-template-columns:1fr 1fr}}@media(max-width:520px){#content .pm-led-level-fields{grid-template-columns:1fr}}`;
   document.head.appendChild(st);
   document.addEventListener('change',e=>{if(e.target?.closest?.('#items'))requestAnimationFrame(enhance);},true);
-  [100,300,700].forEach(ms=>setTimeout(enhance,ms));window.addEventListener('load',enhance);
+  [200,600].forEach(ms=>setTimeout(enhance,ms));window.addEventListener('load',enhance);
   window.__PM_LED_LEVEL_API={isLED,levelSubtotal,enhance,refreshTotals};
 })();
