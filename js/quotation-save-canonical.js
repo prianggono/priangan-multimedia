@@ -9,7 +9,6 @@
   'use strict';
   if(window.__PM_QUOTATION_SAVE_CANONICAL__)return;
   window.__PM_QUOTATION_SAVE_CANONICAL__=true;
-
   const S=v=>String(v??'').trim();
   const N=v=>{if(typeof v==='number')return Number.isFinite(v)?v:0;const s=S(v).replace(/[^0-9,.-]/g,'').replace(/\.(?=\d{3}(?:\D|$))/g,'').replace(',','.');const n=Number(s);return Number.isFinite(n)?n:0;};
   const M=v=>Math.max(0,Math.round(N(v)));
@@ -24,16 +23,13 @@
   const masterFor=item=>{const ms=Array.isArray(window.masters)?window.masters:[];const id=item?.master_id??item?.masterId??item?.id_master??item?.master_harga_id;if(id!=null){const m=ms.find(x=>String(x.id)===String(id));if(m)return m;}return ms.find(x=>S(x.kode)===S(item?.kode))||null;};
   const typeOf=item=>typeof core().typeOf==='function'?core().typeOf(item):S(item.tipe||item.tipe_perhitungan||'qty');
   const complete=item=>{const t=typeOf(item).toLowerCase();if(!S(item.kode)||!S(item.item)||!item.mulai||!item.selesai)return false;if(t==='luas')return N(item.lebar)>0&&N(item.tinggi)>0;if(t==='rigging')return N(item.panjang)>0&&N(item.tinggi)>0;return true;};
-
   async function removeChildren(id){
     const d=db();
-    const old=await d.from('penawaran_items').select('id').eq('penawaran_id',Number(id));
-    if(old.error)throw old.error;
+    const old=await d.from('penawaran_items').select('id').eq('penawaran_id',Number(id));if(old.error)throw old.error;
     const ids=(old.data||[]).map(x=>x.id).filter(Boolean);
     if(ids.length){const j=await d.from('penawaran_jadwal').delete().in('item_id',ids);if(j.error)throw j.error;const j2=await d.from('penawaran_jadwal').delete().in('penawaran_item_id',ids);if(j2.error)throw j2.error;}
     const del=await d.from('penawaran_items').delete().eq('penawaran_id',Number(id));if(del.error)throw del.error;
   }
-
   async function save(){
     const d=db();if(!d)return msg('Supabase belum terhubung.');
     const q=id=>document.querySelector(id)?.value||'';
@@ -46,19 +42,11 @@
     if(button?.dataset.pmSaving==='1')return;
     if(button){button.dataset.pmSaving='1';button.disabled=true;button.dataset.originalText=button.textContent;button.textContent='Menyimpan...';}
     try{
-      const itemBase=source.reduce((s,x)=>s+rawSubtotal(x),0);
-      const itemDisc=source.reduce((s,x)=>s+itemDiscount(x),0);
-      const subtotal=Math.max(0,itemBase-itemDisc);
-      const global=Math.max(0,N(window.__pmDiscountValue));
-      const total=Math.max(0,subtotal-global);
-      const discountPct=subtotal?(global/subtotal*100):0;
-      const editId=N(window.__pmEditingQuotationId||window.__PM_EDIT_QUOTATION_ID);
-      const number=S(window.__pmEditingQuotationNumber||window.__PM_EDIT_QUOTATION_NUMBER)||`PM-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+      const itemBase=source.reduce((s,x)=>s+rawSubtotal(x),0),itemDisc=source.reduce((s,x)=>s+itemDiscount(x),0),subtotal=Math.max(0,itemBase-itemDisc),global=Math.max(0,N(window.__pmDiscountValue)),total=Math.max(0,subtotal-global),discountPct=subtotal?(global/subtotal*100):0;
+      const editId=N(window.__pmEditingQuotationId||window.__PM_EDIT_QUOTATION_ID),number=S(window.__pmEditingQuotationNumber||window.__PM_EDIT_QUOTATION_NUMBER)||`PM-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
       const payload={nomor_penawaran:number,nama_client:client,perusahaan:company,telepon_wa:phone,telepon:phone,whatsapp:phone,email,nama_event:eventName,event_name:eventName,tanggal_mulai:start,tanggal_selesai:end,subtotal:M(subtotal),diskon:M(global),diskon_persen:discountPct,diskon_nominal:M(global),total:M(total),grand_total:M(total),status:'DRAFT'};
       let quoteId=editId||null;
-      if(editId){const u=await d.from('penawaran').update(payload).eq('id',editId);if(u.error)throw u.error;await removeChildren(editId);}
-      else{const ins=await d.from('penawaran').insert([payload]);if(ins.error)throw ins.error;const qr=await d.from('penawaran').select('id').eq('nomor_penawaran',number).maybeSingle();if(qr.error)throw qr.error;if(!qr.data?.id)throw new Error('ID penawaran tidak ditemukan setelah penyimpanan.');quoteId=qr.data.id;}
-
+      if(editId){const u=await d.from('penawaran').update(payload).eq('id',editId);if(u.error)throw u.error;await removeChildren(editId);}else{const ins=await d.from('penawaran').insert([payload]);if(ins.error)throw ins.error;const qr=await d.from('penawaran').select('id').eq('nomor_penawaran',number).maybeSingle();if(qr.error)throw qr.error;if(!qr.data?.id)throw new Error('ID penawaran tidak ditemukan setelah penyimpanan.');quoteId=qr.data.id;}
       const rows=source.map(item=>({
         penawaran_id:quoteId,master_harga_id:masterFor(item)?.id??null,kode:item.kode,item:item.item,nama_item:item.item,
         harga_jual:M(item.harga),harga:M(item.harga),harga_modal:M(item.harga_modal)||0,tipe_perhitungan:typeOf(item),tipe:typeOf(item),
@@ -68,8 +56,7 @@
         level_enabled:!!item.level_enabled,
         level_master_harga_id:item.level_enabled&&item.level_master_harga_id?Number(item.level_master_harga_id):null,
         level_tinggi:item.level_enabled&&N(item.level_tinggi)>0?N(item.level_tinggi):null,
-        level_harga:item.level_enabled&&N(item.level_harga)>0?N(item.level_harga):null,
-        level_subtotal:item.level_enabled?Math.max(0,N(rawSubtotal(item))-N(item.lebar)*N(item.tinggi)*N(item.harga??item.harga_jual)*Math.max(1,N(item.qty)||1)*days(item)):0
+        level_harga:item.level_enabled&&N(item.level_harga)>0?N(item.level_harga):null
       }));
       const insItems=await d.from('penawaran_items').insert(rows);if(insItems.error)throw insItems.error;
       const saved=await d.from('penawaran_items').select('id,subtotal,diskon_persen,diskon_nominal').eq('penawaran_id',quoteId).order('id',{ascending:true});if(saved.error)throw saved.error;
@@ -86,6 +73,5 @@
     }catch(e){console.error('[PM] canonical quotation save',e);msg('Gagal menyimpan penawaran: '+(e.message||e));}
     finally{if(button){button.disabled=false;button.dataset.pmSaving='0';button.textContent=button.dataset.originalText||'Simpan Penawaran';}}
   }
-  window.saveQuote=save;
-  window.__PM_QUOTATION_SAVE_API={save};
+  window.saveQuote=save;window.__PM_QUOTATION_SAVE_API={save};
 })();
