@@ -19,3 +19,33 @@ button:focus-visible,.btn:focus-visible{outline:2px solid #00e5ff!important;outl
 .nav.active{background:linear-gradient(90deg,#0969ff,#5b38e8)!important;color:#fff!important;box-shadow:0 0 16px rgba(0,229,255,.16)}
 .nav:hover{background:#10264a;color:#fff}
 .badge.ok{background:#063c2c!important;color:#00f5a0!important;border:1px solid #0a7554}.badge.warn{background:#3b2d08!important;color:#ffd166!important;border:1px solid #80621a}
+
+/* A4 QUOTATION PRINT FIT — keep the complete customer quotation on one sheet. */
+@page{size:A4 portrait;margin:0}
+@media print{
+  html,body{width:210mm!important;min-height:297mm!important;margin:0!important;padding:0!important;background:#fff!important;overflow:hidden!important}
+  #pmPrintPreview{width:210mm!important;min-height:297mm!important;margin:0!important;padding:0!important;background:#fff!important;overflow:hidden!important}
+  #pmPrintPreview .pm-print-toolbar{display:none!important}
+  #pmPrintPreview .pm-print-scroll{width:210mm!important;max-width:210mm!important;height:297mm!important;min-height:297mm!important;max-height:297mm!important;margin:0!important;padding:0!important;overflow:hidden!important}
+  #pmPrintPreview .pm-a4{width:308.82mm!important;min-width:308.82mm!important;max-width:none!important;min-height:436.76mm!important;height:436.76mm!important;margin:0!important;padding:0!important;box-sizing:border-box!important;overflow:visible!important;zoom:.68!important;box-shadow:none!important;page-break-after:avoid!important;break-after:avoid-page!important}
+  #pmPrintPreview .pm-title-row{margin-top:7px!important;margin-bottom:5px!important}
+  #pmPrintPreview .pm-title-row h1{font-size:14px!important;line-height:1.05!important;margin:0!important}
+  #pmPrintPreview .pm-info-card{margin-top:6px!important}
+  #pmPrintPreview .pm-info-section{padding:6px 8px!important;line-height:1.2!important;font-size:7pt!important}
+  #pmPrintPreview .pm-client-name,#pmPrintPreview .pm-event-name{font-size:8.2pt!important;line-height:1.1!important}
+  #pmPrintPreview .pm-section-label,#pmPrintPreview .pm-period-label{font-size:6pt!important;margin-bottom:2px!important}
+  #pmPrintPreview .pm-items{font-size:6.2pt!important;table-layout:fixed!important;border-collapse:collapse!important}
+  #pmPrintPreview .pm-items th,#pmPrintPreview .pm-items td{padding:2.2px 2.8px!important;line-height:1.05!important;vertical-align:top!important}
+  #pmPrintPreview .pm-items tr{break-inside:avoid!important;page-break-inside:avoid!important}
+  #pmPrintPreview .pm-items th{font-size:5.8pt!important;line-height:1!important}
+  #pmPrintPreview .pm-cust-package{margin-top:1.5px!important;padding:1.5px 2px 0 5px!important;border-left-width:1.5px!important}
+  #pmPrintPreview .pm-cust-package-title{font-size:5.4px!important;line-height:1!important;margin-bottom:1px!important;letter-spacing:.05em!important}
+  #pmPrintPreview .pm-cust-package table{font-size:5.2px!important;line-height:1!important}
+  #pmPrintPreview .pm-cust-package th,#pmPrintPreview .pm-cust-package td{padding:.6px 2px!important;line-height:1!important}
+  #pmPrintPreview .pm-cust-level-price{font-size:5.2px!important;line-height:1!important;margin-top:1px!important}
+  #pmPrintPreview .pm-terms,#pmPrintPreview .pm-signature{margin-top:4px!important}
+  #pmPrintPreview .pm-terms-body{font-size:5.4pt!important;line-height:1.12!important}
+  #pmPrintPreview .pm-signature img.signature{max-width:100px!important;height:42px!important}
+  #pmPrintPreview .pm-footer{margin-top:5px!important;font-size:5pt!important}
+  #pmPrintPreview .pm-total,#pmPrintPreview .pm-discount-row{break-inside:avoid!important;page-break-inside:avoid!important}
+}
