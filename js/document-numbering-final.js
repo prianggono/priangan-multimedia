@@ -1,24 +1,65 @@
 /* Priangan Multimedia — Document Numbering
- * Cross-cutting filename/document-number service.
- * Quotation revision is read from penawaran.revisi_penawaran in Supabase.
- * No document revision state is stored in localStorage.
+ * Database owns quotation/invoice numbers and revision.
+ * This file only prepares customer-facing filenames and aligns invoice metadata.
  */
 (function(){
-'use strict';
-if(window.__PM_DOCUMENT_NUMBERING_FINAL)return;window.__PM_DOCUMENT_NUMBERING_FINAL=true;
-const S=v=>String(v??'').trim();
-const N=v=>{const n=Number(v);return Number.isFinite(n)?n:0};
-const DB=()=>window.db||window.__PM_STABLE_DB||null;
-const slug=v=>S(v).normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-+|-+$/g,'').replace(/-+/g,'-').toLowerCase()||'event';
-const cleanEvent=v=>slug(v).replace(/-/g,'_')||'event';
-const quoteFilename=(eventName,number,revision)=>`Penawaran - ${cleanEvent(eventName)} - ${S(number)}${N(revision)>0?` V${N(revision)}`:''}.pdf`;
-const invoiceFilename=(eventName,number)=>`Invoice - ${cleanEvent(eventName)} - ${S(number||'Invoice')}.pdf`;
-async function quoteById(id){const d=DB();if(!d||!id)return null;try{const r=await d.from('penawaran').select('id,nomor_penawaran,nomor_invoice,nama_event,nama_client,perusahaan,revisi_penawaran').eq('id',Number(id)).maybeSingle();return r.error?null:r.data}catch(_){return null}}
-async function installSave(){if(typeof window.saveQuote!=='function'||window.saveQuote.__pmDocumentNumbering)return false;const original=window.saveQuote;const wrapped=async function(){const editing=N(window.__pmEditingQuotationId||window.__PM_EDIT_QUOTATION_ID);const result=await original.apply(this,arguments);try{const id=editing||N(window.__PM_LAST_QUOTATION_ID);const row=await quoteById(id);if(row){window.__PM_LAST_QUOTATION_ID=Number(row.id);window.__PM_LAST_QUOTATION_NUMBER=S(row.nomor_penawaran);window.__PM_QUOTATION_REVISION=N(row.revisi_penawaran);window.__PM_PRINT_FILENAME=quoteFilename(row.nama_event,row.nomor_penawaran,row.revisi_penawaran)}}catch(e){console.warn('[PM] document numbering save',e)}return result};wrapped.__pmDocumentNumbering=true;window.saveQuote=wrapped;return true}
-async function installInvoiceEdit(){if(typeof window.invoiceEdit!=='function'||window.invoiceEdit.__pmDocumentNumbering)return false;const original=window.invoiceEdit;const wrapped=async function(id){const result=await original.apply(this,arguments);try{const row=await quoteById(id);if(row&&row.nomor_invoice){document.getElementById('invNo')?.setAttribute('value',row.nomor_invoice)}}catch(e){console.warn('[PM] invoice numbering edit',e)}return result};wrapped.__pmDocumentNumbering=true;window.invoiceEdit=wrapped;return true}
-async function installQuotationPrint(){if(typeof window.printQuote!=='function'||window.printQuote.__pmDocumentNumbering)return false;const original=window.printQuote;const wrapped=async function(){const id=N(window.__pmEditingQuotationId||window.__PM_EDIT_QUOTATION_ID||window.__PM_LAST_QUOTATION_ID);const row=id?await quoteById(id):null;const number=S(row?.nomor_penawaran||window.__PM_LAST_QUOTATION_NUMBER);const eventName=S(row?.nama_event||document.querySelector('#qeve')?.value);const revision=N(row?.revisi_penawaran||window.__PM_QUOTATION_REVISION);if(number){window.__PM_PRINT_DOCUMENT_NUMBER=number;window.__PM_PRINT_FILENAME=quoteFilename(eventName,number,revision);document.title=window.__PM_PRINT_FILENAME.replace(/\.pdf$/i,'')}return original.apply(this,arguments)};wrapped.__pmDocumentNumbering=true;window.printQuote=wrapped;return true}
-async function installInvoicePreview(){if(typeof window.previewInvoice!=='function'||window.previewInvoice.__pmDocumentNumbering)return false;const original=window.previewInvoice;const wrapped=async function(){const no=S(document.getElementById('invNo')?.value);const result=await original.apply(this,arguments);const eventName=S(document.querySelector('#content .head p')?.textContent).split('•').slice(1).join('•').trim()||'event';if(no){window.__PM_INVOICE_PRINT_NUMBER=no;window.__PM_PRINT_FILENAME=invoiceFilename(eventName,no);document.title=window.__PM_PRINT_FILENAME.replace(/\.pdf$/i,'');document.querySelector('#pmInvoicePreview')?.querySelectorAll('.pm-inv-number,.pm-doc-tag strong,[data-pm-invoice-number]')?.forEach(el=>el.textContent=no)}return result};wrapped.__pmDocumentNumbering=true;window.previewInvoice=wrapped;return true}
-function boot(){installSave();installInvoiceEdit();installQuotationPrint();installInvoicePreview()}
-boot();const mo=new MutationObserver(boot);mo.observe(document.documentElement,{childList:true,subtree:true});setTimeout(()=>mo.disconnect(),10000);
-window.addEventListener('beforeprint',()=>{const f=S(window.__PM_PRINT_FILENAME);if(f)document.title=f.replace(/\.pdf$/i,'')},true);
+  'use strict';
+  if(window.__PM_DOCUMENT_NUMBERING_FINAL)return;
+  window.__PM_DOCUMENT_NUMBERING_FINAL=true;
+
+  const S=v=>String(v??'').trim();
+  const N=v=>{const n=Number(v);return Number.isFinite(n)?n:0};
+  const DB=()=>window.db||window.__PM_STABLE_DB||null;
+  const period=(a,b)=>{
+    const aa=S(a).slice(0,10),bb=S(b||a).slice(0,10);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(aa))return S(a)||'-';
+    const [ay,am,ad]=aa.split('-').map(Number),[by,bm,bd]=bb.split('-').map(Number);
+    const mn=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    if(ay===by&&am===bm&&ad===bd)return `${ad} ${mn[am-1]} ${ay}`;
+    if(ay===by&&am===bm)return `${ad}-${bd} ${mn[am-1]} ${ay}`;
+    if(ay===by)return `${ad} ${mn[am-1]}-${bd} ${mn[bm-1]} ${ay}`;
+    return `${ad} ${mn[am-1]} ${ay}-${bd} ${mn[bm-1]} ${by}`;
+  };
+  async function rowById(id){
+    const d=DB();if(!d||!id)return null;
+    const r=await d.from('penawaran').select('id,nomor_penawaran,nomor_invoice,nama_event,revisi_penawaran,tanggal_mulai,tanggal_selesai').eq('id',Number(id)).maybeSingle();
+    return r.error?null:r.data;
+  }
+  async function prepareQuotationFilename(){
+    const id=N(window.__PM_LAST_QUOTATION_ID||window.__pmEditingQuotationId||window.__PM_EDIT_QUOTATION_ID);
+    const row=await rowById(id);
+    const no=S(row?.nomor_penawaran||window.__PM_LAST_QUOTATION_NUMBER);
+    const rev=N(row?.revisi_penawaran||0);
+    if(!no)return;
+    window.__PM_PRINT_FILENAME=`${no}${rev>0?` V${rev}`:''}.pdf`;
+    document.title=window.__PM_PRINT_FILENAME.replace(/\.pdf$/i,'');
+  }
+  async function prepareInvoicePreview(){
+    const id=N(window.__PM_LAST_QUOTATION_ID||window.__pmEditingQuotationId||window.__PM_EDIT_QUOTATION_ID);
+    const row=await rowById(id);
+    const number=S(row?.nomor_invoice||document.getElementById('invNo')?.value);
+    if(number){
+      window.__PM_INVOICE_PRINT_NUMBER=number;
+      window.__PM_PRINT_FILENAME=`${number}.pdf`;
+      document.title=number;
+    }
+    const area=document.querySelector('#pmInvoiceDocumentPreview');
+    if(!area||!row)return;
+    area.querySelector('.pm-inv-intro')?.remove();
+    area.querySelector('.pm-inv-doc > strong')?.remove();
+    const info=area.querySelector('.pm-inv-info');
+    if(info?.children?.[1]&&!info.querySelector('.pm-inv-period')){
+      const wrap=document.createElement('div');
+      wrap.className='pm-inv-period';
+      wrap.innerHTML=`<div class="pm-inv-label">PERIODE</div><div>${period(row.tanggal_mulai,row.tanggal_selesai)}</div>`;
+      info.children[1].appendChild(wrap);
+    }
+  }
+  document.addEventListener('click',async e=>{
+    const b=e.target.closest?.('button');if(!b)return;
+    const text=S(b.textContent);
+    if(/Preview Surat|Cetak.*PDF|Preview \/ Cetak A4/i.test(text))setTimeout(prepareQuotationFilename,120);
+    if(/Preview Invoice|Cetak.*Invoice/i.test(text))setTimeout(prepareInvoicePreview,120);
+  },true);
+  window.addEventListener('beforeprint',()=>{const f=S(window.__PM_PRINT_FILENAME);if(f)document.title=f.replace(/\.pdf$/i,'')},true);
 })();
