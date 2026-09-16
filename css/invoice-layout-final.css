@@ -7,7 +7,7 @@
 #pmInvoiceDocumentPreview .pm-inv-actions{display:flex;gap:8px}
 #pmInvoiceDocumentPreview .pm-inv-scroll{flex:1;overflow:auto;padding:24px;background:#e9edf3}
 #pmInvoiceDocumentPreview .pm-inv-a4{width:210mm;min-height:297mm;box-sizing:border-box;margin:0 auto;padding:0 14mm 11mm;background:#fff;box-shadow:0 8px 32px rgba(15,23,42,.18);overflow:hidden}
-#pmInvoiceDocumentPreview .pm-inv-head{position:relative;display:block;width:100%;height:auto;min-height:40mm;margin:0 0 12px;padding:0;overflow:hidden;background-color:#071022;background-image:url('/priangan-multimedia/header%201.png')!important;background-position:center;background-size:100% auto;background-repeat:no-repeat;box-shadow:none}
+#pmInvoiceDocumentPreview .pm-inv-head{position:relative;display:block;width:100%;height:auto;aspect-ratio:2048/390;min-height:0;margin:0 0 12px;padding:0;overflow:hidden;background-color:#071022;background-image:url('https://prianggono.github.io/priangan-multimedia/header%201.png')!important;background-position:center;background-size:100% 100%;background-repeat:no-repeat;box-shadow:none}
 #pmInvoiceDocumentPreview .pm-inv-head-image{display:block;width:100%;height:auto;margin:0;object-fit:contain}
 #pmInvoiceDocumentPreview .pm-inv-doc{position:absolute;right:3.2%;top:21%;width:28%;text-align:right;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
 #pmInvoiceDocumentPreview .pm-inv-doc>div:first-child{font-size:10pt;font-weight:900;letter-spacing:.5px}
@@ -51,6 +51,7 @@
 #pmInvoiceDocumentPreview .pm-inv-paybox:last-child .pm-inv-payrow span{display:inline}
 #pmInvoiceDocumentPreview .pm-inv-paybox:last-child .pm-inv-payrow b{display:inline}
 #pmInvoiceDocumentPreview .pm-inv-paybox:last-child .pm-inv-payrow span::after{content:" ";white-space:pre}
+#pmInvoiceDocumentPreview .pm-inv-paybox:last-child .pm-inv-bank-details{display:flex;align-items:center;gap:7px;white-space:nowrap;margin-top:5px;font-size:7.8pt;line-height:1.3}
 @media(max-width:850px){
   #pmInvoiceDocumentPreview .pm-inv-scroll{padding:12px}
   #pmInvoiceDocumentPreview .pm-inv-a4{width:100%;min-height:0;padding:0 12px 18px}
