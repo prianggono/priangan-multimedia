@@ -8,7 +8,7 @@
     input[type="date"]::-webkit-calendar-picker-indicator { opacity: 1; filter: invert(1) brightness(1.7); cursor: pointer; }
     input[type="date"] { color-scheme: dark; }
 
-    #pmPrintPreview { position: fixed; inset: 0; z-index: 999999; background: rgba(2,6,23,.96); display:flex; flex-direction:column; }
+    #pmPrintPreview,#pmInvoiceDocumentPreview { position: fixed; inset: 0; z-index: 999999; background: rgba(2,6,23,.96); display:flex; flex-direction:column; }
     .pm-print-toolbar { flex:0 0 auto; min-height:64px; padding:10px 18px; display:flex; align-items:center; justify-content:space-between; gap:16px; background:#0b1220; border-bottom:1px solid #26334d; color:#fff; font-family:Arial,Helvetica,sans-serif; }
     .pm-print-toolbar strong { display:block; font-size:15px; }
     .pm-print-toolbar span { display:block; color:#94a3b8; font-size:12px; margin-top:3px; }
@@ -90,11 +90,11 @@
     @media print {
       html,body { background:#fff!important; }
       body * { visibility:hidden!important; }
-      #pmPrintPreview,#pmPrintPreview * { visibility:visible!important; }
-      #pmPrintPreview { position:absolute!important; inset:0!important; display:block!important; background:#fff!important; }
-      .pm-print-toolbar { display:none!important; }
-      .pm-print-scroll { overflow:visible!important; padding:0!important; }
-      .pm-a4 { width:210mm!important; min-height:297mm!important; margin:0!important; padding:13mm 14mm 11mm!important; box-shadow:none!important; }
+      #pmPrintPreview,#pmPrintPreview *,#pmInvoiceDocumentPreview,#pmInvoiceDocumentPreview * { visibility:visible!important; }
+      #pmPrintPreview,#pmInvoiceDocumentPreview { position:absolute!important; inset:0!important; display:block!important; background:#fff!important; }
+      #pmPrintPreview .pm-print-toolbar,#pmInvoiceDocumentPreview .pm-inv-toolbar { display:none!important; }
+      #pmPrintPreview .pm-print-scroll,#pmInvoiceDocumentPreview .pm-inv-scroll { overflow:visible!important; padding:0!important; }
+      #pmPrintPreview .pm-a4,#pmInvoiceDocumentPreview .pm-inv-a4 { width:210mm!important; min-height:297mm!important; margin:0!important; box-shadow:none!important; }
       .pm-items th { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
       .pm-top-accent,.pm-total td,.pm-discount-row td,.pm-info-card,.pm-event-section,.pm-section-heading,.pm-section-heading span,.pm-letterhead,.pm-package-print { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
       .pm-logo-wrap { background:transparent!important; border:0!important; box-shadow:none!important; }
