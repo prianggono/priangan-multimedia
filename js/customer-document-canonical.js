@@ -28,11 +28,12 @@
   };
   const days=(a,b)=>{if(!a||!b)return 1;const x=new Date(S(a).slice(0,10)+'T00:00:00'),y=new Date(S(b).slice(0,10)+'T00:00:00'),d=Math.round((y-x)/86400000);return d>=0?d+1:1;};
   const cm=v=>{const n=N(v);if(n<=0)return 0;return Math.round(n<10?n*100:n);};
+  const levelSubtotal=item=>item?.level_enabled?N(item.lebar)*N(item.level_harga)*Math.max(1,N(item.qty)||1):0;
   const itemDiscount=item=>{
     const led=isLED(item);let base;
     if(led){
       const price=N(item.harga_jual??item.harga),qty=Math.max(1,N(item.qty)||1);
-      base=N(item.lebar)*N(item.tinggi)*price*qty*days(item.mulai??item.tanggal_mulai,item.selesai??item.tanggal_selesai)+(item.level_enabled?N(item.lebar)*N(item.level_harga)*qty:0);
+      base=N(item.lebar)*N(item.tinggi)*price*qty*days(item.mulai??item.tanggal_mulai,item.selesai??item.tanggal_selesai)+levelSubtotal(item);
     }else base=Math.max(0,N(item.subtotal));
     const pct=Math.max(0,Math.min(100,N(item.diskon_persen)));
     const rp=pct>0?Math.min(base,Math.round(base*pct/100)):Math.min(base,Math.max(0,N(item.diskon_nominal)));
@@ -42,7 +43,11 @@
   const displayName=item=>`${S(item?.item||item?.nama_item||'-').replace(/\s*\+\s*Level.*$/i,'')}${levelSuffix(item)}`;
   const qtyText=item=>{
     const t=S(item?.tipe_perhitungan||item?.tipe).toLowerCase();
-    if(isLED(item))return `${N(item.lebar)} × ${N(item.tinggi)} m²${Math.max(1,N(item.qty)||1)>1?` • ${Math.max(1,N(item.qty)||1)} set`:''}`;
+    if(isLED(item)){
+      const set=Math.max(1,N(item.qty)||1);
+      const level=item?.level_enabled&&cm(item.level_tinggi)>0?` • Level ${cm(item.level_tinggi)} m`:'';
+      return `${N(item.lebar)} × ${N(item.tinggi)} m²${set>1?` • ${set} set`:''}${level}`;
+    }
     if(t==='rigging')return `${N(item.panjang)} × ${N(item.tinggi)} m`;
     if(t==='level')return `${N(item.lebar)} m`;
     if(t==='overtime')return `${N(item.qty)} jam`;
@@ -103,26 +108,35 @@
     }catch(e){console.warn('[PM] saved quotation document load',e);return null;}
   }
 
+  function quotationRoot(){return document.querySelector('#pmPrintArea')||document.querySelector('#pmPrintPreview .pm-a4');}
+  function quotationTable(root){return root?.querySelector('table.pm-items')||document.querySelector('#pmPrintPreview table.pm-items');}
+
   function patchQuotationRows(root,list){
-    const rows=[...root.querySelectorAll('.pm-items tbody tr')].filter(r=>!r.classList.contains('pm-total')&&!r.classList.contains('pm-discount-row'));
+    const table=quotationTable(root);if(!table)return false;
+    const rows=[...table.querySelectorAll('tbody tr')].filter(r=>!r.classList.contains('pm-total')&&!r.classList.contains('pm-discount-row'));
     list.forEach((item,i)=>{
       const row=rows[i];if(!row)return;
-      const name=row.querySelector('td:nth-child(2) strong');if(name)name.textContent=displayName(item);
-      const q=row.querySelector('td:nth-child(3)');if(q)q.textContent=qtyText(item);
-      const p=row.querySelector('td:nth-child(5)');if(p)p.innerHTML=priceHtml(item);
-      const sub=row.querySelector('td:nth-child(6)');if(sub)sub.textContent=M(itemDiscount(item));
-      const host=row.querySelector('td:nth-child(2)');if(host&&!host.querySelector('.pm-cust-package')&&packageHtml(item))host.insertAdjacentHTML('beforeend',packageHtml(item));
+      const cells=row.cells;if(cells.length<6)return;
+      const name=cells[1].querySelector('strong');if(name)name.textContent=displayName(item);
+      cells[2].textContent=qtyText(item);
+      cells[3].textContent=period(item.mulai??item.tanggal_mulai,item.selesai??item.tanggal_selesai);
+      cells[4].innerHTML=priceHtml(item);
+      cells[5].textContent=M(itemDiscount(item));
+      if(packageHtml(item)&&!cells[1].querySelector('.pm-cust-package'))cells[1].insertAdjacentHTML('beforeend',packageHtml(item));
     });
-    const total=root.querySelector('.pm-total td:last-child');
-    if(total){const value=list.reduce((s,x)=>s+itemDiscount(x),0)-Math.max(0,N(window.__pmDiscountValue));total.textContent=M(Math.max(0,value));}
+    const global=Math.max(0,N(window.__pmDiscountValue));
+    const totalValue=Math.max(0,list.reduce((s,x)=>s+itemDiscount(x),0)-global);
+    const total=table.querySelector('.pm-total td:last-child');
+    if(total)total.textContent=M(totalValue);
+    return true;
   }
 
   async function quotationPatch(){
-    const root=document.querySelector('#pmPrintArea');if(!root)return;
+    const root=quotationRoot();if(!root)return false;
     const saved=await savedQuotationItems(root);
     const list=(saved&&saved.length?saved:items().filter(x=>x&&S(x.kode)&&S(x.item)));
-    if(!list.length)return;
-    patchQuotationRows(root,list);
+    if(!list.length)return false;
+    return patchQuotationRows(root,list);
   }
 
   async function invoiceRowsFromDb(area){
@@ -153,8 +167,16 @@
     const extraRow=body.querySelector('.pm-inv-extra-total');if(extraRow&&extras===0)extraRow.remove();
   }
 
-  function scheduleQuotation(){setTimeout(()=>quotationPatch(),0);setTimeout(()=>quotationPatch(),100);setTimeout(()=>quotationPatch(),250);}
+  function scheduleQuotation(){
+    [0,40,100,220,450].forEach(ms=>setTimeout(()=>{quotationPatch();},ms));
+  }
   function scheduleInvoice(){setTimeout(()=>invoicePatch(),40);setTimeout(()=>invoicePatch(),140);setTimeout(()=>invoicePatch(),300);}
+
+  function wrapPrint(){
+    const fn=window.printQuote;
+    if(typeof fn!=='function'||fn.__pmCustomerDocPrintWrapper)return false;
+    return true;
+  }
 
   document.addEventListener('click',e=>{
     const b=e.target.closest?.('button');if(!b)return;const t=S(b.textContent);
