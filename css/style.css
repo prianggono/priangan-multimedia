@@ -27,7 +27,7 @@ button:focus-visible,.btn:focus-visible{outline:2px solid #00e5ff!important;outl
   #pmPrintPreview{width:210mm!important;min-height:297mm!important;margin:0!important;padding:0!important;background:#fff!important;overflow:hidden!important}
   #pmPrintPreview .pm-print-toolbar{display:none!important}
   #pmPrintPreview .pm-print-scroll{width:210mm!important;max-width:210mm!important;height:297mm!important;min-height:297mm!important;max-height:297mm!important;margin:0!important;padding:0!important;overflow:hidden!important}
-  #pmPrintPreview .pm-a4{width:308.82mm!important;min-width:308.82mm!important;max-width:none!important;min-height:436.76mm!important;height:436.76mm!important;margin:0!important;padding:0!important;box-sizing:border-box!important;overflow:visible!important;zoom:.68!important;box-shadow:none!important;page-break-after:avoid!important;break-after:avoid-page!important}
+  #pmPrintPreview .pm-a4{width:269.23mm!important;min-width:269.23mm!important;max-width:none!important;min-height:380.77mm!important;height:380.77mm!important;margin:0!important;padding:0!important;box-sizing:border-box!important;overflow:visible!important;zoom:.78!important;box-shadow:none!important;page-break-after:avoid!important;break-after:avoid-page!important}
   #pmPrintPreview .pm-title-row{margin-top:7px!important;margin-bottom:5px!important}
   #pmPrintPreview .pm-title-row h1{font-size:14px!important;line-height:1.05!important;margin:0!important}
   #pmPrintPreview .pm-info-card{margin-top:6px!important}
