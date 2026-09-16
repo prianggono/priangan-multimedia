@@ -1,50 +1,11 @@
-/* Priangan Multimedia — Invoice print visibility fix
- * The quotation print stylesheet hides body descendants with visibility:hidden.
- * Invoice preview is rendered in #pmInvoicePreview, so explicitly expose it.
- */
-@media print {
-  html, body {
-    background:#fff !important;
-  }
-
-  body * {
-    visibility:hidden !important;
-  }
-
-  #pmInvoicePreview,
-  #pmInvoicePreview * {
-    visibility:visible !important;
-  }
-
-  #pmInvoicePreview {
-    position:absolute !important;
-    inset:0 !important;
-    display:block !important;
-    width:100% !important;
-    height:auto !important;
-    background:#fff !important;
-  }
-
-  #pmInvoicePreview .pm-inv-toolbar {
-    display:none !important;
-  }
-
-  #pmInvoicePreview .pm-inv-scroll {
-    display:block !important;
-    width:100% !important;
-    height:auto !important;
-    padding:0 !important;
-    overflow:visible !important;
-    background:#fff !important;
-  }
-
-  #pmInvoicePreview .pm-inv-a4 {
-    display:block !important;
-    visibility:visible !important;
-    width:210mm !important;
-    min-height:297mm !important;
-    margin:0 !important;
-    box-shadow:none !important;
-    overflow:hidden !important;
-  }
+/* Invoice print visibility — single preview owner */
+@page{size:A4 portrait;margin:0}
+@media print{
+  html,body{background:#fff!important}
+  body *{visibility:hidden!important}
+  #pmInvoiceDocumentPreview,#pmInvoiceDocumentPreview *{visibility:visible!important}
+  #pmInvoiceDocumentPreview{position:static!important;inset:auto!important;display:block!important;width:210mm!important;height:auto!important;background:#fff!important;overflow:visible!important}
+  #pmInvoiceDocumentPreview .pm-inv-toolbar{display:none!important}
+  #pmInvoiceDocumentPreview .pm-inv-scroll{display:block!important;width:210mm!important;height:297mm!important;padding:0!important;overflow:visible!important;background:#fff!important}
+  #pmInvoiceDocumentPreview .pm-inv-a4{display:block!important;width:210mm!important;height:297mm!important;min-height:297mm!important;margin:0!important;box-shadow:none!important;overflow:hidden!important}
 }

@@ -1,54 +1,47 @@
-/* Priangan Multimedia — Invoice A4 layout + payment wording */
-#pmInvoicePreview{--pm-navy:#172b5c;--pm-blue:#1f4ea3;--pm-blue-soft:#edf4ff;--pm-line:#d7dfeb;--pm-text:#172033;--pm-muted:#667085;font-family:Arial,"Helvetica Neue",sans-serif!important}
-#pmInvoicePreview .pm-inv-toolbar{height:64px!important;flex:0 0 64px!important;padding:0 22px!important}
-#pmInvoicePreview .pm-inv-scroll{padding:22px!important;background:#e9edf3!important}
-#pmInvoicePreview .pm-inv-a4{width:210mm!important;min-height:297mm!important;padding:0 14mm 12mm!important;background:#fff!important;color:var(--pm-text)!important;box-shadow:0 8px 35px rgba(15,23,42,.16)!important;overflow:hidden!important}
-#pmInvoicePreview .pm-inv-accent{height:4px!important;margin:0 -14mm 9mm!important;background:var(--pm-blue)!important}
-#pmInvoicePreview .pm-inv-head{display:grid!important;grid-template-columns:minmax(0,1fr) 43mm!important;align-items:start!important;gap:12mm!important;min-height:29mm!important;border-bottom:1px solid var(--pm-line)!important;padding-bottom:5mm!important}
-#pmInvoicePreview .pm-inv-head>div:first-child{display:grid!important;grid-template-columns:26mm minmax(0,1fr)!important;grid-template-rows:auto auto auto!important;column-gap:5mm!important;align-items:start!important;min-width:0!important}
-#pmInvoicePreview .pm-inv-logo{grid-column:1!important;grid-row:1 / span 3!important;width:24mm!important;max-width:24mm!important;height:18mm!important;max-height:18mm!important;object-fit:contain!important;object-position:left top!important;margin:0!important}
-#pmInvoicePreview .pm-inv-brand{grid-column:2!important;grid-row:1!important;margin:0!important;padding:0!important;font-size:17px!important;line-height:1.15!important;letter-spacing:.2px!important;color:var(--pm-navy)!important}
-#pmInvoicePreview .pm-inv-sub{grid-column:2!important;grid-row:2!important;margin-top:2px!important;font-size:8px!important;line-height:1.25!important;letter-spacing:1px!important;color:#64748b!important}
-#pmInvoicePreview .pm-inv-contact{grid-column:2!important;grid-row:3!important;margin-top:5px!important;font-size:7.5px!important;line-height:1.45!important;color:var(--pm-muted)!important;overflow-wrap:anywhere!important}
-#pmInvoicePreview .pm-inv-doc{text-align:right!important;padding-top:1mm!important}
-#pmInvoicePreview .pm-inv-doc b{color:var(--pm-blue)!important;font-size:21px!important;line-height:1!important;letter-spacing:1.5px!important}
-#pmInvoicePreview .pm-inv-doc strong{margin-top:4px!important;font-size:11px!important;letter-spacing:.3px!important}
-#pmInvoicePreview .pm-inv-dates{margin-top:7px!important;font-size:7.5px!important;line-height:1.55!important;color:var(--pm-muted)!important}
-#pmInvoicePreview .pm-inv-info{grid-template-columns:1fr 1fr!important;gap:4mm!important;margin-top:5mm!important}
-#pmInvoicePreview .pm-inv-box{min-height:25mm!important;padding:3.5mm!important;border:1px solid var(--pm-line)!important;border-radius:2.5mm!important;background:#fff!important;font-size:8px!important;line-height:1.5!important}
-#pmInvoicePreview .pm-inv-label{margin-bottom:1.5mm!important;font-size:6.8px!important;line-height:1!important;font-weight:800!important;letter-spacing:.8px!important;color:var(--pm-blue)!important}
-#pmInvoicePreview .pm-inv-client{margin-bottom:1px!important;font-size:10px!important;line-height:1.25!important;font-weight:800!important;color:var(--pm-navy)!important}
-#pmInvoicePreview .pm-inv-table{width:100%!important;margin-top:5mm!important;font-size:7.8px!important;table-layout:fixed!important}
-#pmInvoicePreview .pm-inv-table th{padding:2.3mm 2mm!important;background:var(--pm-navy)!important;color:#fff!important;font-size:7px!important;line-height:1.1!important;letter-spacing:.2px!important}
-#pmInvoicePreview .pm-inv-table td{padding:2.2mm 2mm!important;border:1px solid var(--pm-line)!important;vertical-align:middle!important;line-height:1.3!important}
-#pmInvoicePreview .pm-inv-table th:nth-child(1),#pmInvoicePreview .pm-inv-table td:nth-child(1){width:9mm!important;text-align:center!important}
-#pmInvoicePreview .pm-inv-table th:nth-child(3),#pmInvoicePreview .pm-inv-table td:nth-child(3){width:27mm!important;text-align:center!important}
-#pmInvoicePreview .pm-inv-table th:nth-child(4),#pmInvoicePreview .pm-inv-table td:nth-child(4){width:31mm!important}
-#pmInvoicePreview .pm-inv-table th:nth-child(5),#pmInvoicePreview .pm-inv-table td:nth-child(5){width:34mm!important}
-#pmInvoicePreview .pm-inv-table .code{margin-top:1px!important;font-size:6.5px!important;color:#7b8798!important}
-#pmInvoicePreview .pm-inv-total td{padding-top:2.8mm!important;padding-bottom:2.8mm!important;background:var(--pm-blue-soft)!important;color:var(--pm-navy)!important;font-size:8.5px!important}
-#pmInvoicePreview .pm-inv-pay{grid-template-columns:1fr 1fr!important;gap:4mm!important;margin-top:5mm!important}
-#pmInvoicePreview .pm-inv-paybox{min-height:22mm!important;padding:3.5mm!important;border:1px solid var(--pm-line)!important;border-radius:2.5mm!important}
-#pmInvoicePreview .pm-inv-payrow{margin:1.5mm 0!important;font-size:7.8px!important;line-height:1.2!important}
-#pmInvoicePreview .pm-inv-balance{color:#b77900!important;font-size:9px!important}
-#pmInvoicePreview .pm-inv-terms{margin-top:5mm!important;padding:3.5mm!important;border:1px solid var(--pm-line)!important;border-radius:2.5mm!important;font-size:7px!important;line-height:1.4!important}
-#pmInvoicePreview .pm-inv-terms>strong{display:block!important;margin-bottom:1mm!important;color:var(--pm-navy)!important;font-size:7.2px!important;letter-spacing:.3px!important}
-#pmInvoicePreview .pm-inv-terms ul{margin:1mm 0 0!important;padding-left:4.5mm!important}
-#pmInvoicePreview .pm-inv-terms li{margin:0 0 .8mm!important}
-#pmInvoicePreview .pm-inv-sign{width:44mm!important;margin:5mm 0 0 auto!important;min-height:25mm!important;text-align:center!important;font-size:7.8px!important;color:var(--pm-text)!important}
-#pmInvoicePreview .pm-inv-sign img{width:auto!important;max-width:28mm!important;height:11mm!important;object-fit:contain!important;margin:1mm auto 0!important}
-#pmInvoicePreview .pm-inv-line{width:34mm!important;border-top:1px solid #374151!important;margin:1mm auto 1.2mm!important}
-#pmInvoicePreview .pm-inv-sign strong{font-size:8px!important}
-#pmInvoicePreview .pm-inv-footer{left:14mm!important;right:14mm!important;bottom:7mm!important;padding-top:2mm!important;font-size:6.5px!important;color:#7b8798!important}
-/* Payment wording/content: standardized for printed Invoice */
-#pmInvoicePreview .pm-inv-pay .pm-inv-payrow:nth-child(2) span:first-child{font-size:0!important}
-#pmInvoicePreview .pm-inv-pay .pm-inv-payrow:nth-child(2) span:first-child::after{content:"Downpayment";font-size:7.8px!important}
-#pmInvoicePreview .pm-inv-pay .pm-inv-paybox:nth-child(2) .pm-inv-label + div{font-size:0!important;line-height:1.5!important}
-#pmInvoicePreview .pm-inv-pay .pm-inv-paybox:nth-child(2) .pm-inv-label + div::after{content:"Bank BCA • No. Rekening 1394575278 • a.n. Ganjar Rahmadhita.";font-size:7.8px!important;line-height:1.5!important;color:var(--pm-text)!important}
-@media(max-width:850px){#pmInvoicePreview .pm-inv-scroll{padding:10px!important}#pmInvoicePreview .pm-inv-a4{transform-origin:top center;box-shadow:none!important}}
-@media(max-width:650px){#pmInvoicePreview .pm-inv-info,#pmInvoicePreview .pm-inv-pay{grid-template-columns:1fr!important}}
-@media print{@page{size:A4 portrait;margin:0}#pmInvoicePreview .pm-inv-toolbar{display:none!important}#pmInvoicePreview .pm-inv-scroll{padding:0!important;overflow:visible!important;background:#fff!important}#pmInvoicePreview .pm-inv-a4{width:210mm!important;min-height:297mm!important;margin:0!important;box-shadow:none!important;overflow:hidden!important}#pmInvoicePreview .pm-inv-accent{margin:0 -14mm 9mm!important}}
-
-/* Payment/wording compatibility for preview variants */
-#pmInvoicePreview .pm-inv-paybox:has(.pm-inv-balance) .pm-inv-payrow:nth-child(2) span:first-child{font-size:0!important}
-#pmInvoicePreview .pm-inv-paybox:has(.pm-inv-balance) .pm-inv-payrow:nth-child(2) span:first-child::after{content:"Downpayment";font-size:7.8px!important}
+/* Invoice document layout — single authority */
+#pmInvoiceDocumentPreview{position:fixed;inset:0;z-index:100000;display:flex;flex-direction:column;background:rgba(8,14,28,.86);backdrop-filter:blur(3px);font-family:Arial,"Helvetica Neue",sans-serif;color:#172033}
+#pmInvoiceDocumentPreview .pm-inv-toolbar{height:62px;flex:0 0 62px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 22px;background:#071022;color:#fff;border-bottom:1px solid #233454}
+#pmInvoiceDocumentPreview .pm-inv-toolbar>div:first-child{display:flex;align-items:center;gap:14px}
+#pmInvoiceDocumentPreview .pm-inv-toolbar strong{font-size:15px}
+#pmInvoiceDocumentPreview .pm-inv-toolbar span{font-size:12px;color:#9fb0cf}
+#pmInvoiceDocumentPreview .pm-inv-actions{display:flex;gap:8px}
+#pmInvoiceDocumentPreview .pm-inv-scroll{flex:1;overflow:auto;padding:24px;background:#e9edf3}
+#pmInvoiceDocumentPreview .pm-inv-a4{width:210mm;min-height:297mm;box-sizing:border-box;margin:0 auto;padding:0 12mm 9mm;background:#fff;box-shadow:0 8px 32px rgba(15,23,42,.18);overflow:hidden}
+#pmInvoiceDocumentPreview .pm-inv-head{position:relative;display:block;aspect-ratio:2048/390;width:100%;margin:0;padding:0;overflow:hidden;background:url('../header%201.png') center/100% 100% no-repeat}
+#pmInvoiceDocumentPreview .pm-inv-head>div:first-child{display:none}
+#pmInvoiceDocumentPreview .pm-inv-doc{position:absolute;right:3.2%;top:22%;width:28%;text-align:right;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+#pmInvoiceDocumentPreview .pm-inv-doc>div:first-child{font-size:10pt;font-weight:900;letter-spacing:.5px}
+#pmInvoiceDocumentPreview .pm-inv-doc b{display:block;color:#67e8f9;font-size:7.5pt;letter-spacing:1.2px}
+#pmInvoiceDocumentPreview .pm-inv-doc strong{display:block;margin-top:3px;font-size:7.2pt}
+#pmInvoiceDocumentPreview .pm-inv-dates{font-size:6.5pt;line-height:1.4}
+#pmInvoiceDocumentPreview .pm-inv-info{display:grid;grid-template-columns:1fr 1fr;gap:5mm;margin-top:5mm}
+#pmInvoiceDocumentPreview .pm-inv-box{padding:3.5mm;border:1px solid #d7dfeb;border-radius:2.5mm;background:#fff;font-size:8pt;line-height:1.45}
+#pmInvoiceDocumentPreview .pm-inv-label{margin-bottom:1.5mm;font-size:6.5pt;font-weight:800;letter-spacing:.8px;color:#1f4ea3}
+#pmInvoiceDocumentPreview .pm-inv-client{font-size:10pt;font-weight:800;color:#172b5c}
+#pmInvoiceDocumentPreview .pm-inv-intro{margin:4mm 0 2mm;font-size:8.5pt;color:#172033}
+#pmInvoiceDocumentPreview .pm-inv-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:7.7pt}
+#pmInvoiceDocumentPreview .pm-inv-table th,#pmInvoiceDocumentPreview .pm-inv-table td{border:1px solid #d7dfeb;padding:2mm 1.8mm;vertical-align:top;line-height:1.25}
+#pmInvoiceDocumentPreview .pm-inv-table th{background:#172b5c;color:#fff;font-size:7pt;text-align:center}
+#pmInvoiceDocumentPreview .pm-inv-table th:nth-child(1){width:8mm}#pmInvoiceDocumentPreview .pm-inv-table th:nth-child(2){width:auto}#pmInvoiceDocumentPreview .pm-inv-table th:nth-child(3){width:27mm}#pmInvoiceDocumentPreview .pm-inv-table th:nth-child(4){width:29mm}#pmInvoiceDocumentPreview .pm-inv-table th:nth-child(5){width:31mm}#pmInvoiceDocumentPreview .pm-inv-table th:nth-child(6){width:34mm}
+#pmInvoiceDocumentPreview .pm-inv-table td:nth-child(1),#pmInvoiceDocumentPreview .pm-inv-table td:nth-child(3){text-align:center}
+#pmInvoiceDocumentPreview .pm-inv-code{font-size:6.3pt;color:#7b8798;margin-top:1px}
+#pmInvoiceDocumentPreview .pm-inv-pack{margin-top:1.5mm;padding:1.5mm 2mm;border-left:1.2mm solid #7db2ff;background:#f6f9fd}
+#pmInvoiceDocumentPreview .pm-inv-pack>b{display:block;margin-bottom:1mm;font-size:6.4pt;color:#172b5c}
+#pmInvoiceDocumentPreview .pm-inv-pack span{display:flex;justify-content:space-between;gap:8px;font-size:6.2pt;line-height:1.25}
+#pmInvoiceDocumentPreview .pm-inv-pack em{font-style:normal}#pmInvoiceDocumentPreview .pm-inv-pack strong{font-weight:700}
+#pmInvoiceDocumentPreview .pm-inv-table small{display:block;margin-top:1px;font-size:6.2pt;white-space:nowrap;color:#7b2e00}
+#pmInvoiceDocumentPreview .pm-inv-extra-total td,#pmInvoiceDocumentPreview .pm-inv-total td{background:#edf4ff;color:#172b5c;font-weight:700}
+#pmInvoiceDocumentPreview .pm-inv-pay{display:grid;grid-template-columns:1fr 1fr;gap:5mm;margin-top:5mm}
+#pmInvoiceDocumentPreview .pm-inv-paybox{padding:3.5mm;border:1px solid #d7dfeb;border-radius:2.5mm;background:#fff}
+#pmInvoiceDocumentPreview .pm-inv-payrow{display:flex;justify-content:space-between;gap:10px;margin:1.3mm 0;font-size:7.5pt;line-height:1.3}
+#pmInvoiceDocumentPreview .pm-inv-payrow b{white-space:nowrap}#pmInvoiceDocumentPreview .pm-inv-balance{color:#b77900}
+#pmInvoiceDocumentPreview .pm-inv-bottom-row{display:grid;grid-template-columns:minmax(0,1fr) 52mm;gap:10mm;align-items:end;margin-top:6mm}
+#pmInvoiceDocumentPreview .pm-inv-terms{padding:3.5mm;border:1px solid #d7dfeb;border-radius:2.5mm;font-size:6.8pt;line-height:1.35}
+#pmInvoiceDocumentPreview .pm-inv-terms>strong{display:block;margin-bottom:1.5mm;color:#172b5c;font-size:7pt}
+#pmInvoiceDocumentPreview .pm-inv-sign{text-align:center;font-size:7.5pt;min-height:28mm}
+#pmInvoiceDocumentPreview .pm-inv-sign img{display:block;width:auto;max-width:30mm;height:13mm;object-fit:contain;margin:1mm auto}
+#pmInvoiceDocumentPreview .pm-inv-line{width:38mm;border-top:1px solid #374151;margin:1mm auto 1.2mm}
+#pmInvoiceDocumentPreview .pm-inv-sign strong{font-size:8pt}
+#pmInvoiceDocumentPreview .pm-inv-footer;margin-top:4mm;font-size:6.3pt;color:#7b8798;text-align:left}
+@media(max-width:850px){#pmInvoiceDocumentPreview .pm-inv-scroll{padding:12px}#pmInvoiceDocumentPreview .pm-inv-a4{width:100%;min-height:0;padding:0 12px 18px}.pm-inv-info,.pm-inv-pay{grid-template-columns:1fr!important}#pmInvoiceDocumentPreview .pm-inv-bottom-row{grid-template-columns:1fr;gap:6mm}.pm-inv-sign{margin-left:auto;max-width:52mm}}
+@media print{#pmInvoiceDocumentPreview{position:static!important;display:block!important;background:#fff!important;backdrop-filter:none!important}#pmInvoiceDocumentPreview .pm-inv-toolbar{display:none!important}#pmInvoiceDocumentPreview .pm-inv-scroll{padding:0!important;overflow:visible!important;background:#fff!important}#pmInvoiceDocumentPreview .pm-inv-a4{width:210mm!important;height:297mm!important;min-height:297mm!important;margin:0!important;padding:0 12mm 9mm!important;box-shadow:none!important;overflow:hidden!important}body.pm-invoice-preview-open{background:#fff!important}}
