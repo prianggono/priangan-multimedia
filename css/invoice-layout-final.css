@@ -49,6 +49,10 @@
 #pmInvoiceDocumentPreview .pm-inv-sign>div:last-child{margin-top:1px;color:#64748b;font-size:7.2pt}
 #pmInvoiceDocumentPreview .pm-inv-footer{margin-top:9px;padding-top:7px;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:6.6pt;display:flex;justify-content:space-between;gap:15px}
 #pmInvoiceDocumentPreview .pm-inv-footer strong{color:#64748b;white-space:nowrap}
+/* Rekening — satu baris */
+#pmInvoiceDocumentPreview .pm-inv-terms>div{white-space:nowrap;overflow:hidden;text-overflow:clip}
+#pmInvoiceDocumentPreview .pm-inv-terms>div>*{display:inline!important;margin:0!important;padding:0!important;border:0!important}
+#pmInvoiceDocumentPreview .pm-inv-terms>div>*+*::before{content:" ";white-space:pre}
 @media(max-width:850px){
   #pmInvoiceDocumentPreview .pm-inv-scroll{padding:12px}
   #pmInvoiceDocumentPreview .pm-inv-a4{width:100%;min-height:0;padding:0 12px 18px}
