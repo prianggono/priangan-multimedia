@@ -71,7 +71,8 @@ create table if not exists public.penawaran (
   tanggal_invoice date,
   jatuh_tempo date,
   status_invoice text,
-  catatan_invoice text
+  catatan_invoice text,
+  revisi_penawaran integer not null default 0
 );
 
 create table if not exists public.penawaran_items (
@@ -214,6 +215,7 @@ create index if not exists idx_penawaran_client on public.penawaran (client_id);
 create index if not exists idx_penawaran_nomor on public.penawaran (nomor_penawaran);
 create index if not exists idx_penawaran_status on public.penawaran (status);
 create index if not exists idx_penawaran_tanggal on public.penawaran (tanggal);
+create unique index if not exists uq_penawaran_nomor_invoice on public.penawaran(nomor_invoice) where nomor_invoice is not null and btrim(nomor_invoice) <> '';
 create index if not exists idx_penawaran_invoice_items_master_harga_id on public.penawaran_invoice_items (master_harga_id);
 create index if not exists idx_penawaran_invoice_items_penawaran_id on public.penawaran_invoice_items (penawaran_id);
 create index if not exists idx_penawaran_items_kode on public.penawaran_items (kode);
@@ -235,6 +237,8 @@ create index if not exists idx_pengeluaran_keuangan_tanggal on public.pengeluara
 -- trigger_hitung_penawaran_jadwal()
 -- trigger_hitung_penawaran_pembayaran()
 -- sync_penawaran_discount_fields()
+-- save_penawaran_atomic(bigint,jsonb,jsonb,jsonb)
+-- save_invoice_atomic(bigint,jsonb,jsonb)
 -- rls_auto_enable()
 
 -- Current production triggers:
