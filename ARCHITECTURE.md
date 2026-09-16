@@ -56,9 +56,11 @@ Do **not** create files named `*-fix.js`, `*-final.js`, `*-v2.js`, `*-patch.js`,
 - Use the quotation snapshot fields for historical reporting.
 - Foreign keys and triggers belong to the database contract, not frontend workarounds.
 
-## 6. Current known legacy layering
+## 6. Legacy-layer cleanup status
 
-The quotation module was previously stabilized through several files whose names contain `canonical`, `final`, `fix`, and `v2`. They are now treated as the current domain modules rather than as places to add another patch. The next refactor should consolidate their responsibilities into cleanly named domain files; until that refactor is performed, do not introduce another quotation patch layer.
+The quotation module previously accumulated patch layers. The duplicate quotation-navigation controller has now been removed; normal quotation navigation/reset is owned by `js/app.js`, while quotation editing remains owned by the history domain. No second navigation patch should be introduced.
+
+The remaining filenames containing `fix`, `final`, `canonical`, or `v2` are currently active domain modules, not additional controllers. They are intentionally retained until their responsibilities can be consolidated safely without changing runtime behavior. **Do not add another layer.**
 
 ## 7. Verification checklist for quotation bugs
 
