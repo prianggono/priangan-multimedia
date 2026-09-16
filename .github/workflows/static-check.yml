@@ -1,0 +1,40 @@
+name: Static Validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            echo "Checking $file"
+            node --check "$file"
+          done < <(find js -type f -name '*.js' -print0 | sort -z)
+      - name: Check loaded JS files exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path('index.html').read_text(encoding='utf-8')
+          refs = re.findall(r'<script[^>]+src=["\'](js/[^"\']+\.js)(?:\?[^"\']*)?["\']', html, re.I)
+          missing = [r for r in refs if not Path(r.split('?', 1)[0]).exists()]
+          if missing:
+              raise SystemExit('Missing JavaScript files: ' + ', '.join(missing))
+          print(f'Validated {len(refs)} JavaScript entrypoint references.')
+          PY
