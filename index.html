@@ -1,8 +1,64 @@
 <!doctype html>
 <html lang="id">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Priangan Multimedia — Sales &amp; Quotation</title><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="css/style.css?v=13"><link rel="stylesheet" href="css/finance-ui.css?v=7"><link rel="stylesheet" href="css/invoice-layout-final.css?v=5"><link rel="stylesheet" href="css/margin-internal.css?v=1"><link rel="stylesheet" href="css/invoice-print-visibility-fix.css?v=2"><link rel="stylesheet" href="css/dashboard-mobile-final.css?v=1"><link rel="stylesheet" href="css/mobile-preview-final.css?v=2"><link rel="stylesheet" href="css/quotation-doc-tag-offset-fix.css?v=1"><link rel="stylesheet" href="css/quotation-header-invoice-match-final.css?v=2"><link rel="stylesheet" href="css/quotation-header-tidy-final.css?v=2"><link rel="stylesheet" href="css/invoice-header-image-final.css?v=3"><style id="pm-print-a4-reset">@page{size:A4 portrait;margin:0}@media print{#pmPrintPreview .pm-a4{width:210mm!important;min-width:210mm!important;max-width:210mm!important;height:297mm!important;min-height:297mm!important;max-height:297mm!important;zoom:1!important;transform:none!important;transform-origin:top left!important;overflow:hidden!important}}
-</style></head>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Priangan Multimedia — Sales &amp; Quotation</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css?v=13">
+<link rel="stylesheet" href="css/finance-ui.css?v=7">
+<link rel="stylesheet" href="css/invoice-layout-final.css?v=6">
+<link rel="stylesheet" href="css/margin-internal.css?v=1">
+<link rel="stylesheet" href="css/dashboard-mobile-final.css?v=1">
+<link rel="stylesheet" href="css/mobile-preview-final.css?v=3">
+<link rel="stylesheet" href="css/quotation-doc-tag-offset-fix.css?v=1">
+<link rel="stylesheet" href="css/quotation-header-invoice-match-final.css?v=2">
+<link rel="stylesheet" href="css/quotation-header-tidy-final.css?v=2">
+<style id="pm-print-a4-reset">@page{size:A4 portrait;margin:0}@media print{#pmPrintPreview .pm-a4{width:210mm!important;min-width:210mm!important;max-width:210mm!important;height:297mm!important;min-height:297mm!important;max-height:297mm!important;zoom:1!important;transform:none!important;transform-origin:top left!important;overflow:hidden!important}}</style>
+</head>
 <body>
-<div id="app"><aside class="sidebar"><div class="brand"><div class="mark">PM</div><div><b>PRIANGAN MULTIMEDIA</b><small>SALES &amp; QUOTATION</small></div></div><nav><button class="nav active" data-p="dashboard">▦ Dashboard</button><button class="nav" data-p="master">◇ Master Harga</button><button class="nav" data-p="clients">♙ Data Client</button><button class="nav" data-p="quotation">▣ Buat Penawaran</button><button class="nav" data-p="history">▤ Riwayat Penawaran</button><button class="nav" data-p="invoice">▤ Invoice</button><button class="nav" data-p="finance">▤ Laporan Keuangan</button><button class="nav" data-p="vendors">♧ Data Vendor</button><button class="nav" data-p="template">▧ Template Surat</button></nav><button class="nav bottom" data-p="settings">⚙ Pengaturan</button></aside><main><header><button id="menu" type="button" aria-label="Buka menu" aria-expanded="false">☰</button><div><b id="title">Dashboard</b><small>Priangan Multimedia</small></div><span id="status" class="badge warn">Belum terhubung</span></header><section id="content"></section></main></div><div id="toast"></div>
-<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script defer src="js/config.js?v=8"></script><script defer src="js/print-style.js?v=9"></script><script defer src="js/header-fix.js?v=4"></script><script defer src="js/app.js?v=18"></script><script defer src="js/ttd-upload-fix.js?v=1"></script><script defer src="js/master-cost-fix.js?v=9"></script><script defer src="js/csv-import.js?v=6"></script><script defer src="js/client-management-fix.js?v=5"></script><script defer src="js/finance.js?v=11"></script><script defer src="js/history-actions-runtime-fix.js?v=7"></script><script defer src="js/quotation-runtime-canonical-v2.js?v=8"></script><script defer src="js/quotation-ui-canonical.js?v=11"></script><script defer src="js/quotation-save-final.js?v=4"></script><script defer src="js/package-detail-ui.js?v=4"></script><script defer src="js/invoice.js?v=16"></script><script defer src="js/customer-document-canonical.js?v=10"></script><script defer src="js/dashboard-cyberpunk-final.js?v=8"></script><script defer src="js/mobile-sidebar-fix.js?v=1"></script><script defer src="js/db-view-health.js?v=3"></script><script defer src="js/vendor-management.js?v=2"></script><script defer src="js/document-numbering-final.js?v=10"></script>
-</body></html>
+<div id="app">
+<aside class="sidebar">
+  <div class="brand"><div class="mark">PM</div><div><b>PRIANGAN MULTIMEDIA</b><small>SALES &amp; QUOTATION</small></div></div>
+  <nav>
+    <button class="nav active" data-p="dashboard">▦ Dashboard</button>
+    <button class="nav" data-p="master">◇ Master Harga</button>
+    <button class="nav" data-p="clients">♙ Data Client</button>
+    <button class="nav" data-p="quotation">▣ Buat Penawaran</button>
+    <button class="nav" data-p="history">▤ Riwayat Penawaran</button>
+    <button class="nav" data-p="invoice">▤ Invoice</button>
+    <button class="nav" data-p="finance">▤ Laporan Keuangan</button>
+    <button class="nav" data-p="vendors">♧ Data Vendor</button>
+    <button class="nav" data-p="template">▧ Template Surat</button>
+  </nav>
+  <button class="nav bottom" data-p="settings">⚙ Pengaturan</button>
+</aside>
+<main>
+  <header><button id="menu" type="button" aria-label="Buka menu" aria-expanded="false">☰</button><div><b id="title">Dashboard</b><small>Priangan Multimedia</small></div><span id="status" class="badge warn">Belum terhubung</span></header>
+  <section id="content"></section>
+</main>
+</div>
+<div id="toast"></div>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script defer src="js/config.js?v=8"></script>
+<script defer src="js/print-style.js?v=9"></script>
+<script defer src="js/header-fix.js?v=4"></script>
+<script defer src="js/app.js?v=18"></script>
+<script defer src="js/ttd-upload-fix.js?v=1"></script>
+<script defer src="js/master-cost-fix.js?v=9"></script>
+<script defer src="js/csv-import.js?v=6"></script>
+<script defer src="js/client-management-fix.js?v=5"></script>
+<script defer src="js/finance.js?v=11"></script>
+<script defer src="js/history-actions-runtime-fix.js?v=7"></script>
+<script defer src="js/quotation-runtime-canonical-v2.js?v=8"></script>
+<script defer src="js/quotation-ui-canonical.js?v=11"></script>
+<script defer src="js/quotation-save-final.js?v=4"></script>
+<script defer src="js/package-detail-ui.js?v=4"></script>
+<script defer src="js/invoice.js?v=17"></script>
+<script defer src="js/dashboard-cyberpunk-final.js?v=8"></script>
+<script defer src="js/mobile-sidebar-fix.js?v=1"></script>
+<script defer src="js/db-view-health.js?v=3"></script>
+<script defer src="js/vendor-management.js?v=2"></script>
+<script defer src="js/document-numbering-final.js?v=11"></script>
+</body>
+</html>
