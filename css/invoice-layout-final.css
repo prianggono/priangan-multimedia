@@ -7,7 +7,8 @@
 #pmInvoiceDocumentPreview .pm-inv-actions{display:flex;gap:8px}
 #pmInvoiceDocumentPreview .pm-inv-scroll{flex:1;overflow:auto;padding:24px;background:#e9edf3}
 #pmInvoiceDocumentPreview .pm-inv-a4{width:210mm;min-height:297mm;box-sizing:border-box;margin:0 auto;padding:0 14mm 11mm;background:#fff;box-shadow:0 8px 32px rgba(15,23,42,.18);overflow:hidden}
-#pmInvoiceDocumentPreview .pm-inv-head{position:relative;display:block;aspect-ratio:2048/390;width:100%;margin:0 0 12px;padding:0;overflow:hidden;background:url('../header%201.png') center/100% 100% no-repeat;box-shadow:none}
+#pmInvoiceDocumentPreview .pm-inv-head{position:relative;display:block;width:100%;height:auto;min-height:40mm;margin:0 0 12px;padding:0;overflow:hidden;background-color:#071022;background-image:url('/priangan-multimedia/header%201.png')!important;background-position:center;background-size:100% auto;background-repeat:no-repeat;box-shadow:none}
+#pmInvoiceDocumentPreview .pm-inv-head-image{display:block;width:100%;height:auto;margin:0;object-fit:contain}
 #pmInvoiceDocumentPreview .pm-inv-doc{position:absolute;right:3.2%;top:21%;width:28%;text-align:right;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
 #pmInvoiceDocumentPreview .pm-inv-doc>div:first-child{font-size:10pt;font-weight:900;letter-spacing:.5px}
 #pmInvoiceDocumentPreview .pm-inv-doc b{display:block;color:#67e8f9;font-size:7.5pt;letter-spacing:1.2px;margin-top:3px}
@@ -37,22 +38,19 @@
 #pmInvoiceDocumentPreview .pm-inv-paybox:last-child{border-left:0;border-radius:0 8px 8px 0;background:#f8fafc}
 #pmInvoiceDocumentPreview .pm-inv-payrow{display:flex;justify-content:space-between;gap:10px;margin:4px 0;font-size:7.8pt;line-height:1.3}
 #pmInvoiceDocumentPreview .pm-inv-payrow b{white-space:nowrap}#pmInvoiceDocumentPreview .pm-inv-balance{font-size:9pt;color:#b77900}
-#pmInvoiceDocumentPreview .pm-inv-bottom-row{display:grid;grid-template-columns:minmax(0,1fr) 52mm;gap:10mm;align-items:end;margin-top:12px}
-#pmInvoiceDocumentPreview .pm-inv-terms{padding:0;border:1px solid #dbe3ef;border-radius:7px;overflow:hidden;font-size:7.4pt;line-height:1.45}
-#pmInvoiceDocumentPreview .pm-inv-terms>strong{display:flex;align-items:center;gap:7px;margin:0;padding:7px 9px;background:#f8fafc;border-bottom:1px solid #dbe3ef;color:#111827;font-size:7.5pt;letter-spacing:.5px}
-#pmInvoiceDocumentPreview .pm-inv-terms>strong::before{content:"01";display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;border-radius:5px;background:#2563eb;color:#fff;font-size:6.5pt;font-weight:800;flex:0 0 20px}
-#pmInvoiceDocumentPreview .pm-inv-terms>div{padding:8px 10px;color:#475569}
-#pmInvoiceDocumentPreview .pm-inv-sign{text-align:center;font-size:7.5pt;min-height:28mm}
+#pmInvoiceDocumentPreview .pm-inv-bottom-row{display:flex;justify-content:flex-end;align-items:flex-end;margin-top:12mm}
+#pmInvoiceDocumentPreview .pm-inv-terms{display:none!important}
+#pmInvoiceDocumentPreview .pm-inv-sign{text-align:center;font-size:7.5pt;min-height:28mm;width:52mm}
 #pmInvoiceDocumentPreview .pm-inv-sign img{display:block;width:auto;max-width:38mm;height:16mm;object-fit:contain;margin:1mm auto}
 #pmInvoiceDocumentPreview .pm-inv-line{width:42mm;border-bottom:1px solid #334155;margin:1mm auto 1.2mm}
 #pmInvoiceDocumentPreview .pm-inv-sign strong{font-size:8pt;color:#111827}
 #pmInvoiceDocumentPreview .pm-inv-sign>div:last-child{margin-top:1px;color:#64748b;font-size:7.2pt}
 #pmInvoiceDocumentPreview .pm-inv-footer{margin-top:9px;padding-top:7px;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:6.6pt;display:flex;justify-content:space-between;gap:15px}
 #pmInvoiceDocumentPreview .pm-inv-footer strong{color:#64748b;white-space:nowrap}
-/* Rekening — satu baris */
-#pmInvoiceDocumentPreview .pm-inv-terms>div{white-space:nowrap;overflow:hidden;text-overflow:clip}
-#pmInvoiceDocumentPreview .pm-inv-terms>div>*{display:inline!important;margin:0!important;padding:0!important;border:0!important}
-#pmInvoiceDocumentPreview .pm-inv-terms>div>*+*::before{content:" ";white-space:pre}
+#pmInvoiceDocumentPreview .pm-inv-paybox:last-child .pm-inv-payrow{justify-content:flex-start;gap:6px}
+#pmInvoiceDocumentPreview .pm-inv-paybox:last-child .pm-inv-payrow span{display:inline}
+#pmInvoiceDocumentPreview .pm-inv-paybox:last-child .pm-inv-payrow b{display:inline}
+#pmInvoiceDocumentPreview .pm-inv-paybox:last-child .pm-inv-payrow span::after{content:" ";white-space:pre}
 @media(max-width:850px){
   #pmInvoiceDocumentPreview .pm-inv-scroll{padding:12px}
   #pmInvoiceDocumentPreview .pm-inv-a4{width:100%;min-height:0;padding:0 12px 18px}
@@ -60,12 +58,13 @@
   #pmInvoiceDocumentPreview .pm-inv-box+.pm-inv-box{border-left:0;border-top:1px solid #dbe3ef}
   #pmInvoiceDocumentPreview .pm-inv-paybox:first-child{border-radius:8px 8px 0 0}
   #pmInvoiceDocumentPreview .pm-inv-paybox:last-child{border-left:1px solid #dbe3ef;border-radius:0 0 8px 8px}
-  #pmInvoiceDocumentPreview .pm-inv-bottom-row{grid-template-columns:1fr;gap:6mm}
+  #pmInvoiceDocumentPreview .pm-inv-bottom-row{justify-content:center}
 }
 @media print{
   #pmInvoiceDocumentPreview{position:static!important;display:block!important;background:#fff!important;backdrop-filter:none!important}
   #pmInvoiceDocumentPreview .pm-inv-toolbar{display:none!important}
   #pmInvoiceDocumentPreview .pm-inv-scroll{padding:0!important;overflow:visible!important;background:#fff!important}
   #pmInvoiceDocumentPreview .pm-inv-a4{width:210mm!important;height:297mm!important;min-height:297mm!important;margin:0!important;padding:0 14mm 11mm!important;box-shadow:none!important;overflow:hidden!important}
-  #pmInvoiceDocumentPreview .pm-inv-head,#pmInvoiceDocumentPreview .pm-inv-table th,#pmInvoiceDocumentPreview .pm-inv-extra-total td,#pmInvoiceDocumentPreview .pm-inv-total td,#pmInvoiceDocumentPreview .pm-inv-pack,#pmInvoiceDocumentPreview .pm-inv-box+.pm-inv-box,#pmInvoiceDocumentPreview .pm-inv-terms>strong{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  #pmInvoiceDocumentPreview .pm-inv-head,#pmInvoiceDocumentPreview .pm-inv-table th,#pmInvoiceDocumentPreview .pm-inv-extra-total td,#pmInvoiceDocumentPreview .pm-inv-total td,#pmInvoiceDocumentPreview .pm-inv-pack,#pmInvoiceDocumentPreview .pm-inv-box+.pm-inv-box{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  #pmInvoiceDocumentPreview .pm-inv-head-image{display:block!important}
 }
