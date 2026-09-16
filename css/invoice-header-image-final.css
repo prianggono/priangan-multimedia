@@ -1,9 +1,0 @@
-/* Invoice letterhead — single preview owner */
-#pmInvoiceDocumentPreview .pm-inv-head{position:relative!important;display:block!important;aspect-ratio:2048 / 390!important;width:100%!important;margin:0!important;padding:0!important;overflow:hidden!important;background-image:url('../header%201.png')!important;background-size:100% 100%!important;background-repeat:no-repeat!important;background-position:center!important;box-shadow:none!important}
-#pmInvoiceDocumentPreview .pm-inv-head>div:first-child{display:none!important}
-#pmInvoiceDocumentPreview .pm-inv-doc{position:absolute!important;right:3.2%!important;top:22%!important;width:28%!important;text-align:right!important;color:#fff!important;text-shadow:0 1px 3px rgba(0,0,0,.7)!important}
-#pmInvoiceDocumentPreview .pm-inv-doc>div:first-child{font-size:10pt!important;font-weight:900!important;letter-spacing:.5px!important}
-#pmInvoiceDocumentPreview .pm-inv-doc b{display:block!important;color:#67e8f9!important;font-size:7.5pt!important;letter-spacing:1.2px!important}
-#pmInvoiceDocumentPreview .pm-inv-doc strong{display:block!important;margin-top:3px!important;font-size:7.2pt!important}
-#pmInvoiceDocumentPreview .pm-inv-dates{font-size:6.5pt!important;line-height:1.4!important}
-@media print{#pmInvoiceDocumentPreview .pm-inv-head{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;background-image:url('../header%201.png')!important;background-size:100% 100%!important}}
