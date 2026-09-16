@@ -38,3 +38,22 @@ jobs:
               raise SystemExit('Missing JavaScript files: ' + ', '.join(missing))
           print(f'Validated {len(refs)} JavaScript entrypoint references.')
           PY
+      - name: Check removed layers stay removed
+        shell: bash
+        run: |
+          set -euo pipefail
+          forbidden=(
+            'customer-document-canonical.js'
+            'invoice-header-image-final.css'
+            'invoice-print-visibility-fix.css'
+            'invoice-quotation-match.css'
+            'quotation-info-invoice-match-final.css'
+            'pmInvoicePreview'
+          )
+          for pattern in "${forbidden[@]}"; do
+            if grep -RIn --exclude-dir=.git --exclude='*.md' --exclude='static-check.yml' "$pattern" .; then
+              echo "Forbidden legacy reference found: $pattern"
+              exit 1
+            fi
+          done
+          echo 'Legacy Invoice layers verified absent.'
