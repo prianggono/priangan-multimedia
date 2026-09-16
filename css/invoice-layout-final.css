@@ -47,10 +47,19 @@
 #pmInvoiceDocumentPreview .pm-inv-sign>div:last-child{margin-top:1px;color:#64748b;font-size:7.2pt}
 #pmInvoiceDocumentPreview .pm-inv-footer{margin-top:9px;padding-top:7px;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:6.6pt;display:flex;justify-content:space-between;gap:15px}
 #pmInvoiceDocumentPreview .pm-inv-footer strong{color:#64748b;white-space:nowrap}
-/* Rekening — satu baris */
-#pmInvoiceDocumentPreview .pm-inv-paybox:last-child .pm-inv-payrow{display:inline-flex;justify-content:flex-start;align-items:center;gap:5px;margin:4px 10px 4px 0;vertical-align:middle;white-space:nowrap}
-#pmInvoiceDocumentPreview .pm-inv-paybox:last-child .pm-inv-payrow span{display:inline}
-#pmInvoiceDocumentPreview .pm-inv-paybox:last-child .pm-inv-payrow b{display:inline;white-space:nowrap}
+#pmInvoiceDocumentPreview .pm-inv-paybox:last-child .pm-inv-bank-details{display:flex;align-items:center;gap:7px;white-space:nowrap;font-size:7.8pt;line-height:1.3}
+#pmPaymentModal{position:fixed;inset:0;z-index:100001;font-family:Arial,"Helvetica Neue",sans-serif}
+#pmPaymentModal .pm-payment-backdrop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(2,6,23,.74);backdrop-filter:blur(4px)}
+#pmPaymentModal .pm-payment-dialog{width:min(460px,100%);background:#0d1628;color:#fff;border:1px solid #2b4266;border-radius:14px;box-shadow:0 25px 70px rgba(0,0,0,.55);overflow:hidden}
+#pmPaymentModal .pm-payment-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid #233552}
+#pmPaymentModal .pm-payment-head strong{display:block;font-size:16px}
+#pmPaymentModal .pm-payment-head span{display:block;margin-top:4px;color:#9fb0cf;font-size:12px}
+#pmPaymentModal .pm-payment-close{border:0;background:transparent;color:#9fb0cf;font-size:24px;line-height:1;cursor:pointer}
+#pmPaymentModal .pm-payment-body{padding:18px}
+#pmPaymentModal .pm-payment-body .field{margin-bottom:14px}
+#pmPaymentModal .pm-payment-body input,#pmPaymentModal .pm-payment-body select{width:100%;box-sizing:border-box}
+#pmPaymentModal .pm-payment-actions{display:flex;justify-content:flex-end;gap:8px;padding:14px 18px;border-top:1px solid #233552}
+body.pm-payment-modal-open{overflow:hidden}
 @media(max-width:850px){
   #pmInvoiceDocumentPreview .pm-inv-scroll{padding:12px}
   #pmInvoiceDocumentPreview .pm-inv-a4{width:100%;min-height:0;padding:0 12px 18px}
@@ -59,12 +68,14 @@
   #pmInvoiceDocumentPreview .pm-inv-paybox:first-child{border-radius:8px 8px 0 0}
   #pmInvoiceDocumentPreview .pm-inv-paybox:last-child{border-left:1px solid #dbe3ef;border-radius:0 0 8px 8px}
   #pmInvoiceDocumentPreview .pm-inv-bottom-row{justify-content:center}
+  #pmInvoiceDocumentPreview .pm-inv-paybox:last-child .pm-inv-bank-details{flex-wrap:wrap;white-space:normal}
 }
 @media print{
-  #pmInvoiceDocumentPreview{position:static!important;display:block!important;background:#fff!important;backdrop-filter:none!important}
+  #pmInvoiceDocumentPreview{position:absolute!important;display:block!important;background:#fff!important}
   #pmInvoiceDocumentPreview .pm-inv-toolbar{display:none!important}
   #pmInvoiceDocumentPreview .pm-inv-scroll{padding:0!important;overflow:visible!important;background:#fff!important}
   #pmInvoiceDocumentPreview .pm-inv-a4{width:210mm!important;height:297mm!important;min-height:297mm!important;margin:0!important;padding:0 14mm 11mm!important;box-shadow:none!important;overflow:hidden!important}
   #pmInvoiceDocumentPreview .pm-inv-head,#pmInvoiceDocumentPreview .pm-inv-table th,#pmInvoiceDocumentPreview .pm-inv-extra-total td,#pmInvoiceDocumentPreview .pm-inv-total td,#pmInvoiceDocumentPreview .pm-inv-pack,#pmInvoiceDocumentPreview .pm-inv-box+.pm-inv-box{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-  #pmInvoiceDocumentPreview .pm-inv-head-image{display:block!important}
+  #pmInvoiceDocumentPreview .pm-inv-head-image{display:block!important;width:100%!important;height:auto!important;object-fit:contain!important}
+  #pmPaymentModal{display:none!important}
 }
