@@ -101,9 +101,13 @@
         return {
           id:Date.now()+Math.random()+i,
           db_id:r.id,
+          master_id:r.master_harga_id,
+          master_harga_id:r.master_harga_id,
           kode:S(r.kode||r.kode_item),
           item:S(r.item||r.nama_item),
           nama_item:S(r.nama_item||r.item),
+          kategori:S(r.kategori||''),
+          satuan:S(r.satuan||''),
           harga:quotePrice,
           harga_jual:quotePrice,
           harga_modal:N(r.harga_modal),
@@ -118,7 +122,13 @@
           selesai:S(r.tanggal_selesai||s.tanggal_selesai||''),
           durasi:Math.max(1,N(r.durasi||s.durasi||s.durasi_hari)||1),
           tipe:S(r.tipe_perhitungan||r.tipe||''),
-          tipe_perhitungan:S(r.tipe_perhitungan||r.tipe||'')
+          tipe_perhitungan:S(r.tipe_perhitungan||r.tipe||''),
+          level_enabled:!!r.level_enabled,
+          level_master_harga_id:r.level_master_harga_id!=null?Number(r.level_master_harga_id):null,
+          level_tinggi:r.level_enabled&&N(r.level_tinggi)>0?N(r.level_tinggi):null,
+          level_harga:r.level_enabled&&N(r.level_harga)>0?N(r.level_harga):null,
+          level_subtotal:r.level_enabled&&N(r.level_subtotal)>0?N(r.level_subtotal):0,
+          __level_price_auto:r.level_enabled&&r.level_master_harga_id!=null
         };
       });
 
