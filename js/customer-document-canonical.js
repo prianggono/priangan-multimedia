@@ -36,7 +36,31 @@
 
   function style(){if(document.getElementById('pmCustomerDocumentStyles'))return;const st=document.createElement('style');st.id='pmCustomerDocumentStyles';st.textContent='.pm-cust-level-price{font-size:6.5pt!important;color:#475569!important;margin-top:2px!important;line-height:1.1!important}.pm-cust-package{margin-top:5px;padding:5px 8px 2px 12px;border-left:3px solid #7ea1ff;color:#334155}.pm-cust-package-title{font-size:7px;font-weight:800;letter-spacing:.08em;color:#64748b;margin-bottom:2px}.pm-cust-package table{width:100%;border-collapse:collapse;font-size:7px}.pm-cust-package th,.pm-cust-package td{padding:1.5px 4px;border:0;text-align:left;vertical-align:top}.pm-cust-package th{font-size:6.4px;color:#64748b;text-transform:uppercase}.pm-cust-package th:last-child,.pm-cust-package td:last-child{width:48px;text-align:right;font-weight:600}.pm-cust-total td{background:#edf4ff!important;font-weight:800!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}';document.head.appendChild(st);}
 
-  function quotationPatch(){const root=document.querySelector('#pmPrintArea');const list=items().filter(x=>x&&S(x.kode)&&S(x.item));if(!root||!list.length)return;const rows=[...root.querySelectorAll('.pm-items tbody tr')].filter(r=>!r.classList.contains('pm-total')&&!r.classList.contains('pm-discount-row'));list.forEach((item,i)=>{const row=rows[i];if(!row)return;const name=row.querySelector('td:nth-child(2) strong');if(name)name.textContent=displayName(item);const q=row.querySelector('td:nth-child(3)');if(q)q.textContent=qtyText(item);const p=row.querySelector('td:nth-child(5)');if(p)p.innerHTML=priceHtml(item);const sub=row.querySelector('td:nth-child(6)');if(sub)sub.textContent=M(itemDiscount(item));if(packageHtml(item)){const host=row.querySelector('td:nth-child(2)');if(host&&!host.querySelector('.pm-cust-package'))host.insertAdjacentHTML('beforeend',packageHtml(item));}});const total=root.querySelector('.pm-total td:last-child');if(total){const value=list.reduce((s,x)=>s+itemDiscount(x),0)-Math.max(0,N(window.__pmDiscountValue));total.textContent=M(Math.max(0,value));}}
+  async function quotationRowsFromDb(root){
+    const d=db();if(!d||!root)return null;
+    const txt=S(root.textContent),no=(txt.match(/PM-\d{4}-\d+/i)||[])[0];
+    if(!no)return null;
+    try{
+      const qr=await d.from('penawaran').select('id,nomor_penawaran,diskon,diskon_nominal').eq('nomor_penawaran',no).maybeSingle();
+      if(qr.error||!qr.data)return null;
+      const ir=await d.from('penawaran_items').select('*').eq('penawaran_id',qr.data.id).order('id',{ascending:true});
+      if(ir.error||!Array.isArray(ir.data)||!ir.data.length)return null;
+      return{quote:qr.data,items:ir.data};
+    }catch(_){return null;}
+  }
+
+  async function quotationPatch(){
+    const root=document.querySelector('#pmPrintArea');if(!root)return;
+    let list=items().filter(x=>x&&S(x.kode)&&S(x.item));
+    let saved=null;
+    try{saved=await quotationRowsFromDb(root);}catch(_){saved=null;}
+    if(saved?.items?.length)list=saved.items;
+    if(!list.length)return;
+    const rows=[...root.querySelectorAll('.pm-items tbody tr')].filter(r=>!r.classList.contains('pm-total')&&!r.classList.contains('pm-discount-row'));
+    list.forEach((item,i)=>{const row=rows[i];if(!row)return;const name=row.querySelector('td:nth-child(2) strong');if(name)name.textContent=displayName(item);const q=row.querySelector('td:nth-child(3)');if(q)q.textContent=qtyText(item);const p=row.querySelector('td:nth-child(5)');if(p)p.innerHTML=priceHtml(item);const sub=row.querySelector('td:nth-child(6)');if(sub)sub.textContent=M(itemDiscount(item));if(packageHtml(item)){const host=row.querySelector('td:nth-child(2)');if(host&&!host.querySelector('.pm-cust-package'))host.insertAdjacentHTML('beforeend',packageHtml(item));}});
+    const total=root.querySelector('.pm-total td:last-child');
+    if(total){const discountBase=saved?N(saved.quote.diskon??saved.quote.diskon_nominal):N(window.__pmDiscountValue);const value=list.reduce((s,x)=>s+itemDiscount(x),0)-Math.max(0,discountBase);total.textContent=M(Math.max(0,value));}
+  }
 
   async function invoiceRowsFromDb(area){const d=db();if(!d||!area)return null;const txt=S(area.textContent),no=(txt.match(/PM-\d{4}-\d+/i)||[])[0];if(!no)return null;try{const qr=await d.from('penawaran').select('*').eq('nomor_penawaran',no).maybeSingle();if(qr.error||!qr.data)return null;const ir=await d.from('penawaran_items').select('*').eq('penawaran_id',qr.data.id).order('id',{ascending:true});if(ir.error)return null;let extras=[];try{const er=await d.from('penawaran_invoice_items').select('*').eq('penawaran_id',qr.data.id).order('id',{ascending:true});if(!er.error)extras=er.data||[]}catch(_){}return{quote:qr.data,items:ir.data||[],extras};}catch(_){return null;}}
 
