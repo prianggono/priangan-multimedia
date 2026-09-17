@@ -1,6 +1,6 @@
 /* Priangan Multimedia — Document Numbering
  * Database owns quotation/invoice numbers and quotation revision.
- * This file only prepares PDF filename/title state.
+ * This file prepares document filename/title state and document date formatting.
  */
 (function () {
   'use strict';
@@ -45,6 +45,22 @@
     window.__PM_PRINT_FILENAME = `${no}.pdf`;
   }
 
+  function formatInvoicePeriodText() {
+    const root = document.querySelector('#pmInvoiceDocumentPreview');
+    if (!root) return;
+    const months = {
+      Jan: 'Januari', Feb: 'Februari', Mar: 'Maret', Apr: 'April', Mei: 'Mei', Jun: 'Juni',
+      Jul: 'Juli', Agu: 'Agustus', Sep: 'September', Okt: 'Oktober', Nov: 'November', Des: 'Desember'
+    };
+    const periodNode = root.querySelector('.pm-inv-period-label')?.nextElementSibling;
+    if (!periodNode) return;
+    let text = S(periodNode.textContent);
+    Object.entries(months).forEach(([short, full]) => {
+      text = text.replace(new RegExp(`\\b${short}\\b`, 'g'), full);
+    });
+    periodNode.textContent = text;
+  }
+
   function install() {
     if (typeof window.saveQuote === 'function' && !window.saveQuote.__pmDocumentNumbering) {
       const original = window.saveQuote;
@@ -73,19 +89,25 @@
       const wrapped = async function () {
         const result = await original.apply(this, arguments);
         setInvoiceFilename();
+        formatInvoicePeriodText();
         return result;
       };
       wrapped.__pmDocumentNumbering = true;
       window.previewInvoice = wrapped;
     }
+    formatInvoicePeriodText();
   }
 
   install();
-  const observer = new MutationObserver(install);
+  const observer = new MutationObserver(() => {
+    install();
+    formatInvoicePeriodText();
+  });
   observer.observe(document.documentElement, { childList: true, subtree: true });
-  setTimeout(() => observer.disconnect(), 10000);
+  setTimeout(() => observer.disconnect(), 15000);
 
   window.addEventListener('beforeprint', () => {
+    formatInvoicePeriodText();
     const filename = S(window.__PM_PRINT_FILENAME);
     if (filename) document.title = filename.replace(/\.pdf$/i, '');
   }, true);
