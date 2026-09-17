@@ -46,7 +46,7 @@
     const ax = new Date(aa + 'T00:00:00');
     const bx = new Date(bb + 'T00:00:00');
     if (Number.isNaN(ax.getTime()) || Number.isNaN(bx.getTime())) return E(a || b || '-');
-    const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
     const ay = ax.getFullYear(), by = bx.getFullYear();
     const am = ax.getMonth(), bm = bx.getMonth();
     const ad = ax.getDate(), bd = bx.getDate();
@@ -162,12 +162,10 @@
     return `<div class="pm-inv-pack"><div class="pm-inv-pack-title">ISI PAKET</div>${rows.map((r) => `<span><b>${E(r.name)}</b><em>${E(r.qty)}</em></span>`).join('')}</div>`;
   }
 
-  // Preview/print renderer only. Never use this for the interactive editor.
   function documentItemRow(i, n) {
     return `<tr><td class="center">${n}</td><td><strong>${E(itemName(i))}</strong><div class="pm-inv-code">${E(i.kode || '')}</div>${packageHtml(i)}</td><td class="center">${E(qtyText(i))}</td><td class="center">${E(periodText(i.tanggal_mulai || current.q.tanggal_mulai, i.tanggal_selesai || current.q.tanggal_selesai))}</td><td class="right nowrap">${priceHtml(i)}</td><td class="right nowrap">${M(itemAmount(i))}</td></tr>`;
   }
 
-  // Interactive editor renderer. No package expansion, no document-only markup.
   function editorItemRow(i, n) {
     return `<tr><td class="center">${n}</td><td><strong>${E(itemName(i))}</strong><div class="pm-inv-code">${E(i.kode || '')}</div></td><td class="center">${E(qtyText(i))}</td><td class="center">${E(periodText(i.tanggal_mulai || current.q.tanggal_mulai, i.tanggal_selesai || current.q.tanggal_selesai))}</td><td class="right nowrap">${priceHtml(i)}</td><td class="right nowrap">${M(itemAmount(i))}</td></tr>`;
   }
