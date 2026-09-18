@@ -41,6 +41,7 @@
     .pm-date-box span { display:block; color:#64748b; font-size:6.5pt; font-weight:800; letter-spacing:1px; }
     .pm-date-box strong { display:block; margin-top:2px; font-size:8pt; color:#1e293b; }
     .pm-info-card { display:grid; grid-template-columns:1.25fr 1fr; border:1px solid #dbe3ef; border-radius:8px; overflow:hidden; background:#f8fafc; }
+    .pm-terms-signature-row { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,.85fr); gap:8mm; align-items:end; margin-top:12px; }
     .pm-info-section { padding:9px 11px; }
     .pm-event-section { border-left:1px solid #dbe3ef; background:#f1f5f9; }
     .pm-section-label { margin-bottom:4px; color:#64748b; font-size:6.6pt; font-weight:800; letter-spacing:1px; }
@@ -95,6 +96,7 @@
       #pmPrintPreview .pm-print-toolbar,#pmInvoiceDocumentPreview .pm-inv-toolbar { display:none!important; }
       #pmPrintPreview .pm-print-scroll,#pmInvoiceDocumentPreview .pm-inv-scroll { overflow:visible!important; padding:0!important; }
       #pmPrintPreview .pm-a4,#pmInvoiceDocumentPreview .pm-inv-a4 { width:210mm!important; min-height:297mm!important; margin:0!important; box-shadow:none!important; }
+      #pmPrintPreview .pm-terms-signature-row { grid-template-columns:minmax(0,1.55fr) minmax(0,.85fr)!important; gap:8mm!important; }
       .pm-items th { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
       .pm-top-accent,.pm-total td,.pm-discount-row td,.pm-info-card,.pm-event-section,.pm-section-heading,.pm-section-heading span,.pm-letterhead,.pm-package-print { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
       .pm-logo-wrap { background:transparent!important; border:0!important; box-shadow:none!important; }
