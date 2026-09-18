@@ -77,7 +77,7 @@
     .pm-section-heading span { display:inline-flex; width:20px; height:20px; align-items:center; justify-content:center; border-radius:5px; background:#2563eb; color:#fff; font-size:6.5pt; font-weight:800; }
     .pm-section-heading strong { font-size:7.5pt; letter-spacing:.5px; }
     .pm-terms-body { padding:8px 10px; color:#475569; font-size:7.4pt; line-height:1.45; }
-    .pm-signature { width:220px; margin:0 0 0 auto; text-align:center; }
+    .pm-signature { width:220px; margin:0 auto; text-align:center; align-self:center; }
     .pm-signature-label { color:#475569; font-size:7.5pt; font-weight:700; }
     .pm-signature-box { min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; }
     .pm-signature .signature { display:block; width:auto; max-width:190px; height:82px; max-height:82px; object-fit:contain; margin:1px auto 0; }
