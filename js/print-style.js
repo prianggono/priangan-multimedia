@@ -107,24 +107,10 @@
       #pmPrintPreview .pm-print-toolbar,
       #pmInvoiceDocumentPreview .pm-inv-toolbar { display:none!important; }
 
-      /* Quotation: neutralize the mobile zoom stage; print the native A4 document. */
-      #pmPrintPreview .pm-print-scroll {
-        display:block!important; width:210mm!important; height:auto!important; min-height:297mm!important;
-        margin:0!important; padding:0!important; overflow:visible!important; background:#fff!important;
-      }
-      #pmPrintPreview .pm-a4-stage {
-        display:block!important; width:210mm!important; height:auto!important; min-height:297mm!important;
-        margin:0!important; padding:0!important; transform:none!important; position:relative!important;
-      }
-      #pmPrintPreview .pm-a4 {
-        display:block!important; width:210mm!important; min-width:210mm!important; max-width:none!important;
-        min-height:297mm!important; height:auto!important; max-height:none!important;
-        margin:0!important; padding:13mm 14mm 11mm!important; box-sizing:border-box!important;
-        transform:none!important; box-shadow:none!important; overflow:visible!important; break-inside:auto!important;
-      }
-      #pmPrintPreview .pm-terms-signature-row {
-        display:grid!important; grid-template-columns:65% 27%!important; gap:8%!important; align-items:start!important;
-      }
+      /* Quotation: print the same native A4 DOM and geometry used by the preview. Only viewer chrome is removed. */
+      #pmPrintPreview .pm-print-scroll { display:block!important; width:210mm!important; height:auto!important; min-height:297mm!important; margin:0!important; padding:0!important; overflow:visible!important; background:#fff!important; }
+      #pmPrintPreview .pm-a4-stage { display:block!important; width:210mm!important; height:auto!important; min-height:297mm!important; margin:0!important; padding:0!important; transform:none!important; position:relative!important; }
+      #pmPrintPreview .pm-a4 { transform:none!important; box-shadow:none!important; overflow:visible!important; break-inside:auto!important; }
 
       /* Invoice: same native A4 geometry; zoom/fit never enters the printed page. */
       #pmInvoiceDocumentPreview .pm-inv-scroll {
@@ -167,14 +153,6 @@
       #pmPaymentModal { display:none!important; }
       .sidebar, header, #pmMobileSidebarBackdrop, .no-print, #pmInternalMargin { display:none!important; }
       main { margin:0!important; }
-      #pmPrintPreview .pm-letterhead {
-        display:block!important; width:100%!important; height:auto!important; aspect-ratio:2048 / 390!important;
-        min-height:0!important; padding:0!important; overflow:hidden!important;
-        background-image:url('header%201.png')!important; background-position:center center!important;
-        background-repeat:no-repeat!important; background-size:100% 100%!important;
-        -webkit-print-color-adjust:exact!important; print-color-adjust:exact!important;
-      }
-      #pmPrintPreview .pm-letterhead .pm-doc-tag { right:3.2%!important; top:27%!important; width:28%!important; }
       #pmPrintPreview .pm-inv-head { margin:0 0 12px!important; overflow:hidden!important; }
       #pmPrintPreview .pm-inv-head-image { display:block!important; width:100%!important; height:auto!important; max-width:100%!important; object-fit:contain!important; }
     }
