@@ -79,7 +79,7 @@
 #pmPaymentModal .pm-payment-body input,#pmPaymentModal .pm-payment-body select{width:100%;box-sizing:border-box}
 #pmPaymentModal .pm-payment-actions{display:flex;justify-content:flex-end;gap:8px;padding:14px 18px;border-top:1px solid #233552}
 body.pm-payment-modal-open{overflow:hidden}
-@media(max-width:850px){
+@media screen and (max-width:850px){
   #pmInvoiceDocumentPreview .pm-inv-scroll{padding:12px}
   #pmInvoiceDocumentPreview .pm-inv-a4{width:100%;min-height:0;padding:0 12px 18px}
   #pmInvoiceDocumentPreview .pm-inv-info,#pmInvoiceDocumentPreview .pm-inv-pay{grid-template-columns:1fr}
