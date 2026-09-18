@@ -420,6 +420,22 @@
   function closePreview(){document.getElementById('pmPrintPreview')?.remove();document.body.classList.remove('pm-preview-open');}
   async function executePreview(){if(window.__PM_QUOTATION_PREVIEW_READY)await window.__PM_QUOTATION_PREVIEW_READY;const area=document.getElementById('pmPrintArea');if(!area)return msg('Area A4 tidak ditemukan.');const images=[...area.querySelectorAll('img')];await Promise.all(images.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{let done=false;const finish=()=>{if(done)return;done=true;img.removeEventListener('load',finish);img.removeEventListener('error',finish);resolve();};img.addEventListener('load',finish);img.addEventListener('error',finish);setTimeout(finish,2500);})));forceA4Layout();const no=S(area.querySelector('.pm-doc-tag strong')?.textContent||window.__PM_LAST_QUOTATION_NUMBER||'Penawaran');document.title=`Penawaran - ${no}`;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));window.print();}
   function forceA4Layout(){const id='pmQuotationDomainPrintStyles';if(!document.getElementById(id)){const st=document.createElement('style');st.id=id;st.textContent=`#pmPrintPreview .pm-a4{width:210mm!important;min-width:210mm!important;min-height:297mm!important;height:auto!important;max-height:none!important;box-sizing:border-box!important;margin:0 auto!important;position:relative!important;background:#fff!important;overflow:visible!important}
+      /* Desktop: compact S&K + signature block, matching the approved quotation reference. */
+      @media screen and (min-width:701px){
+        #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:65% 27%!important;gap:8%!important;align-items:center!important}
+        #pmPrintPreview .pm-terms{margin:0!important;min-width:0!important}
+        #pmPrintPreview .pm-terms-body{padding:5px 7px!important;font-size:6.4pt!important;line-height:1.18!important}
+        #pmPrintPreview .pm-section-heading{padding:4px 6px!important}
+        #pmPrintPreview .pm-section-heading span{width:16px!important;height:16px!important;font-size:5.5pt!important}
+        #pmPrintPreview .pm-section-heading strong{font-size:6.6pt!important}
+        #pmPrintPreview .pm-signature{width:120px!important;margin:0 0 0 auto!important;text-align:center!important;justify-self:end!important}
+        #pmPrintPreview .pm-signature-label{font-size:6.2pt!important}
+        #pmPrintPreview .pm-signature-box{min-height:0!important}
+        #pmPrintPreview .pm-signature .signature{max-width:88px!important;height:48px!important}
+        #pmPrintPreview .pm-signature-line{width:120px!important;margin:2px auto 2px!important}
+        #pmPrintPreview .pm-signature-box strong{font-size:6.6pt!important}
+        #pmPrintPreview .pm-signature-role{font-size:5.8pt!important}
+      }
       #pmPrintPreview .pm-subtotal-line{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:1px 0}.pm-level-subtotal{color:#475569;font-size:6.8pt}.pm-subtotal-cell{vertical-align:middle!important}.pm-quote-level-price{font-size:6.8pt;color:#475569;line-height:1.1;margin-top:1px;white-space:nowrap}
       @media screen and (max-width:700px){
         /* Keep the document itself A4 on mobile. Only the outer stage is zoomed. */
