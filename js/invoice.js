@@ -39,20 +39,39 @@
     return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
-  function periodText(a, b) {
-    if (!a && !b) return '-';
+  function parsePeriod(a, b) {
+    if (!a && !b) return null;
     const aa = S(a).slice(0, 10);
     const bb = S(b || a).slice(0, 10);
     const ax = new Date(aa + 'T00:00:00');
     const bx = new Date(bb + 'T00:00:00');
-    if (Number.isNaN(ax.getTime()) || Number.isNaN(bx.getTime())) return E(a || b || '-');
+    if (Number.isNaN(ax.getTime()) || Number.isNaN(bx.getTime())) return null;
+    return { ax, bx };
+  }
+
+  // Event/project period uses the full Indonesian month name.
+  function periodText(a, b) {
+    const p = parsePeriod(a, b);
+    if (!p) return E(a || b || '-');
+    const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    const { ax, bx } = p;
+    const ay=ax.getFullYear(), by=bx.getFullYear(), am=ax.getMonth(), bm=bx.getMonth(), ad=ax.getDate(), bd=bx.getDate();
+    if (ay===by && am===bm && ad===bd) return `${ad} ${months[am]} ${ay}`;
+    if (ay===by && am===bm) return `${ad}-${bd} ${months[am]} ${ay}`;
+    if (ay===by) return `${ad} ${months[am]}-${bd} ${months[bm]} ${ay}`;
+    return `${ad} ${months[am]} ${ay}-${bd} ${months[bm]} ${by}`;
+  }
+
+  // Schedule column stays compact.
+  function scheduleText(a, b) {
+    const p = parsePeriod(a, b);
+    if (!p) return E(a || b || '-');
     const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    const ay = ax.getFullYear(), by = bx.getFullYear();
-    const am = ax.getMonth(), bm = bx.getMonth();
-    const ad = ax.getDate(), bd = bx.getDate();
-    if (ay === by && am === bm && ad === bd) return `${ad} ${months[am]} ${ay}`;
-    if (ay === by && am === bm) return `${ad}-${bd} ${months[am]} ${ay}`;
-    if (ay === by) return `${ad} ${months[am]}-${bd} ${months[bm]} ${ay}`;
+    const { ax, bx } = p;
+    const ay=ax.getFullYear(), by=bx.getFullYear(), am=ax.getMonth(), bm=bx.getMonth(), ad=ax.getDate(), bd=bx.getDate();
+    if (ay===by && am===bm && ad===bd) return `${ad} ${months[am]} ${ay}`;
+    if (ay===by && am===bm) return `${ad}-${bd} ${months[am]} ${ay}`;
+    if (ay===by) return `${ad} ${months[am]}-${bd} ${months[bm]} ${ay}`;
     return `${ad} ${months[am]} ${ay}-${bd} ${months[bm]} ${by}`;
   }
 
@@ -174,15 +193,15 @@
   }
 
   function documentItemRow(i, n) {
-    return `<tr><td class="center">${n}</td><td><strong>${E(itemName(i))}</strong><div class="pm-inv-code">${E(i.kode || '')}</div>${packageHtml(i)}</td><td class="center">${E(qtyText(i))}</td><td class="center">${E(periodText(i.tanggal_mulai || current.q.tanggal_mulai, i.tanggal_selesai || current.q.tanggal_mulai))}</td><td class="right nowrap">${priceHtml(i)}</td><td class="right nowrap">${subtotalHtml(i)}</td></tr>`;
+    return `<tr><td class="center">${n}</td><td><strong>${E(itemName(i))}</strong><div class="pm-inv-code">${E(i.kode || '')}</div>${packageHtml(i)}</td><td class="center">${E(qtyText(i))}</td><td class="center">${E(scheduleText(i.tanggal_mulai || current.q.tanggal_mulai, i.tanggal_selesai || current.q.tanggal_mulai))}</td><td class="right nowrap">${priceHtml(i)}</td><td class="right nowrap">${subtotalHtml(i)}</td></tr>`;
   }
 
   function editorItemRow(i, n) {
-    return `<tr><td class="center">${n}</td><td><strong>${E(itemName(i))}</strong><div class="pm-inv-code">${E(i.kode || '')}</div></td><td class="center">${E(qtyText(i))}</td><td class="center">${E(periodText(i.tanggal_mulai || current.q.tanggal_mulai, i.tanggal_selesai || current.q.tanggal_selesai))}</td><td class="right nowrap">${priceHtml(i)}</td><td class="right nowrap">${M(itemAmount(i))}</td></tr>`;
+    return `<tr><td class="center">${n}</td><td><strong>${E(itemName(i))}</strong><div class="pm-inv-code">${E(i.kode || '')}</div></td><td class="center">${E(qtyText(i))}</td><td class="center">${E(scheduleText(i.tanggal_mulai || current.q.tanggal_mulai, i.tanggal_selesai || current.q.tanggal_selesai))}</td><td class="right nowrap">${priceHtml(i)}</td><td class="right nowrap">${M(itemAmount(i))}</td></tr>`;
   }
 
   function extraRow(x, n) {
-    return `<tr><td class="center">${n}</td><td><strong>${E(x.nama_item || 'Item Tambahan')}</strong><div class="pm-inv-code">${E(x.kode || 'ADD-INV')}</div></td><td class="center">${E(x.qty ?? 1)} ${E(x.satuan || '')}</td><td class="center">${E(periodText(x.tanggal_mulai || current.q.tanggal_mulai, x.tanggal_selesai || current.q.tanggal_mulai))}</td><td class="right nowrap">${M(x.harga)}</td><td class="right nowrap">${M(x.subtotal)}</td></tr>`;
+    return `<tr><td class="center">${n}</td><td><strong>${E(x.nama_item || 'Item Tambahan')}</strong><div class="pm-inv-code">${E(x.kode || 'ADD-INV')}</div></td><td class="center">${E(x.qty ?? 1)} ${E(x.satuan || '')}</td><td class="center">${E(scheduleText(x.tanggal_mulai || current.q.tanggal_mulai, x.tanggal_selesai || current.q.tanggal_mulai))}</td><td class="right nowrap">${M(x.harga)}</td><td class="right nowrap">${M(x.subtotal)}</td></tr>`;
   }
 
   async function invoicePage() {
