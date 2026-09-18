@@ -59,6 +59,7 @@
   };
 
   window.clientsPage = function () {
+    installClientMobileStyles();
     const list = Array.isArray(window.clients) ? window.clients : [];
     const seen = new Set();
     const unique = list.filter(row => {
@@ -69,7 +70,7 @@
     });
     document.querySelector('#content').innerHTML = `
       <div class="head"><div><h1>Client</h1><p>Kontak identik digabung saat tampil; kontak berbeda dalam perusahaan tetap terpisah.</p></div><button class="btn" type="button" onclick="clientForm()">+ Tambah Client</button></div>
-      <div class="card"><div class="scroll"><table class="table"><thead><tr><th>Nama</th><th>Perusahaan</th><th>Telepon / WA</th><th>Email</th><th>Aksi</th></tr></thead><tbody>
+      <div class="card pm-client-table-card"><div class="scroll"><table class="table"><thead><tr><th>Nama</th><th>Perusahaan</th><th>No. Tlp / WA</th><th>E-mail</th><th>Aksi</th></tr></thead><tbody>
       ${unique.map(c => `<tr><td>${esc(c.nama_client)}</td><td>${esc(c.perusahaan)}</td><td>${esc(c.whatsapp || c.telepon_wa || c.telepon)}</td><td>${esc(c.email)}</td><td><div class="actions"><button class="btn secondary" type="button" onclick="clientEdit(${Number(c.id)})">Edit</button><button class="btn danger" type="button" onclick="clientDelete(${Number(c.id)})">Hapus</button></div></td></tr>`).join('') || '<tr><td colspan="5" class="empty">Belum ada data client.</td></tr>'}
       </tbody></table></div></div>`;
   };
@@ -90,6 +91,62 @@
         <div class="actions"><button class="btn secondary" type="button" onclick="document.getElementById('clientForm')?.remove()">Batal</button><button class="btn" type="button" onclick="saveClient(${c ? Number(c.id) : 'null'})">Simpan</button></div>
       </div>`);
   };
+
+  function installClientMobileStyles() {
+    if (document.getElementById('pmClientMobileStyles')) return;
+    const st = document.createElement('style');
+    st.id = 'pmClientMobileStyles';
+    st.textContent = `
+      @media(max-width:700px){
+        #content .pm-client-table-card .scroll{overflow:visible;width:100%;max-width:100%}
+        #content .pm-client-table-card .table{width:100%;min-width:0;table-layout:auto}
+        #content .pm-client-table-card .table thead{display:none}
+        #content .pm-client-table-card .table tbody{display:block}
+        #content .pm-client-table-card .table tbody tr{
+          display:grid;
+          grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+          gap:2px 18px;
+          padding:10px 0;
+          border-bottom:1px solid #20304b;
+        }
+        #content .pm-client-table-card .table tbody td{
+          display:flex;
+          align-items:flex-start;
+          justify-content:space-between;
+          gap:8px;
+          min-width:0;
+          padding:6px 0;
+          border:0;
+          white-space:normal;
+          overflow-wrap:anywhere;
+          word-break:normal;
+        }
+        #content .pm-client-table-card .table tbody td::before{
+          flex:0 0 auto;
+          color:#7185aa;
+          font-size:10px;
+          font-weight:700;
+        }
+        #content .pm-client-table-card .table tbody td:nth-child(1)::before{content:"Nama"}
+        #content .pm-client-table-card .table tbody td:nth-child(2)::before{content:"Perusahaan"}
+        #content .pm-client-table-card .table tbody td:nth-child(3)::before{content:"No. Tlp / WA"}
+        #content .pm-client-table-card .table tbody td:nth-child(4)::before{content:"E-mail"}
+        #content .pm-client-table-card .table tbody td:nth-child(5){
+          grid-column:1 / -1;
+          justify-content:flex-start;
+          gap:10px;
+          padding-top:8px;
+        }
+        #content .pm-client-table-card .table tbody td:nth-child(5)::before{content:"Aksi"}
+        #content .pm-client-table-card .table tbody td:nth-child(5) .actions{
+          justify-content:flex-start!important;
+          flex-wrap:nowrap;
+          gap:8px;
+        }
+      }
+    `;
+    document.head.appendChild(st);
+  }
 
   window.clientEdit = id => window.clientForm(id);
 
