@@ -319,7 +319,10 @@
     const area=document.querySelector('#pmPrintPreview .pm-a4');
     if(!scroll||!stage||!area)return;
     const naturalW=area.offsetWidth||794;
-    const maxFit=Math.min(1,Math.max(.35,(scroll.clientWidth-20)/naturalW));
+    // Fit is based on the actual preview viewport, not a hard-coded A4 pixel width.
+    // This keeps the document visually A4 while making the full page fill Android width.
+    const viewportW=scroll.getBoundingClientRect().width||scroll.clientWidth||794;
+    const maxFit=Math.min(1.15,Math.max(.35,(viewportW-2)/naturalW));
     let z=fit?maxFit:Math.max(maxFit,Math.min(1.8,Number(scale)||maxFit));
     if(!Number.isFinite(z))z=maxFit;
     window.__PM_QUOTATION_ZOOM=z;
