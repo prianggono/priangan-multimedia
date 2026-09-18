@@ -257,5 +257,3 @@ body.pm-payment-modal-open{overflow:hidden}
   #pmInvoiceDocumentPreview .pm-inv-box+.pm-inv-box{border-left:1px solid #dbe3ef!important;border-top:0!important}
   #pmInvoiceDocumentPreview .pm-inv-pay{grid-template-columns:1.25fr 1fr!important}
 }
-
-/* Final print authority: PDF/print uses the same A4 geometry as the preview document. */
