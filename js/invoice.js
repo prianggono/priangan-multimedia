@@ -162,8 +162,19 @@
     return `<div class="pm-inv-pack"><div class="pm-inv-pack-title">ISI PAKET</div>${rows.map((r) => `<span><b>${E(r.name)}</b><em>${E(r.qty)}</em></span>`).join('')}</div>`;
   }
 
+  function subtotalHtml(i) {
+    const saved = N(i?.subtotal);
+    if (i?.level_enabled && N(i.level_harga) > 0) {
+      const level = Math.max(0, levelAmount(i));
+      const total = saved > 0 ? saved : Math.max(0, itemAmount(i));
+      const base = Math.max(0, total - level);
+      return `<div>${M(base)}</div><div class="pm-inv-level-subtotal">Level ${E(levelCm(i.level_tinggi))} cm: ${M(level)}</div>`;
+    }
+    return M(itemAmount(i));
+  }
+
   function documentItemRow(i, n) {
-    return `<tr><td class="center">${n}</td><td><strong>${E(itemName(i))}</strong><div class="pm-inv-code">${E(i.kode || '')}</div>${packageHtml(i)}</td><td class="center">${E(qtyText(i))}</td><td class="center">${E(periodText(i.tanggal_mulai || current.q.tanggal_mulai, i.tanggal_selesai || current.q.tanggal_selesai))}</td><td class="right nowrap">${priceHtml(i)}</td><td class="right nowrap">${M(itemAmount(i))}</td></tr>`;
+    return `<tr><td class="center">${n}</td><td><strong>${E(itemName(i))}</strong><div class="pm-inv-code">${E(i.kode || '')}</div>${packageHtml(i)}</td><td class="center">${E(qtyText(i))}</td><td class="center">${E(periodText(i.tanggal_mulai || current.q.tanggal_mulai, i.tanggal_selesai || current.q.tanggal_mulai))}</td><td class="right nowrap">${priceHtml(i)}</td><td class="right nowrap">${subtotalHtml(i)}</td></tr>`;
   }
 
   function editorItemRow(i, n) {
