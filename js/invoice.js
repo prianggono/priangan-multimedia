@@ -176,6 +176,7 @@
 
   async function invoicePage() {
     setPage();
+    installInvoiceMobileStyles();
     const c = document.querySelector('#content');
     if (!c) return;
     try {
@@ -196,7 +197,7 @@
         if (!extraMap.has(r.penawaran_id)) extraMap.set(r.penawaran_id, []);
         extraMap.get(r.penawaran_id).push(r);
       });
-      c.innerHTML = `<div class="head"><div><h1>Invoice</h1><p>Sumber data: Supabase.</p></div><button class="btn secondary" id="pmInvRefresh" type="button">↻ Refresh</button></div><div class="card"><div class="scroll"><table class="table"><thead><tr><th>No. Invoice</th><th>Penawaran</th><th>Client</th><th>Event</th><th>Total</th><th>Dibayar</th><th>Sisa</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${(q.data || []).map((r) => {
+      c.innerHTML = `<div class="head"><div><h1>Invoice</h1><p>Sumber data: Supabase.</p></div><button class="btn secondary" id="pmInvRefresh" type="button">↻ Refresh</button></div><div class="card pm-invoice-list-card"><div class="scroll"><table class="table pm-invoice-list-table"><thead><tr><th>No. Invoice</th><th>Penawaran</th><th>Client</th><th>Event</th><th>Total</th><th>Dibayar</th><th>Sisa</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${(q.data || []).map((r) => {
         const ex = extraMap.get(r.id) || [];
         const paidNow = paidMap.get(r.id) || 0;
         const total = quoteTotal(r) + extrasTotal(ex);
@@ -217,6 +218,75 @@
       console.error('[PM] invoice page', e);
       c.innerHTML = `<div class="card"><div class="empty">Gagal membaca invoice: ${E(e.message || e)}</div></div>`;
     }
+  }
+
+  function installInvoiceMobileStyles(){
+    if(document.getElementById('pmInvoiceMobileStyles')) return;
+    const st=document.createElement('style');
+    st.id='pmInvoiceMobileStyles';
+    st.textContent=`
+      @media(max-width:700px){
+        #content .pm-invoice-list-card .scroll{overflow:visible;width:100%;max-width:100%}
+        #content .pm-invoice-list-table{width:100%;min-width:0;table-layout:auto}
+        #content .pm-invoice-list-table thead{display:none}
+        #content .pm-invoice-list-table tbody{display:block}
+        #content .pm-invoice-list-table tbody tr{
+          display:grid;
+          grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+          gap:2px 18px;
+          padding:9px 0;
+          border-bottom:1px solid #20304b;
+        }
+        #content .pm-invoice-list-table tbody tr:last-child{border-bottom:0}
+        #content .pm-invoice-list-table tbody td{
+          display:flex;
+          align-items:flex-start;
+          justify-content:space-between;
+          gap:7px;
+          min-width:0;
+          padding:5px 0;
+          border:0;
+          white-space:normal!important;
+          overflow-wrap:anywhere;
+          word-break:normal;
+          text-align:right!important;
+        }
+        #content .pm-invoice-list-table tbody td::before{
+          flex:0 0 auto;
+          margin-right:auto;
+          color:#7185aa;
+          font-size:10px;
+          font-weight:700;
+          text-align:left;
+        }
+        #content .pm-invoice-list-table tbody td:nth-child(1)::before{content:"No. Invoice"}
+        #content .pm-invoice-list-table tbody td:nth-child(2)::before{content:"Penawaran"}
+        #content .pm-invoice-list-table tbody td:nth-child(3)::before{content:"Client"}
+        #content .pm-invoice-list-table tbody td:nth-child(4)::before{content:"Event"}
+        #content .pm-invoice-list-table tbody td:nth-child(5)::before{content:"Total"}
+        #content .pm-invoice-list-table tbody td:nth-child(6)::before{content:"Dibayar"}
+        #content .pm-invoice-list-table tbody td:nth-child(7)::before{content:"Sisa"}
+        #content .pm-invoice-list-table tbody td:nth-child(8)::before{content:"Status"}
+        #content .pm-invoice-list-table tbody td:nth-child(9){
+          grid-column:1 / -1;
+          justify-content:flex-start;
+          text-align:left!important;
+          padding-top:8px;
+        }
+        #content .pm-invoice-list-table tbody td:nth-child(9)::before{content:"Aksi"}
+        #content .pm-invoice-list-table tbody td:nth-child(9) .actions{
+          flex:1;
+          flex-wrap:wrap;
+          justify-content:flex-start!important;
+          gap:6px;
+        }
+        #content .pm-invoice-list-table tbody td:nth-child(9) .btn.sm{
+          min-height:36px;
+          padding:7px 10px;
+        }
+      }
+    `;
+    document.head.appendChild(st);
   }
 
   async function openForm(id) {
