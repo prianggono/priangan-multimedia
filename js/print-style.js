@@ -41,7 +41,7 @@
     .pm-date-box span { display:block; color:#64748b; font-size:6.5pt; font-weight:800; letter-spacing:1px; }
     .pm-date-box strong { display:block; margin-top:2px; font-size:8pt; color:#1e293b; }
     .pm-info-card { display:grid; grid-template-columns:1.25fr 1fr; border:1px solid #dbe3ef; border-radius:8px; overflow:hidden; background:#f8fafc; }
-    .pm-terms-signature-row { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,.85fr); gap:8mm; align-items:end; margin-top:12px; }
+    .pm-terms-signature-row { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,.85fr); gap:8mm; align-items:start; margin-top:12px; }
     .pm-info-section { padding:9px 11px; }
     .pm-event-section { border-left:1px solid #dbe3ef; background:#f1f5f9; }
     .pm-section-label { margin-bottom:4px; color:#64748b; font-size:6.6pt; font-weight:800; letter-spacing:1px; }
@@ -77,9 +77,9 @@
     .pm-section-heading span { display:inline-flex; width:20px; height:20px; align-items:center; justify-content:center; border-radius:5px; background:#2563eb; color:#fff; font-size:6.5pt; font-weight:800; }
     .pm-section-heading strong { font-size:7.5pt; letter-spacing:.5px; }
     .pm-terms-body { padding:8px 10px; color:#475569; font-size:7.4pt; line-height:1.45; }
-    .pm-signature { width:220px; margin:16px 0 0 auto; text-align:center; }
+    .pm-signature { width:220px; margin:0 0 0 auto; text-align:center; }
     .pm-signature-label { color:#475569; font-size:7.5pt; font-weight:700; }
-    .pm-signature-box { min-height:125px; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; }
+    .pm-signature-box { min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; }
     .pm-signature .signature { display:block; width:auto; max-width:190px; height:82px; max-height:82px; object-fit:contain; margin:1px auto 0; }
     .pm-signature-line { width:190px; border-bottom:1px solid #334155; margin:4px auto 4px; }
     .pm-signature-box strong { display:block; font-size:8.2pt; color:#111827; }
