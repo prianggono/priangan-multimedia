@@ -170,7 +170,7 @@
       #pmPrintPreview .pm-letterhead {
         display:block!important; width:100%!important; height:auto!important; aspect-ratio:2048 / 390!important;
         min-height:0!important; padding:0!important; overflow:hidden!important;
-        background-image:url('../header%201.png')!important; background-position:center center!important;
+        background-image:url('header%201.png')!important; background-position:center center!important;
         background-repeat:no-repeat!important; background-size:100% 100%!important;
         -webkit-print-color-adjust:exact!important; print-color-adjust:exact!important;
       }
