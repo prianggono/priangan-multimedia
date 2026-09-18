@@ -24,19 +24,42 @@ jobs:
             echo "Checking $file"
             node --check "$file"
           done < <(find js -type f -name '*.js' -print0 | sort -z)
-      - name: Check loaded JS files exist
+      - name: Check loaded assets exist and are not duplicated
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import re
+          from collections import Counter
           from pathlib import Path
+
           html = Path('index.html').read_text(encoding='utf-8')
-          refs = re.findall(r'<script[^>]+src=["\'](js/[^"\']+\.js)(?:\?[^"\']*)?["\']', html, re.I)
-          missing = [r for r in refs if not Path(r.split('?', 1)[0]).exists()]
-          if missing:
-              raise SystemExit('Missing JavaScript files: ' + ', '.join(missing))
-          print(f'Validated {len(refs)} JavaScript entrypoint references.')
+
+          js_refs = re.findall(
+              r'<script[^>]+src=["\'](js/[^"\']+\.js)(?:\?[^"\']*)?["\']',
+              html,
+              re.I,
+          )
+          css_refs = re.findall(
+              r'<link[^>]+href=["\'](css/[^"\']+\.css)(?:\?[^"\']*)?["\']',
+              html,
+              re.I,
+          )
+
+          def validate(kind, refs):
+              paths = [r.split('?', 1)[0] for r in refs]
+              missing = [r for r in paths if not Path(r).exists()]
+              if missing:
+                  raise SystemExit(f'Missing {kind} files: ' + ', '.join(sorted(set(missing))))
+
+              duplicates = sorted(path for path, count in Counter(paths).items() if count > 1)
+              if duplicates:
+                  raise SystemExit(f'Duplicate {kind} entrypoint references: ' + ', '.join(duplicates))
+
+              print(f'Validated {len(paths)} {kind} entrypoint references.')
+
+          validate('JavaScript', js_refs)
+          validate('CSS', css_refs)
           PY
       - name: Check removed layers stay removed
         shell: bash

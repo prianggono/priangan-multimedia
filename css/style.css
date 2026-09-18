@@ -20,32 +20,31 @@ button:focus-visible,.btn:focus-visible{outline:2px solid #00e5ff!important;outl
 .nav:hover{background:#10264a;color:#fff}
 .badge.ok{background:#063c2c!important;color:#00f5a0!important;border:1px solid #0a7554}.badge.warn{background:#3b2d08!important;color:#ffd166!important;border:1px solid #80621a}
 
-/* A4 QUOTATION PRINT FIT — keep the complete customer quotation on one sheet. */
+/* A4 QUOTATION PRINT BASE — layout remains A4; only order rows may compact. */
 @page{size:A4 portrait;margin:0}
 @media print{
-  html,body{width:210mm!important;min-height:297mm!important;margin:0!important;padding:0!important;background:#fff!important;overflow:hidden!important}
-  #pmPrintPreview{width:210mm!important;min-height:297mm!important;margin:0!important;padding:0!important;background:#fff!important;overflow:hidden!important}
+  html,body{width:100%!important;min-height:297mm!important;margin:0!important;padding:0!important;background:#fff!important;overflow:visible!important}
+  #pmPrintPreview{width:100%!important;min-height:297mm!important;margin:0!important;padding:0!important;background:#fff!important;overflow:visible!important}
   #pmPrintPreview .pm-print-toolbar{display:none!important}
-  #pmPrintPreview .pm-print-scroll{width:210mm!important;max-width:210mm!important;height:297mm!important;min-height:297mm!important;max-height:297mm!important;margin:0!important;padding:0!important;overflow:hidden!important}
-  #pmPrintPreview .pm-a4{width:269.23mm!important;min-width:269.23mm!important;max-width:none!important;min-height:380.77mm!important;height:380.77mm!important;margin:0!important;padding:0!important;box-sizing:border-box!important;overflow:visible!important;zoom:.78!important;box-shadow:none!important;page-break-after:avoid!important;break-after:avoid-page!important}
-  #pmPrintPreview .pm-title-row{margin-top:7px!important;margin-bottom:5px!important}
-  #pmPrintPreview .pm-title-row h1{font-size:14px!important;line-height:1.05!important;margin:0!important}
-  #pmPrintPreview .pm-info-card{margin-top:6px!important}
-  #pmPrintPreview .pm-info-section{padding:6px 8px!important;line-height:1.2!important;font-size:7pt!important}
-  #pmPrintPreview .pm-client-name,#pmPrintPreview .pm-event-name{font-size:8.2pt!important;line-height:1.1!important}
-  #pmPrintPreview .pm-section-label,#pmPrintPreview .pm-period-label{font-size:6pt!important;margin-bottom:2px!important}
-  #pmPrintPreview .pm-items{font-size:6.2pt!important;table-layout:fixed!important;border-collapse:collapse!important}
-  #pmPrintPreview .pm-items th,#pmPrintPreview .pm-items td{padding:2.2px 2.8px!important;line-height:1.05!important;vertical-align:top!important}
-  #pmPrintPreview .pm-items tr{break-inside:avoid!important;page-break-inside:avoid!important}
-  #pmPrintPreview .pm-items th{font-size:5.8pt!important;line-height:1!important}
-  #pmPrintPreview .pm-cust-package{margin-top:1.5px!important;padding:1.5px 2px 0 5px!important;border-left-width:1.5px!important}
-  #pmPrintPreview .pm-cust-package-title{font-size:5.4px!important;line-height:1!important;margin-bottom:1px!important;letter-spacing:.05em!important}
-  #pmPrintPreview .pm-cust-package table{font-size:5.2px!important;line-height:1!important}
-  #pmPrintPreview .pm-cust-package th,#pmPrintPreview .pm-cust-package td{padding:.6px 2px!important;line-height:1!important}
-  #pmPrintPreview .pm-cust-level-price{font-size:5.2px!important;line-height:1!important;margin-top:1px!important}
-  #pmPrintPreview .pm-terms,#pmPrintPreview .pm-signature{margin-top:4px!important}
-  #pmPrintPreview .pm-terms-body{font-size:5.4pt!important;line-height:1.12!important}
-  #pmPrintPreview .pm-signature img.signature{max-width:100px!important;height:42px!important}
-  #pmPrintPreview .pm-footer{margin-top:5px!important;font-size:5pt!important}
-  #pmPrintPreview .pm-total,#pmPrintPreview .pm-discount-row{break-inside:avoid!important;page-break-inside:avoid!important}
+  #pmPrintPreview .pm-print-scroll{width:210mm!important;max-width:210mm!important;height:auto!important;min-height:297mm!important;max-height:none!important;margin:0!important;padding:0!important;overflow:visible!important}
+  #pmPrintPreview .pm-a4{width:210mm!important;min-width:210mm!important;max-width:210mm!important;height:auto!important;min-height:297mm!important;max-height:none!important;zoom:1!important;transform:none!important;transform-origin:top left!important;box-sizing:border-box!important;overflow:visible!important;box-shadow:none!important;break-inside:auto!important;break-after:auto!important}
 }
+/* DATE PICKER */
+input[type="date"]{color:#fff;color-scheme:dark;background:#060d1d}
+input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(2);opacity:1;cursor:pointer}
+input[type="date"]::-webkit-datetime-edit,input[type="date"]::-webkit-datetime-edit-fields-wrapper,input[type="date"]::-webkit-datetime-edit-text,input[type="date"]::-webkit-datetime-edit-month-field,input[type="date"]::-webkit-datetime-edit-day-field,input[type="date"]::-webkit-datetime-edit-year-field{color:#fff}
+input[type="date"]::-webkit-calendar-picker-indicator:hover{filter:invert(1) brightness(2.4);opacity:1}
+
+/* GLOBAL ACTION CONTRAST */
+.btn{min-height:40px;cursor:pointer;background:#2563eb!important;color:#fff!important;border:1px solid #4d7cff!important;box-shadow:0 0 0 1px rgba(77,124,255,.12),0 4px 14px rgba(0,0,0,.22);transition:filter .15s ease,transform .15s ease,box-shadow .15s ease}
+.btn:hover{filter:brightness(1.12);transform:translateY(-1px);box-shadow:0 0 16px rgba(0,229,255,.16),0 5px 16px rgba(0,0,0,.25)}
+.btn:active{transform:translateY(0);filter:brightness(1)}
+.btn.secondary{background:#243b72!important;color:#fff!important;border-color:#5879d8!important}
+.btn.green{background:#00d98b!important;color:#04140d!important;border-color:#00f5a0!important}
+.btn.red,.btn.danger{background:#ff315f!important;color:#fff!important;border:1px solid #ff6f8e!important;box-shadow:0 4px 14px rgba(255,49,95,.18)!important}
+.btn.red:hover,.btn.danger:hover{filter:brightness(1.1);box-shadow:0 0 16px rgba(255,49,95,.28),0 5px 16px rgba(0,0,0,.25)!important}
+.btn:disabled{opacity:.55!important;cursor:not-allowed;filter:none!important;transform:none!important;box-shadow:none!important}
+button:focus-visible,.btn:focus-visible{outline:2px solid #00e5ff!important;outline-offset:2px}
+.nav.active{background:linear-gradient(90deg,#0969ff,#5b38e8)!important;color:#fff!important;box-shadow:0 0 16px rgba(0,229,255,.16)}
+.nav:hover{background:#10264a;color:#fff}
+.badge.ok{background:#063c2c!important;color:#00f5a0!important;border:1px solid #0a7554}.badge.warn{background:#3b2d08!important;color:#ffd166!important;border:1px solid #80621a}

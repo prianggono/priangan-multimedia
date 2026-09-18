@@ -8,7 +8,7 @@
     input[type="date"]::-webkit-calendar-picker-indicator { opacity: 1; filter: invert(1) brightness(1.7); cursor: pointer; }
     input[type="date"] { color-scheme: dark; }
 
-    #pmPrintPreview,#pmInvoiceDocumentPreview { position: fixed; inset: 0; z-index: 999999; background: rgba(2,6,23,.96); display:flex; flex-direction:column; }
+    #pmPrintPreview,#pmInvoiceDocumentPreview { position: fixed; inset: 0; z-index: 999999; background: #071022; display:flex; flex-direction:column; }
     .pm-print-toolbar { flex:0 0 auto; min-height:64px; padding:10px 18px; display:flex; align-items:center; justify-content:space-between; gap:16px; background:#0b1220; border-bottom:1px solid #26334d; color:#fff; font-family:Arial,Helvetica,sans-serif; }
     .pm-print-toolbar strong { display:block; font-size:15px; }
     .pm-print-toolbar span { display:block; color:#94a3b8; font-size:12px; margin-top:3px; }

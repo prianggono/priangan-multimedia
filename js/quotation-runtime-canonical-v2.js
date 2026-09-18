@@ -55,21 +55,18 @@
 
   function typeOf(item){ return itemMode(masterFor(item)) || S(item?.tipe || item?.tipe_perhitungan) || 'qty'; }
 
-  function itemSubtotal(item){
-    const price = N(item?.harga ?? item?.harga_jual);
-    const duration = days(item?.mulai ?? item?.tanggal_mulai, item?.selesai ?? item?.tanggal_selesai);
-    const type = typeOf(item);
-    const qty = Math.max(1,N(item?.qty ?? item?.jumlah)||1);
-    const width=N(item?.lebar), height=N(item?.tinggi), length=N(item?.panjang);
-    if(type==='luas') return width*height*price*duration;
-    if(type==='rigging') return ((length*2)+(height*2))*price*duration;
-    if(type==='level'){
-      const led = items().find(x => x!==item && /led|videotron/i.test(`${S(x.item)} ${S(x.kode)}`));
-      return (led?N(led.lebar):width)*price*duration;
-    }
-    return qty*price*duration;
+  function isLED(item){
+    const master=masterFor(item), text=`${S(master?.item)} ${S(master?.kategori)} ${S(master?.kode)} ${S(item?.item)} ${S(item?.kode)}`.toLowerCase();
+    if(/led\s*tv|televisi|tv\s*[- ]?\d{2,3}\b/.test(text))return false;
+    return /videotron|led\s*(indoor|outdoor)|\bled\s*p\.?\d/.test(text);
   }
-
+  function levelSubtotal(item){return item?.level_enabled?N(item.lebar)*N(item.level_harga)*Math.max(1,N(item.qty??item.jumlah)||1):0;}
+  function itemSubtotal(item){
+    const price=N(item?.harga??item?.harga_jual),duration=days(item?.mulai??item?.tanggal_mulai,item?.selesai??item?.tanggal_selesai),type=typeOf(item),qty=Math.max(1,N(item?.qty??item?.jumlah)||1),width=N(item?.lebar),height=N(item?.tinggi),length=N(item?.panjang);
+    let base=type==='luas'?width*height*price*qty*duration:type==='rigging'?((length*2)+(height*2))*price*duration:type==='level'?0:qty*price*duration;
+    if(isLED(item))base=width*height*price*qty*duration+levelSubtotal(item);
+    return Math.max(0,base);
+  }
   function baseTotal(){ return Math.round(items().filter(x=>x&&S(x.kode)&&S(x.item)).reduce((a,x)=>a+itemSubtotal(x),0)); }
 
   function discountState(){
@@ -207,7 +204,7 @@
   }
 
   function itemSummary(item){
-    const t=typeOf(item),label=S(item.item)||'Item belum dipilih',api=window.__PM_ITEM_DISCOUNT_API,st=api?.state?api.state(item):null,sub=st?st.net:itemSubtotal(item),schedule=item.mulai&&item.selesai?`${item.mulai} → ${item.selesai}`:'Jadwal belum lengkap';
+    const t=typeOf(item),label=S(item.item)||'Item belum dipilih',api=window.__PM_QUOTATION_UI_API,st=api?.state?api.state(item):null,sub=st?st.net:itemSubtotal(item),schedule=item.mulai&&item.selesai?`${item.mulai} → ${item.selesai}`:'Jadwal belum lengkap';
     let metric='';
     if(t==='luas')metric=`${N(item.lebar)} × ${N(item.tinggi)} m`;
     else if(t==='rigging')metric=`Rigging ${N(item.panjang)} × ${N(item.tinggi)} m`;
@@ -283,6 +280,29 @@
     return `${a.day} ${a.shortMonth} ${a.year}-${b.day} ${b.shortMonth} ${b.year}`;
   }
 
+  function levelCm(v){
+    const n=N(v);
+    return n>0&&n<10?Math.round(n*100):Math.round(n);
+  }
+
+  function displayItemName(item){
+    const base=S(item?.item)||'Item belum dipilih';
+    if(!item?.level_enabled) return base;
+    const cm=levelCm(item.level_tinggi);
+    return cm>0 ? `${base} + Level ${cm} cm` : `${base} + Level`;
+  }
+
+  function levelPrintMarkup(item){
+    if(!item?.level_enabled||N(item.level_harga)<=0)return '';
+    const cm=levelCm(item.level_tinggi);
+    return `<div class="pm-print-level">Level ${cm>0?cm+' cm':'-'} • ${M(levelSubtotal(item))}</div>`;
+  }
+
+  function levelSubtotal(item){
+    if(!item?.level_enabled)return 0;
+    return N(item.lebar)*N(item.level_harga)*Math.max(1,N(item.qty)||1);
+  }
+
   function quotePackageMarkup(item){
     const master=masterFor(item),rows=parsePackageRows(master?.isi_paket);
     if(!master||!rows.length)return '';
@@ -290,29 +310,79 @@
   }
 
   function preview(){
-    if(document.getElementById('pmPrintPreview'))return;
+    if(window.__PM_QUOTATION_PREVIEW_BUILDING)return;
+    const stale=document.getElementById('pmPrintPreview'); if(stale) stale.remove(); document.body.classList.remove('pm-preview-open');
     const rows=items().filter(x=>x&&S(x.kode)&&S(x.item)),client=S(document.querySelector('#qc')?.value),company=S(document.querySelector('#qp')?.value),eventName=S(document.querySelector('#qeve')?.value);
     if(!rows.length)return msg('Pilih minimal 1 Produk / Jasa terlebih dahulu.');
     if(!client||!company||!eventName)return msg('Isi Client, Perusahaan, dan Nama Event terlebih dahulu.');
-    const d=sync(),t=window.template&&typeof window.template==='object'?window.template:{},number=S(window.__pmEditingQuotationNumber||window.__PM_EDIT_QUOTATION_NUMBER||window.__PM_LAST_QUOTATION_NUMBER)||`PM-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
-    const eventStart=S(document.querySelector('#qs')?.value),eventEnd=S(document.querySelector('#qe2')?.value);
-    const htmlRows=rows.map((item,index)=>{
-      const type=typeOf(item);
-      let q=N(item.qty)||1;
-      if(type==='luas')q=`${N(item.lebar)} × ${N(item.tinggi)} m²`;
-      else if(type==='level'){const led=rows.find(x=>x!==item&&/led|videotron/i.test(`${S(x.item)} ${S(x.kode)}`));q=`${led?N(led.lebar):N(item.lebar)} m`;}
-      else if(type==='rigging')q=`${N(item.panjang)} × ${N(item.tinggi)} m`;
-      const net=window.__PM_ITEM_DISCOUNT_API?.state?window.__PM_ITEM_DISCOUNT_API.state(item).net:itemSubtotal(item);
-      return `<tr><td class="center">${index+1}</td><td><strong>${E(item.item)}</strong><div class="code">${E(item.kode)}</div>${quotePackageMarkup(item)}</td><td class="center">${E(q)}</td><td class="center"><span class="schedule">${E(periodShort(item.mulai,item.selesai))}</span></td><td class="right nowrap">${M(item.harga)}</td><td class="right nowrap">${M(net)}</td></tr>`;
-    }).join('');
+    const number=S(window.__pmEditingQuotationNumber||window.__PM_EDIT_QUOTATION_NUMBER||window.__PM_LAST_QUOTATION_NUMBER)||`PM-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
     const overlay=document.createElement('div');overlay.id='pmPrintPreview';
-    overlay.innerHTML=`<div class="pm-print-toolbar"><div><strong>Preview Surat Penawaran</strong><span>A4 Portrait • ${E(number)}</span></div><div class="pm-print-actions"><button type="button" class="pm-close" onclick="closePrintPreview()">Tutup</button><button type="button" class="pm-print" onclick="executePrintPreview()">Cetak / Simpan PDF</button></div></div><div class="pm-print-scroll"><main class="pm-a4" id="pmPrintArea"><div class="pm-top-accent"></div><header class="pm-letterhead"><div class="pm-logo-wrap">${t.logo_url?`<img class="logo" src="${E(t.logo_url)}" alt="Logo">`:'<div class="logo-fallback">PM</div>'}</div><div class="pm-brand"><div class="pm-brand-name">${E(t.kop_text||'PRIANGAN MULTIMEDIA')}</div><div class="pm-brand-sub">SALES & QUOTATION</div>${t.alamat?`<p>${E(t.alamat)}</p>`:''}<p>${E(t.telepon||t.whatsapp||'')}${t.email?' • '+E(t.email):''}</p></div><div class="pm-doc-tag"><span>QUOTATION</span><strong>${E(number)}</strong></div></header><div class="pm-title-row"><div><div class="pm-eyebrow">OFFICIAL BUSINESS PROPOSAL</div><h1>SURAT PENAWARAN HARGA</h1></div><div class="pm-date-box"><span>TANGGAL</span><strong>${periodFull(new Date().toISOString().slice(0,10),new Date().toISOString().slice(0,10))}</strong></div></div><section class="pm-info-card"><div class="pm-info-section"><div class="pm-section-label">DITUJUKAN KEPADA</div><div class="pm-client-name">${E(client)}</div><div>${E(company)}</div><div>${E(S(document.querySelector('#qw')?.value))}</div><div>${E(S(document.querySelector('#qe')?.value))}</div></div><div class="pm-info-section pm-event-section"><div class="pm-section-label">EVENT / PROJECT</div><div class="pm-event-name">${E(eventName)}</div><div class="pm-period-label">PERIODE</div><div>${E(periodFull(eventStart,eventEnd))}</div></div></section><p class="pm-opening">Dengan hormat,<br>Bersama ini kami sampaikan penawaran harga untuk kebutuhan event / project tersebut sebagai berikut:</p><table class="pm-items"><thead><tr><th>No.</th><th>Produk / Jasa</th><th>Qty / Dimensi</th><th>Jadwal</th><th>Harga</th><th>Subtotal</th></tr></thead><tbody>${htmlRows}${d.rp>0?`<tr class="pm-discount-row"><td colspan="5" class="right">DISKON (${Math.round(d.pct)}%)</td><td class="right">- ${M(d.rp)}</td></tr>`:''}<tr class="pm-total"><td colspan="5" class="right">GRAND TOTAL</td><td class="right">${M(d.total)}</td></tr></tbody></table><section class="pm-terms"><div class="pm-section-heading"><span>01</span><strong>SYARAT &amp; KETENTUAN</strong></div><div class="pm-terms-body">${E(t.ketentuan||'Penawaran harga berlaku sesuai kesepakatan dan spesifikasi event.').replace(/\r?\n/g,'<br>')}</div></section><section class="pm-signature"><div class="pm-signature-label">HORMAT KAMI,</div><div class="pm-signature-box">${t.ttd_url?`<img class="signature" src="${E(t.ttd_url)}" alt="TTD">`:''}<div class="pm-signature-line"></div><strong>${E(t.nama_penandatangan||'____________________________')}</strong>${t.jabatan_penandatangan?`<div class="pm-signature-role">${E(t.jabatan_penandatangan)}</div>`:''}</div></section><footer class="pm-footer"><div>Terima kasih atas kepercayaan dan kesempatan yang diberikan kepada Priangan Multimedia.</div><strong>${E(t.kop_text||'PRIANGAN MULTIMEDIA')}</strong></footer></main></div>`;
-    document.body.appendChild(overlay);document.body.classList.add('pm-preview-open');forceA4Layout();
+    overlay.innerHTML=`<div class="pm-print-toolbar"><div><strong>Preview Surat Penawaran</strong><span>A4 Portrait • ${E(number)}</span></div><div class="pm-print-actions"><button type="button" class="pm-close" onclick="closePrintPreview()">Tutup</button><button type="button" class="pm-print" onclick="executePrintPreview()" disabled>Menyiapkan...</button></div></div><div class="pm-print-scroll"><main class="pm-a4" id="pmPrintArea"><div style="padding:30px;text-align:center;color:#64748b;font-family:Arial,sans-serif">Menyiapkan preview A4...</div></main></div>`;
+    document.body.appendChild(overlay);document.body.classList.add('pm-preview-open');
+    window.__PM_QUOTATION_PREVIEW_BUILDING=true;
+    let resolveReady;
+    window.__PM_QUOTATION_PREVIEW_READY=new Promise(resolve=>{resolveReady=resolve;});
+    setTimeout(()=>{
+      try{
+        const rawDiscount=discountState(),itemNet=rows.reduce((sum,item)=>sum+(window.__PM_QUOTATION_UI_API?.state?N(window.__PM_QUOTATION_UI_API.state(item).net):N(itemSubtotal(item))),0),globalDiscount=Math.min(itemNet,Math.max(0,N(window.__pmDiscountValue))),d={...rawDiscount,base:itemNet,rp:globalDiscount,total:Math.max(0,itemNet-globalDiscount)},t=window.template&&typeof window.template==='object'?window.template:{};
+        const eventStart=S(document.querySelector('#qs')?.value),eventEnd=S(document.querySelector('#qe2')?.value);
+        const packageCount=rows.reduce((sum,item)=>sum+parsePackageRows(masterFor(item)?.isi_paket).length,0);
+        const densityScore=rows.length+Math.ceil(packageCount/2);
+        const density=densityScore<=6?'normal':densityScore<=10?'compact-1':densityScore<=15?'compact-2':densityScore<=21?'compact-3':densityScore<=28?'compact-4':'compact-5';
+        const htmlRows=rows.map((item,index)=>{
+          const type=typeOf(item);let q=N(item.qty)||1;
+          if(type==='luas')q=`${N(item.lebar)} × ${N(item.tinggi)} m²`;
+          else if(type==='level'){const led=rows.find(x=>x!==item&&/led|videotron/i.test(`${S(x.item)} ${S(x.kode)}`));q=`${led?N(led.lebar):N(item.lebar)} m`;}
+          else if(type==='rigging')q=`${N(item.panjang)} × ${N(item.tinggi)} m`;
+          const net=window.__PM_QUOTATION_UI_API?.state?window.__PM_QUOTATION_UI_API.state(item).net:itemSubtotal(item);
+          return `<tr><td class="center">${index+1}</td><td><strong>${E(displayItemName(item))}</strong><div class="code">${E(item.kode)}</div>${levelPrintMarkup(item)}${quotePackageMarkup(item)}</td><td class="center">${E(q)}</td><td class="center">${E(periodShort(item.mulai,item.selesai))}</td><td class="right nowrap">${M(item.harga)}</td><td class="right nowrap">${M(net)}</td></tr>`;
+        }).join('');
+        const area=overlay.querySelector('#pmPrintArea');
+        if(!area)throw new Error('Area A4 tidak ditemukan.');
+        area.className=`pm-a4 pm-order-density-${density}`;
+        area.innerHTML=`<div class="pm-top-accent"></div><header class="pm-letterhead"><div class="pm-logo-wrap">${t.logo_url?`<img class="logo" src="${E(t.logo_url)}" alt="Logo">`:'<div class="logo-fallback">PM</div>'}</div><div class="pm-brand"><div class="pm-brand-name">${E(t.kop_text||'PRIANGAN MULTIMEDIA')}</div><div class="pm-brand-sub">SALES & QUOTATION</div>${t.alamat?`<p>${E(t.alamat)}</p>`:''}<p>${E(t.telepon||t.whatsapp||'')}${t.email?' • '+E(t.email):''}</p></div><div class="pm-doc-tag"><span>QUOTATION</span><strong>${E(number)}</strong></div></header><div class="pm-title-row"><div><div class="pm-eyebrow">OFFICIAL BUSINESS PROPOSAL</div><h1>SURAT PENAWARAN HARGA</h1></div><div class="pm-date-box"><span>TANGGAL</span><strong>${periodFull(new Date().toISOString().slice(0,10),new Date().toISOString().slice(0,10))}</strong></div></div><section class="pm-info-card"><div class="pm-info-section"><div class="pm-section-label">DITUJUKAN KEPADA</div><div class="pm-client-name">${E(client)}</div><div>${E(company)}</div><div>${E(S(document.querySelector('#qw')?.value))}</div><div>${E(S(document.querySelector('#qe')?.value))}</div></div><div class="pm-info-section pm-event-section"><div class="pm-section-label">EVENT / PROJECT</div><div class="pm-event-name">${E(eventName)}</div><div class="pm-period-label">PERIODE</div><div>${E(periodFull(eventStart,eventEnd))}</div></div></section><p class="pm-opening">Dengan hormat,<br>Bersama ini kami sampaikan penawaran harga untuk kebutuhan event / project tersebut sebagai berikut:</p><table class="pm-items"><thead><tr><th>No.</th><th>Produk / Jasa</th><th>Qty / Dimensi</th><th>Jadwal</th><th>Harga</th><th>Subtotal</th></tr></thead><tbody>${htmlRows}${d.rp>0?`<tr class="pm-discount-row"><td colspan="5" class="right">DISKON (${Math.round(d.pct)}%)</td><td class="right">- ${M(d.rp)}</td></tr>`:''}<tr class="pm-total"><td colspan="5" class="right">GRAND TOTAL</td><td class="right">${M(d.total)}</td></tr></tbody></table><section class="pm-terms"><div class="pm-section-heading"><span>01</span><strong>SYARAT &amp; KETENTUAN</strong></div><div class="pm-terms-body">${E(t.ketentuan||'Penawaran harga berlaku sesuai kesepakatan dan spesifikasi event.').replace(/\r?\n/g,'<br>')}</div></section><section class="pm-signature"><div class="pm-signature-label">HORMAT KAMI,</div><div class="pm-signature-box">${t.ttd_url?`<img class="signature" src="${E(t.ttd_url)}" alt="TTD">`:''}<div class="pm-signature-line"></div><strong>${E(t.nama_penandatangan||'____________________________')}</strong>${t.jabatan_penandatangan?`<div class="pm-signature-role">${E(t.jabatan_penandatangan)}</div>`:''}</div></section><footer class="pm-footer"><div>Terima kasih atas kepercayaan dan kesempatan yang diberikan kepada Priangan Multimedia.</div><strong>${E(t.kop_text||'PRIANGAN MULTIMEDIA')}</strong></footer>`;
+        forceA4Layout();
+        const printButton=overlay.querySelector('.pm-print');
+        if(printButton){printButton.disabled=false;printButton.textContent='Cetak / Simpan PDF';}
+        window.__PM_QUOTATION_PREVIEW_BUILDING=false;
+      }catch(e){
+        window.__PM_QUOTATION_PREVIEW_BUILDING=false;
+        console.error('[PM] quotation preview build',e);
+        const area=overlay.querySelector('#pmPrintArea');
+        if(area)area.innerHTML='<div style="padding:24px;font-family:Arial,sans-serif;color:#b91c1c">Preview gagal dibuat. Silakan tutup dan coba lagi.</div>';
+        msg('Gagal membuka preview: '+(e.message||e));
+      }finally{resolveReady();}
+    },0);
   }
-
   function closePreview(){document.getElementById('pmPrintPreview')?.remove();document.body.classList.remove('pm-preview-open');}
-  async function executePreview(){const area=document.getElementById('pmPrintArea');if(!area)return msg('Area A4 tidak ditemukan.');const images=[...area.querySelectorAll('img')];await Promise.all(images.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{let done=false;const finish=()=>{if(done)return;done=true;img.removeEventListener('load',finish);img.removeEventListener('error',finish);resolve();};img.addEventListener('load',finish);img.addEventListener('error',finish);setTimeout(finish,2500);})));forceA4Layout();const no=S(area.querySelector('.pm-doc-tag strong')?.textContent||window.__PM_LAST_QUOTATION_NUMBER||'Penawaran');document.title=`Penawaran - ${no}`;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));window.print();}
-  function forceA4Layout(){const id='pmQuotationDomainPrintStyles';if(!document.getElementById(id)){const st=document.createElement('style');st.id=id;st.textContent=`#pmPrintPreview .pm-a4{width:210mm!important;min-width:210mm!important;min-height:297mm!important;box-sizing:border-box!important;margin:0 auto!important;position:relative!important;background:#fff!important;overflow:visible!important}@page{size:A4 portrait;margin:0}@media print{html,body{margin:0!important;padding:0!important;background:#fff!important;width:210mm!important;min-width:210mm!important}#pmPrintPreview{position:absolute!important;inset:0!important;width:210mm!important;display:block!important;background:#fff!important;overflow:visible!important}#pmPrintPreview .pm-print-toolbar{display:none!important}#pmPrintPreview .pm-print-scroll{display:block!important;width:210mm!important;overflow:visible!important;margin:0!important;padding:0!important}#pmPrintPreview .pm-a4{width:210mm!important;min-width:210mm!important;min-height:297mm!important;height:auto!important;padding:13mm 14mm 11mm!important;box-sizing:border-box!important;box-shadow:none!important;overflow:visible!important}}`;document.head.appendChild(st);}const area=document.getElementById('pmPrintArea');if(!area)return;area.style.width='210mm';area.style.minHeight='297mm';area.style.boxSizing='border-box';}
+  async function executePreview(){if(window.__PM_QUOTATION_PREVIEW_READY)await window.__PM_QUOTATION_PREVIEW_READY;const area=document.getElementById('pmPrintArea');if(!area)return msg('Area A4 tidak ditemukan.');const images=[...area.querySelectorAll('img')];await Promise.all(images.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{let done=false;const finish=()=>{if(done)return;done=true;img.removeEventListener('load',finish);img.removeEventListener('error',finish);resolve();};img.addEventListener('load',finish);img.addEventListener('error',finish);setTimeout(finish,2500);})));forceA4Layout();const no=S(area.querySelector('.pm-doc-tag strong')?.textContent||window.__PM_LAST_QUOTATION_NUMBER||'Penawaran');document.title=`Penawaran - ${no}`;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));window.print();}
+  function forceA4Layout(){const id='pmQuotationDomainPrintStyles';if(!document.getElementById(id)){const st=document.createElement('style');st.id=id;st.textContent=`#pmPrintPreview .pm-a4{width:210mm!important;min-width:210mm!important;min-height:297mm!important;height:auto!important;max-height:none!important;box-sizing:border-box!important;margin:0 auto!important;position:relative!important;background:#fff!important;overflow:visible!important}
+      #pmPrintPreview .pm-items{table-layout:fixed!important}
+      #pmPrintPreview .pm-order-density-compact-1 .pm-items{font-size:7.1pt!important}
+      #pmPrintPreview .pm-order-density-compact-1 .pm-items th,#pmPrintPreview .pm-order-density-compact-1 .pm-items td{padding:4px 4px!important;line-height:1.16!important}
+      #pmPrintPreview .pm-order-density-compact-1 .pm-package-print{margin-top:3px!important;padding:3px 4px 2px!important}
+      #pmPrintPreview .pm-order-density-compact-1 .pm-package-print-list span{font-size:6pt!important;line-height:1.12!important}
+      #pmPrintPreview .pm-order-density-compact-2 .pm-items{font-size:6.5pt!important}
+      #pmPrintPreview .pm-order-density-compact-2 .pm-items th,#pmPrintPreview .pm-order-density-compact-2 .pm-items td{padding:3px 3px!important;line-height:1.08!important}
+      #pmPrintPreview .pm-order-density-compact-2 .pm-package-print{margin-top:2px!important;padding:2px 3px 1px!important}
+      #pmPrintPreview .pm-order-density-compact-2 .pm-package-print-list span{font-size:5.6pt!important;line-height:1.05!important}
+      #pmPrintPreview .pm-order-density-compact-3 .pm-items{font-size:5.9pt!important}
+      #pmPrintPreview .pm-order-density-compact-3 .pm-items th,#pmPrintPreview .pm-order-density-compact-3 .pm-items td{padding:2.4px 2.5px!important;line-height:1.02!important}
+      #pmPrintPreview .pm-order-density-compact-3 .pm-package-print{margin-top:1px!important;padding:1px 2px!important;border-left-width:2px!important}
+      #pmPrintPreview .pm-order-density-compact-3 .pm-package-print-title{font-size:5.2pt!important;margin-bottom:1px!important}
+      #pmPrintPreview .pm-order-density-compact-3 .pm-package-print-list span{font-size:5pt!important;line-height:1!important}
+      #pmPrintPreview .pm-order-density-compact-4 .pm-items{font-size:5.4pt!important}
+      #pmPrintPreview .pm-order-density-compact-4 .pm-items th,#pmPrintPreview .pm-order-density-compact-4 .pm-items td{padding:1.8px 2px!important;line-height:1!important}
+      #pmPrintPreview .pm-order-density-compact-4 .pm-package-print{margin-top:.5px!important;padding:.5px 1.5px!important}
+      #pmPrintPreview .pm-order-density-compact-4 .pm-package-print-title{font-size:4.8pt!important;margin-bottom:.5px!important}
+      #pmPrintPreview .pm-order-density-compact-4 .pm-package-print-list span{font-size:4.6pt!important;line-height:1!important}
+      #pmPrintPreview .pm-order-density-compact-5 .pm-items{font-size:4.9pt!important}
+      #pmPrintPreview .pm-order-density-compact-5 .pm-items th,#pmPrintPreview .pm-order-density-compact-5 .pm-items td{padding:1.3px 1.6px!important;line-height:.98!important}
+      #pmPrintPreview .pm-order-density-compact-5 .pm-package-print{margin-top:0!important;padding:0 1px!important}
+      #pmPrintPreview .pm-order-density-compact-5 .pm-package-print-title{font-size:4.4pt!important;margin-bottom:0!important}
+      #pmPrintPreview .pm-order-density-compact-5 .pm-package-print-list span{font-size:4.2pt!important;line-height:.95!important}
+      @page{size:A4 portrait;margin:0}
+      @media print{html,body{margin:0!important;padding:0!important;background:#fff!important;width:100%!important;min-width:0!important;overflow:visible!important}#pmPrintPreview{position:absolute!important;inset:0!important;width:100%!important;display:block!important;background:#fff!important;overflow:visible!important}#pmPrintPreview .pm-print-toolbar{display:none!important}#pmPrintPreview .pm-print-scroll{display:block!important;width:210mm!important;overflow:visible!important;margin:0!important;padding:0!important}#pmPrintPreview .pm-a4{width:210mm!important;min-width:210mm!important;min-height:297mm!important;height:auto!important;max-height:none!important;padding:13mm 14mm 11mm!important;box-sizing:border-box!important;box-shadow:none!important;overflow:visible!important;break-inside:auto!important}}`;document.head.appendChild(st);}const area=document.getElementById('pmPrintArea');if(!area)return;area.style.width='210mm';area.style.minHeight='297mm';area.style.boxSizing='border-box';}
 
   async function deleteOldChildren(d,id){
     const old=await d.from('penawaran_items').select('id').eq('penawaran_id',id);if(old.error)throw old.error;
@@ -362,12 +432,12 @@
   }
 
   window.addItem=addItem;window.removeItem=removeItem;window.toggleQuotationItem=toggleItem;window.pick=pick;window.upd=upd;window.drawItems=drawItems;window.saveQuote=saveQuotation;window.printQuote=preview;window.closePrintPreview=closePreview;window.executePrintPreview=executePreview;
-  window.__PM_QUOTATION_CORE={N,M,S,E,days,masterFor,itemMode,typeOf,itemSubtotal,baseTotal,discountState,sync,renderMargin,saveQuotation,addItem,removeItem,pick,upd,drawItems,toggleItem,periodFull,periodShort,quotePackageMarkup};
+  window.__PM_QUOTATION_CORE={N,M,S,E,days,masterFor,itemMode,typeOf,itemSubtotal,baseTotal,discountState,sync,renderMargin,saveQuotation,addItem,removeItem,pick,upd,drawItems,toggleItem,periodFull,periodShort,quotePackageMarkup,displayItemName,levelSubtotal,isLED};
 
   function boot(){installQuotationStyles();ensureDiscountUI();if(document.querySelector('#items'))drawItems();else sync();forceA4Layout();}
   [0,150,350,700,1200].forEach(ms=>setTimeout(boot,ms));
   document.addEventListener('input',e=>{if(e.target?.id==='pmDiscPct'||e.target?.id==='pmDisc'){clearTimeout(window.__pmQuotationSyncTimer);window.__pmQuotationSyncTimer=setTimeout(sync,40);}},true);
   document.addEventListener('change',e=>{if(e.target?.closest?.('#items')){clearTimeout(window.__pmQuotationItemsTimer);window.__pmQuotationItemsTimer=setTimeout(sync,40);}},true);
   document.addEventListener('click',e=>{if(e.target?.closest?.('[data-p="quotation"]')){window.__PM_DISC_MODE='rp';window.__pmDiscountBase=0;window.__pmDiscountValue=0;window.__pmDiscountPct=0;window.__pmNetTotal=0;window.__PM_QUOTATION_OPEN_ITEM_ID=null;window.__pmEditingQuotationId=null;window.__PM_EDIT_QUOTATION_ID=null;window.__pmEditingQuotationNumber=null;window.__PM_EDIT_QUOTATION_NUMBER=null;setTimeout(()=>{ensureDiscountUI();if(document.querySelector('#items'))drawItems();else sync();},80);}},true);
-  window.addEventListener('beforeprint',()=>{forceA4Layout();sync();},true);
+  window.addEventListener('beforeprint',()=>{forceA4Layout();},true);
 })();
