@@ -393,7 +393,7 @@
           const subtotalMarkup=isLED(item)&&level>0
             ? `<div class="pm-subtotal-line"><span>LED</span><strong>${M(ledBase)}</strong></div><div class="pm-subtotal-line pm-level-subtotal"><span>Level ${levelCm(item.level_tinggi)>0?levelCm(item.level_tinggi)+' cm':''}</span><strong>${M(level)}</strong></div>`
             : `<strong>${M(net)}</strong>`;
-          return `<tr><td class="center">${index+1}</td><td><strong>${E(S(item.item)||'Item belum dipilih')}</strong><div class="code">${E(item.kode)}</div>${quotePackageMarkup(item)}</td><td class="center">${E(q)}</td><td class="center">${E(periodShort(item.mulai,item.selesai))}</td><td class="right nowrap">${M(item.harga)}</td><td class="right pm-subtotal-cell">${subtotalMarkup}</td></tr>`;
+          return `<tr><td class="center">${index+1}</td><td><strong>${E(displayItemName(item))}</strong><div class="code">${E(item.kode)}</div>${quotePackageMarkup(item)}</td><td class="center">${E(q)}</td><td class="center">${E(periodShort(item.mulai,item.selesai))}</td><td class="right nowrap">${M(item.harga)}</td><td class="right pm-subtotal-cell">${subtotalMarkup}</td></tr>`;
         }).join('');
         const area=overlay.querySelector('#pmPrintArea');
         if(!area)throw new Error('Area A4 tidak ditemukan.');
@@ -435,12 +435,12 @@
       }
       #pmPrintPreview .pm-items{table-layout:fixed!important}
       /* Keep the small table details from stacking/overlapping at zoom. */
-      #pmPrintPreview .pm-items th:nth-child(1),#pmPrintPreview .pm-items td:nth-child(1){width:7%!important;white-space:nowrap!important}
-      #pmPrintPreview .pm-items th:nth-child(2),#pmPrintPreview .pm-items td:nth-child(2){width:34%!important;min-width:0!important}
-      #pmPrintPreview .pm-items th:nth-child(3),#pmPrintPreview .pm-items td:nth-child(3){width:12%!important}
-      #pmPrintPreview .pm-items th:nth-child(4),#pmPrintPreview .pm-items td:nth-child(4){width:14%!important}
-      #pmPrintPreview .pm-items th:nth-child(5),#pmPrintPreview .pm-items td:nth-child(5){width:15%!important}
-      #pmPrintPreview .pm-items th:nth-child(6),#pmPrintPreview .pm-items td:nth-child(6){width:18%!important}
+      #pmPrintPreview .pm-items th:nth-child(1),#pmPrintPreview .pm-items td:nth-child(1){width:8mm!important;white-space:nowrap!important}
+      #pmPrintPreview .pm-items th:nth-child(2),#pmPrintPreview .pm-items td:nth-child(2){width:auto!important;min-width:0!important}
+      #pmPrintPreview .pm-items th:nth-child(3),#pmPrintPreview .pm-items td:nth-child(3){width:27mm!important}
+      #pmPrintPreview .pm-items th:nth-child(4),#pmPrintPreview .pm-items td:nth-child(4){width:29mm!important}
+      #pmPrintPreview .pm-items th:nth-child(5),#pmPrintPreview .pm-items td:nth-child(5){width:31mm!important}
+      #pmPrintPreview .pm-items th:nth-child(6),#pmPrintPreview .pm-items td:nth-child(6){width:34mm!important}
       #pmPrintPreview .pm-items td.right{white-space:nowrap!important}
       #pmPrintPreview .pm-package-print-list{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:1px 8px!important}
       #pmPrintPreview .pm-package-print-list span{display:contents!important}
