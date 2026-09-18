@@ -123,7 +123,7 @@
         transform:none!important; box-shadow:none!important; overflow:visible!important; break-inside:auto!important;
       }
       #pmPrintPreview .pm-terms-signature-row {
-        display:grid!important; grid-template-columns:65% 27%!important; gap:8%!important; align-items:center!important;
+        display:grid!important; grid-template-columns:65% 27%!important; gap:8%!important; align-items:start!important;
       }
 
       /* Invoice: same native A4 geometry; zoom/fit never enters the printed page. */
