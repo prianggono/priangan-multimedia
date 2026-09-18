@@ -5,7 +5,7 @@
     inset:0!important;
     z-index:99999!important;
     overflow:hidden!important;
-    background:#e9edf3!important;
+    background:#000!important;
   }
   #pmPrintPreview .pm-print-toolbar{
     height:auto!important;
@@ -76,7 +76,7 @@
     -webkit-overflow-scrolling:touch!important;
     overscroll-behavior:contain!important;
     touch-action:pan-x pan-y!important;
-    padding:12px 10px 28px!important;
+    padding:0 0 24px!important;
   }
   #pmPrintPreview .pm-a4-stage{
     position:relative!important;
