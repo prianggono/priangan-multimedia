@@ -283,6 +283,29 @@
     return `${a.day} ${a.shortMonth} ${a.year}-${b.day} ${b.shortMonth} ${b.year}`;
   }
 
+  function levelCm(v){
+    const n=N(v);
+    return n>0&&n<10?Math.round(n*100):Math.round(n);
+  }
+
+  function displayItemName(item){
+    const base=S(item?.item)||'Item belum dipilih';
+    if(!item?.level_enabled) return base;
+    const cm=levelCm(item.level_tinggi);
+    return cm>0 ? `${base} + Level ${cm} cm` : `${base} + Level`;
+  }
+
+  function levelPrintMarkup(item){
+    if(!item?.level_enabled||N(item.level_harga)<=0)return '';
+    const cm=levelCm(item.level_tinggi);
+    return `<div class="pm-print-level">Level ${cm>0?cm+' cm':'-'} • ${M(levelSubtotal(item))}</div>`;
+  }
+
+  function levelSubtotal(item){
+    if(!item?.level_enabled)return 0;
+    return N(item.lebar)*N(item.level_harga)*Math.max(1,N(item.qty)||1);
+  }
+
   function quotePackageMarkup(item){
     const master=masterFor(item),rows=parsePackageRows(master?.isi_paket);
     if(!master||!rows.length)return '';
@@ -296,6 +319,9 @@
     if(!client||!company||!eventName)return msg('Isi Client, Perusahaan, dan Nama Event terlebih dahulu.');
     const d=sync(),t=window.template&&typeof window.template==='object'?window.template:{},number=S(window.__pmEditingQuotationNumber||window.__PM_EDIT_QUOTATION_NUMBER||window.__PM_LAST_QUOTATION_NUMBER)||`PM-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
     const eventStart=S(document.querySelector('#qs')?.value),eventEnd=S(document.querySelector('#qe2')?.value);
+    const packageCount=rows.reduce((sum,item)=>sum+parsePackageRows(masterFor(item)?.isi_paket).length,0);
+    const densityScore=rows.length+Math.ceil(packageCount/2);
+    const density=densityScore<=6?'normal':densityScore<=10?'compact-1':densityScore<=15?'compact-2':densityScore<=21?'compact-3':densityScore<=28?'compact-4':'compact-5';
     const htmlRows=rows.map((item,index)=>{
       const type=typeOf(item);
       let q=N(item.qty)||1;
@@ -303,10 +329,10 @@
       else if(type==='level'){const led=rows.find(x=>x!==item&&/led|videotron/i.test(`${S(x.item)} ${S(x.kode)}`));q=`${led?N(led.lebar):N(item.lebar)} m`;}
       else if(type==='rigging')q=`${N(item.panjang)} × ${N(item.tinggi)} m`;
       const net=window.__PM_ITEM_DISCOUNT_API?.state?window.__PM_ITEM_DISCOUNT_API.state(item).net:itemSubtotal(item);
-      return `<tr><td class="center">${index+1}</td><td><strong>${E(item.item)}</strong><div class="code">${E(item.kode)}</div>${quotePackageMarkup(item)}</td><td class="center">${E(q)}</td><td class="center"><span class="schedule">${E(periodShort(item.mulai,item.selesai))}</span></td><td class="right nowrap">${M(item.harga)}</td><td class="right nowrap">${M(net)}</td></tr>`;
+      return `<tr><td class="center">${index+1}</td><td><strong>${E(displayItemName(item))}</strong><div class="code">${E(item.kode)}</div>${levelPrintMarkup(item)}${quotePackageMarkup(item)}</td><td class="center">${E(q)}</td><td class="center">${E(periodShort(item.mulai,item.selesai))}</td><td class="right nowrap">${M(item.harga)}</td><td class="right nowrap">${M(net)}</td></tr>`;
     }).join('');
     const overlay=document.createElement('div');overlay.id='pmPrintPreview';
-    overlay.innerHTML=`<div class="pm-print-toolbar"><div><strong>Preview Surat Penawaran</strong><span>A4 Portrait • ${E(number)}</span></div><div class="pm-print-actions"><button type="button" class="pm-close" onclick="closePrintPreview()">Tutup</button><button type="button" class="pm-print" onclick="executePrintPreview()">Cetak / Simpan PDF</button></div></div><div class="pm-print-scroll"><main class="pm-a4" id="pmPrintArea"><div class="pm-top-accent"></div><header class="pm-letterhead"><div class="pm-logo-wrap">${t.logo_url?`<img class="logo" src="${E(t.logo_url)}" alt="Logo">`:'<div class="logo-fallback">PM</div>'}</div><div class="pm-brand"><div class="pm-brand-name">${E(t.kop_text||'PRIANGAN MULTIMEDIA')}</div><div class="pm-brand-sub">SALES & QUOTATION</div>${t.alamat?`<p>${E(t.alamat)}</p>`:''}<p>${E(t.telepon||t.whatsapp||'')}${t.email?' • '+E(t.email):''}</p></div><div class="pm-doc-tag"><span>QUOTATION</span><strong>${E(number)}</strong></div></header><div class="pm-title-row"><div><div class="pm-eyebrow">OFFICIAL BUSINESS PROPOSAL</div><h1>SURAT PENAWARAN HARGA</h1></div><div class="pm-date-box"><span>TANGGAL</span><strong>${periodFull(new Date().toISOString().slice(0,10),new Date().toISOString().slice(0,10))}</strong></div></div><section class="pm-info-card"><div class="pm-info-section"><div class="pm-section-label">DITUJUKAN KEPADA</div><div class="pm-client-name">${E(client)}</div><div>${E(company)}</div><div>${E(S(document.querySelector('#qw')?.value))}</div><div>${E(S(document.querySelector('#qe')?.value))}</div></div><div class="pm-info-section pm-event-section"><div class="pm-section-label">EVENT / PROJECT</div><div class="pm-event-name">${E(eventName)}</div><div class="pm-period-label">PERIODE</div><div>${E(periodFull(eventStart,eventEnd))}</div></div></section><p class="pm-opening">Dengan hormat,<br>Bersama ini kami sampaikan penawaran harga untuk kebutuhan event / project tersebut sebagai berikut:</p><table class="pm-items"><thead><tr><th>No.</th><th>Produk / Jasa</th><th>Qty / Dimensi</th><th>Jadwal</th><th>Harga</th><th>Subtotal</th></tr></thead><tbody>${htmlRows}${d.rp>0?`<tr class="pm-discount-row"><td colspan="5" class="right">DISKON (${Math.round(d.pct)}%)</td><td class="right">- ${M(d.rp)}</td></tr>`:''}<tr class="pm-total"><td colspan="5" class="right">GRAND TOTAL</td><td class="right">${M(d.total)}</td></tr></tbody></table><section class="pm-terms"><div class="pm-section-heading"><span>01</span><strong>SYARAT &amp; KETENTUAN</strong></div><div class="pm-terms-body">${E(t.ketentuan||'Penawaran harga berlaku sesuai kesepakatan dan spesifikasi event.').replace(/\r?\n/g,'<br>')}</div></section><section class="pm-signature"><div class="pm-signature-label">HORMAT KAMI,</div><div class="pm-signature-box">${t.ttd_url?`<img class="signature" src="${E(t.ttd_url)}" alt="TTD">`:''}<div class="pm-signature-line"></div><strong>${E(t.nama_penandatangan||'____________________________')}</strong>${t.jabatan_penandatangan?`<div class="pm-signature-role">${E(t.jabatan_penandatangan)}</div>`:''}</div></section><footer class="pm-footer"><div>Terima kasih atas kepercayaan dan kesempatan yang diberikan kepada Priangan Multimedia.</div><strong>${E(t.kop_text||'PRIANGAN MULTIMEDIA')}</strong></footer></main></div>`;
+    overlay.innerHTML=`<div class="pm-print-toolbar"><div><strong>Preview Surat Penawaran</strong><span>A4 Portrait • ${E(number)}</span></div><div class="pm-print-actions"><button type="button" class="pm-close" onclick="closePrintPreview()">Tutup</button><button type="button" class="pm-print" onclick="executePrintPreview()">Cetak / Simpan PDF</button></div></div><div class="pm-print-scroll"><main class="pm-a4 pm-order-density-${density}" id="pmPrintArea"><div class="pm-top-accent"></div><header class="pm-letterhead"><div class="pm-logo-wrap">${t.logo_url?`<img class="logo" src="${E(t.logo_url)}" alt="Logo">`:'<div class="logo-fallback">PM</div>'}</div><div class="pm-brand"><div class="pm-brand-name">${E(t.kop_text||'PRIANGAN MULTIMEDIA')}</div><div class="pm-brand-sub">SALES & QUOTATION</div>${t.alamat?`<p>${E(t.alamat)}</p>`:''}<p>${E(t.telepon||t.whatsapp||'')}${t.email?' • '+E(t.email):''}</p></div><div class="pm-doc-tag"><span>QUOTATION</span><strong>${E(number)}</strong></div></header><div class="pm-title-row"><div><div class="pm-eyebrow">OFFICIAL BUSINESS PROPOSAL</div><h1>SURAT PENAWARAN HARGA</h1></div><div class="pm-date-box"><span>TANGGAL</span><strong>${periodFull(new Date().toISOString().slice(0,10),new Date().toISOString().slice(0,10))}</strong></div></div><section class="pm-info-card"><div class="pm-info-section"><div class="pm-section-label">DITUJUKAN KEPADA</div><div class="pm-client-name">${E(client)}</div><div>${E(company)}</div><div>${E(S(document.querySelector('#qw')?.value))}</div><div>${E(S(document.querySelector('#qe')?.value))}</div></div><div class="pm-info-section pm-event-section"><div class="pm-section-label">EVENT / PROJECT</div><div class="pm-event-name">${E(eventName)}</div><div class="pm-period-label">PERIODE</div><div>${E(periodFull(eventStart,eventEnd))}</div></div></section><p class="pm-opening">Dengan hormat,<br>Bersama ini kami sampaikan penawaran harga untuk kebutuhan event / project tersebut sebagai berikut:</p><table class="pm-items"><thead><tr><th>No.</th><th>Produk / Jasa</th><th>Qty / Dimensi</th><th>Jadwal</th><th>Harga</th><th>Subtotal</th></tr></thead><tbody>${htmlRows}${d.rp>0?`<tr class="pm-discount-row"><td colspan="5" class="right">DISKON (${Math.round(d.pct)}%)</td><td class="right">- ${M(d.rp)}</td></tr>`:''}<tr class="pm-total"><td colspan="5" class="right">GRAND TOTAL</td><td class="right">${M(d.total)}</td></tr></tbody></table><section class="pm-terms"><div class="pm-section-heading"><span>01</span><strong>SYARAT &amp; KETENTUAN</strong></div><div class="pm-terms-body">${E(t.ketentuan||'Penawaran harga berlaku sesuai kesepakatan dan spesifikasi event.').replace(/\r?\n/g,'<br>')}</div></section><section class="pm-signature"><div class="pm-signature-label">HORMAT KAMI,</div><div class="pm-signature-box">${t.ttd_url?`<img class="signature" src="${E(t.ttd_url)}" alt="TTD">`:''}<div class="pm-signature-line"></div><strong>${E(t.nama_penandatangan||'____________________________')}</strong>${t.jabatan_penandatangan?`<div class="pm-signature-role">${E(t.jabatan_penandatangan)}</div>`:''}</div></section><footer class="pm-footer"><div>Terima kasih atas kepercayaan dan kesempatan yang diberikan kepada Priangan Multimedia.</div><strong>${E(t.kop_text||'PRIANGAN MULTIMEDIA')}</strong></footer></main></div>`;
     document.body.appendChild(overlay);document.body.classList.add('pm-preview-open');forceA4Layout();
   }
 
@@ -362,7 +388,7 @@
   }
 
   window.addItem=addItem;window.removeItem=removeItem;window.toggleQuotationItem=toggleItem;window.pick=pick;window.upd=upd;window.drawItems=drawItems;window.saveQuote=saveQuotation;window.printQuote=preview;window.closePrintPreview=closePreview;window.executePrintPreview=executePreview;
-  window.__PM_QUOTATION_CORE={N,M,S,E,days,masterFor,itemMode,typeOf,itemSubtotal,baseTotal,discountState,sync,renderMargin,saveQuotation,addItem,removeItem,pick,upd,drawItems,toggleItem,periodFull,periodShort,quotePackageMarkup};
+  window.__PM_QUOTATION_CORE={N,M,S,E,days,masterFor,itemMode,typeOf,itemSubtotal,baseTotal,discountState,sync,renderMargin,saveQuotation,addItem,removeItem,pick,upd,drawItems,toggleItem,periodFull,periodShort,quotePackageMarkup,displayItemName,levelSubtotal};
 
   function boot(){installQuotationStyles();ensureDiscountUI();if(document.querySelector('#items'))drawItems();else sync();forceA4Layout();}
   [0,150,350,700,1200].forEach(ms=>setTimeout(boot,ms));
