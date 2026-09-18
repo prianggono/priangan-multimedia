@@ -63,28 +63,6 @@
   text-align:right!important;
   text-shadow:0 1px 3px rgba(0,0,0,.65)!important;
 }
-@media print{
-  #pmPrintPreview .pm-letterhead{
-    display:block!important;
-    width:100%!important;
-    height:auto!important;
-    aspect-ratio:2048 / 390!important;
-    min-height:0!important;
-    padding:0!important;
-    overflow:hidden!important;
-    background-image:url('../header%201.png')!important;
-    background-position:center center!important;
-    background-repeat:no-repeat!important;
-    background-size:100% 100%!important;
-    -webkit-print-color-adjust:exact!important;
-    print-color-adjust:exact!important;
-  }
-  #pmPrintPreview .pm-letterhead .pm-doc-tag{
-    right:3.2%!important;
-    top:27%!important;
-    width:28%!important;
-  }
-}
 @media screen and (max-width:700px){
   #pmPrintPreview .pm-letterhead{
     aspect-ratio:2048 / 390!important;
