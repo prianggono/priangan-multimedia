@@ -15,9 +15,9 @@
   #pmPrintPreview .pm-doc-tag{grid-column:1/-1!important;text-align:right!important;padding-top:5px!important}
   #pmPrintPreview .pm-title-row{display:block!important;margin-top:10px!important}
   #pmPrintPreview .pm-title-row h1{font-size:15px!important}
-  #pmPrintPreview .pm-info-card{grid-template-columns:1fr!important;margin-top:9px!important}
-  #pmPrintPreview .pm-info-section{padding:8px!important;font-size:8px!important;line-height:1.4!important}
-  #pmPrintPreview .pm-info-section+.pm-info-section{border-left:0!important;border-top:1px solid #dbe3ef!important}
+  #pmPrintPreview .pm-info-card{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)!important;margin-top:9px!important}
+  #pmPrintPreview .pm-info-section{padding:8px!important;font-size:8px!important;line-height:1.4!important;min-width:0!important}
+  #pmPrintPreview .pm-info-section+.pm-info-section{border-left:1px solid #dbe3ef!important;border-top:0!important}
   #pmPrintPreview .pm-items{width:100%!important;table-layout:fixed!important;font-size:7px!important}
   #pmPrintPreview .pm-items th,#pmPrintPreview .pm-items td{padding:5px 3px!important;word-break:break-word!important;white-space:normal!important;line-height:1.25!important}
   #pmPrintPreview .pm-items th:nth-child(2),#pmPrintPreview .pm-items td:nth-child(2){width:31%!important}
@@ -25,8 +25,11 @@
   #pmPrintPreview .pm-items th:nth-child(4),#pmPrintPreview .pm-items td:nth-child(4){width:18%!important}
   #pmPrintPreview .pm-items th:nth-child(5),#pmPrintPreview .pm-items td:nth-child(5){width:17%!important}
   #pmPrintPreview .pm-items th:nth-child(6),#pmPrintPreview .pm-items td:nth-child(6){width:17%!important}
-  #pmPrintPreview .pm-terms,#pmPrintPreview .pm-signature{margin-top:9px!important}
-  #pmPrintPreview .pm-terms-body{font-size:7px!important;line-height:1.4!important}
-  #pmPrintPreview .pm-signature img.signature{max-width:130px!important;height:58px!important}
+  #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:minmax(0,1.55fr) minmax(0,.85fr)!important;gap:8px!important;align-items:end!important;margin-top:9px!important}
+  #pmPrintPreview .pm-terms,#pmPrintPreview .pm-signature{margin-top:0!important;min-width:0!important}
+  #pmPrintPreview .pm-terms-body{font-size:7px!important;line-height:1.3!important}
+  #pmPrintPreview .pm-signature{width:auto!important;text-align:center!important}
+  #pmPrintPreview .pm-signature-box{min-height:100px!important}
+  #pmPrintPreview .pm-signature img.signature{max-width:100%!important;width:auto!important;height:58px!important}
   #pmPrintPreview .pm-footer{position:static!important;margin-top:12px!important;font-size:6.5px!important}
 }
