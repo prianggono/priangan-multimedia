@@ -433,6 +433,18 @@
         #pmPrintPreview .pm-subtotal-line{gap:4px;font-size:6.8px!important}
       }
       #pmPrintPreview .pm-items{table-layout:fixed!important}
+      /* Keep the small table details from stacking/overlapping at zoom. */
+      #pmPrintPreview .pm-items th:nth-child(1),#pmPrintPreview .pm-items td:nth-child(1){width:7%!important;white-space:nowrap!important}
+      #pmPrintPreview .pm-items th:nth-child(2),#pmPrintPreview .pm-items td:nth-child(2){width:34%!important;min-width:0!important}
+      #pmPrintPreview .pm-items th:nth-child(3),#pmPrintPreview .pm-items td:nth-child(3){width:12%!important}
+      #pmPrintPreview .pm-items th:nth-child(4),#pmPrintPreview .pm-items td:nth-child(4){width:14%!important}
+      #pmPrintPreview .pm-items th:nth-child(5),#pmPrintPreview .pm-items td:nth-child(5){width:15%!important}
+      #pmPrintPreview .pm-items th:nth-child(6),#pmPrintPreview .pm-items td:nth-child(6){width:18%!important}
+      #pmPrintPreview .pm-items td.right{white-space:nowrap!important}
+      #pmPrintPreview .pm-package-print-list{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:1px 8px!important}
+      #pmPrintPreview .pm-package-print-list span{display:contents!important}
+      #pmPrintPreview .pm-package-print-list span b{min-width:0!important;overflow-wrap:break-word!important;word-break:normal!important}
+      #pmPrintPreview .pm-package-print-list span em{grid-column:2!important;white-space:nowrap!important;text-align:right!important}
       #pmPrintPreview .pm-order-density-compact-1 .pm-items{font-size:7.1pt!important}
       #pmPrintPreview .pm-order-density-compact-1 .pm-items th,#pmPrintPreview .pm-order-density-compact-1 .pm-items td{padding:4px 4px!important;line-height:1.16!important}
       #pmPrintPreview .pm-order-density-compact-1 .pm-package-print{margin-top:3px!important;padding:3px 4px 2px!important}
