@@ -80,46 +80,47 @@
 #pmPaymentModal .pm-payment-body input,#pmPaymentModal .pm-payment-body select{width:100%;box-sizing:border-box}
 #pmPaymentModal .pm-payment-actions{display:flex;justify-content:flex-end;gap:8px;padding:14px 18px;border-top:1px solid #233552}
 body.pm-payment-modal-open{overflow:hidden}
-@media screen and (max-width:850px){
+@media screen and (max-width:700px){
   #pmInvoiceDocumentPreview .pm-inv-toolbar{
     height:auto!important;
-    min-height:96px!important;
+    min-height:58px!important;
     flex:0 0 auto!important;
+    padding:8px 10px!important;
     display:flex!important;
-    flex-direction:column!important;
-    align-items:stretch!important;
-    justify-content:flex-start!important;
+    flex-direction:row!important;
+    align-items:center!important;
+    justify-content:space-between!important;
     gap:8px!important;
-    padding:10px 12px!important;
+    flex-wrap:wrap!important;
     box-sizing:border-box!important;
     overflow:hidden!important;
   }
   #pmInvoiceDocumentPreview .pm-inv-toolbar>div:first-child{
     min-width:0!important;
-    width:100%!important;
+    flex:1 1 150px!important;
+    width:auto!important;
     display:block!important;
-    flex:0 0 auto!important;
   }
   #pmInvoiceDocumentPreview .pm-inv-toolbar strong{
     display:block!important;
-    font-size:15px!important;
+    font-size:13px!important;
     line-height:1.15!important;
+    white-space:nowrap!important;
   }
   #pmInvoiceDocumentPreview .pm-inv-toolbar>div:first-child span{
     display:block!important;
     margin-top:2px!important;
+    font-size:10px!important;
     white-space:nowrap!important;
     overflow:hidden!important;
     text-overflow:ellipsis!important;
   }
   #pmInvoiceDocumentPreview .pm-inv-actions{
-    width:100%!important;
-    min-width:0!important;
     display:flex!important;
-    flex:0 0 auto!important;
     align-items:center!important;
-    justify-content:flex-start!important;
-    gap:7px!important;
+    gap:5px!important;
+    flex-wrap:nowrap!important;
+    min-width:max-content!important;
     overflow-x:auto!important;
     overflow-y:hidden!important;
     padding:1px 1px 5px!important;
@@ -129,31 +130,50 @@ body.pm-payment-modal-open{overflow:hidden}
   }
   #pmInvoiceDocumentPreview .pm-inv-actions::-webkit-scrollbar{display:none!important}
   #pmInvoiceDocumentPreview .pm-inv-actions>*{flex:0 0 auto!important}
-  #pmInvoiceDocumentPreview .pm-inv-zoom{
-    min-width:52px!important;
-    min-height:44px!important;
-    padding:9px 14px!important;
-  }
+  #pmInvoiceDocumentPreview .pm-inv-actions button,
   #pmInvoiceDocumentPreview .pm-inv-zoom-value{
-    flex:0 0 44px!important;
+    min-height:34px!important;
+    box-sizing:border-box!important;
   }
   #pmInvoiceDocumentPreview .pm-inv-actions .btn{
+    font-size:10px!important;
+    padding:8px 9px!important;
+    border-radius:7px!important;
     white-space:nowrap!important;
-    min-height:44px!important;
+  }
+  #pmInvoiceDocumentPreview .pm-inv-zoom{
+    width:34px!important;
+    min-width:34px!important;
+    padding:0!important;
+    background:#1e293b!important;
+    color:#fff!important;
+    font-size:18px!important;
+    line-height:1!important;
+  }
+  #pmInvoiceDocumentPreview .pm-inv-zoom-value{
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    min-width:42px!important;
+    flex:0 0 42px!important;
+    color:#cbd5e1!important;
+    font-size:10px!important;
+    font-weight:700!important;
   }
   #pmInvoiceDocumentPreview .pm-inv-scroll{
     min-height:0!important;
   }
-}
-
-  #pmInvoiceDocumentPreview .pm-inv-scroll{padding:12px}
-  #pmInvoiceDocumentPreview .pm-inv-a4{width:100%;min-height:0;padding:0 12px 18px}
-  #pmInvoiceDocumentPreview .pm-inv-info,#pmInvoiceDocumentPreview .pm-inv-pay{grid-template-columns:1fr}
-  #pmInvoiceDocumentPreview .pm-inv-box+.pm-inv-box{border-left:0;border-top:1px solid #dbe3ef}
-  #pmInvoiceDocumentPreview .pm-inv-paybox:first-child{border-radius:8px 8px 0 0}
-  #pmInvoiceDocumentPreview .pm-inv-paybox:last-child{border-left:1px solid #dbe3ef;border-radius:0 0 8px 8px}
-  #pmInvoiceDocumentPreview .pm-inv-bottom-row{justify-content:flex-end!important}
-  #pmInvoiceDocumentPreview .pm-inv-paybox:last-child .pm-inv-bank-details{flex-wrap:wrap;white-space:normal}
+  #pmInvoiceDocumentPreview .pm-inv-a4{
+    width:210mm!important;
+    min-width:210mm!important;
+    max-width:none!important;
+    min-height:297mm!important;
+    height:auto!important;
+    max-height:none!important;
+    margin:0!important;
+    box-sizing:border-box!important;
+    overflow:visible!important;
+  }
 }
 @media print{
   @page{size:A4 portrait;margin:0}
