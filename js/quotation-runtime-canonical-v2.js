@@ -314,7 +314,7 @@
     const rows=items().filter(x=>x&&S(x.kode)&&S(x.item)),client=S(document.querySelector('#qc')?.value),company=S(document.querySelector('#qp')?.value),eventName=S(document.querySelector('#qeve')?.value);
     if(!rows.length)return msg('Pilih minimal 1 Produk / Jasa terlebih dahulu.');
     if(!client||!company||!eventName)return msg('Isi Client, Perusahaan, dan Nama Event terlebih dahulu.');
-    const d=discountState(),t=window.template&&typeof window.template==='object'?window.template:{},number=S(window.__pmEditingQuotationNumber||window.__PM_EDIT_QUOTATION_NUMBER||window.__PM_LAST_QUOTATION_NUMBER)||`PM-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+    const rawDiscount=discountState(),itemNet=rows.reduce((sum,item)=>sum+(window.__PM_QUOTATION_UI_API?.state?N(window.__PM_QUOTATION_UI_API.state(item).net):N(itemSubtotal(item))),0),globalDiscount=Math.min(itemNet,Math.max(0,N(window.__pmDiscountValue))),d={...rawDiscount,base:itemNet,rp:globalDiscount,total:Math.max(0,itemNet-globalDiscount)},t=window.template&&typeof window.template==='object'?window.template:{},number=S(window.__pmEditingQuotationNumber||window.__PM_EDIT_QUOTATION_NUMBER||window.__PM_LAST_QUOTATION_NUMBER)||`PM-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
     const eventStart=S(document.querySelector('#qs')?.value),eventEnd=S(document.querySelector('#qe2')?.value);
     const packageCount=rows.reduce((sum,item)=>sum+parsePackageRows(masterFor(item)?.isi_paket).length,0);
     const densityScore=rows.length+Math.ceil(packageCount/2);
