@@ -193,7 +193,83 @@
     }
   }
 
+  function installHistoryMobileStyles(){
+    if(document.getElementById('pmHistoryMobileStyles')) return;
+    const st=document.createElement('style');
+    st.id='pmHistoryMobileStyles';
+    st.textContent=`
+      @media(max-width:700px){
+        #content .pm-history-table{
+          width:100%!important;
+          min-width:0!important;
+          table-layout:auto!important;
+        }
+        #content .pm-history-table thead{display:none}
+        #content .pm-history-table tbody{display:block}
+        #content .pm-history-table tbody tr{
+          display:grid;
+          grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+          gap:2px 18px;
+          padding:9px 0;
+          border-bottom:1px solid #20304b;
+        }
+        #content .pm-history-table tbody tr:last-child{border-bottom:0}
+        #content .pm-history-table tbody td{
+          display:flex;
+          align-items:flex-start;
+          justify-content:space-between;
+          gap:7px;
+          min-width:0;
+          padding:5px 0;
+          border:0;
+          white-space:normal!important;
+          overflow-wrap:anywhere;
+          word-break:normal;
+          text-align:right!important;
+        }
+        #content .pm-history-table tbody td::before{
+          flex:0 0 auto;
+          margin-right:auto;
+          color:#7185aa;
+          font-size:10px;
+          font-weight:700;
+          text-align:left;
+        }
+        #content .pm-history-table tbody td:nth-child(1)::before{content:"No"}
+        #content .pm-history-table tbody td:nth-child(2)::before{content:"Tanggal"}
+        #content .pm-history-table tbody td:nth-child(3)::before{content:"Client"}
+        #content .pm-history-table tbody td:nth-child(4)::before{content:"Perusahaan"}
+        #content .pm-history-table tbody td:nth-child(5)::before{content:"Event"}
+        #content .pm-history-table tbody td:nth-child(6)::before{content:"Total"}
+        #content .pm-history-table tbody td:nth-child(7)::before{content:"DP"}
+        #content .pm-history-table tbody td:nth-child(8)::before{content:"Dibayar"}
+        #content .pm-history-table tbody td:nth-child(9)::before{content:"Margin"}
+        #content .pm-history-table tbody td:nth-child(10)::before{content:"Status"}
+        #content .pm-history-table tbody td:nth-child(11){
+          grid-column:1 / -1;
+          justify-content:flex-start;
+          text-align:left!important;
+          padding-top:8px;
+        }
+        #content .pm-history-table tbody td:nth-child(11)::before{content:"Aksi"}
+        #content .pm-history-table .pmHistoryActions{
+          flex:1;
+          flex-wrap:wrap;
+          justify-content:flex-start!important;
+          gap:6px;
+        }
+        #content .pm-history-table .pmHistoryActions .btn.sm{
+          min-height:36px;
+          padding:7px 10px;
+        }
+        #content .pm-history-table .pm-history-action-cell{min-width:0}
+      }
+    `;
+    document.head.appendChild(st);
+  }
+
   async function renderHistory(){
+    installHistoryMobileStyles();
     const d=DB();
     if(!d) return window.msg?.('Supabase belum terhubung.');
     try{
