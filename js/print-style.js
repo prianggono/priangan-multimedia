@@ -87,7 +87,85 @@
     .pm-footer { margin-top:9px; padding-top:7px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; gap:15px; color:#94a3b8; font-size:6.6pt; }
     .pm-footer strong { color:#64748b; white-space:nowrap; }
 
+    /* Single print authority for quotation + invoice. Preview zoom is screen-only. */
     @page { size:A4 portrait; margin:0; }
+    @media print {
+      html, body {
+        margin:0!important; padding:0!important; width:100%!important; min-width:0!important;
+        background:#fff!important; overflow:visible!important;
+      }
+
+      body * { visibility:hidden!important; }
+      #pmPrintPreview, #pmPrintPreview *,
+      #pmInvoiceDocumentPreview, #pmInvoiceDocumentPreview * { visibility:visible!important; }
+
+      #pmPrintPreview, #pmInvoiceDocumentPreview {
+        position:absolute!important; inset:0!important; width:100%!important; height:auto!important;
+        display:block!important; background:#fff!important; overflow:visible!important;
+      }
+
+      #pmPrintPreview .pm-print-toolbar,
+      #pmInvoiceDocumentPreview .pm-inv-toolbar { display:none!important; }
+
+      /* Quotation: neutralize the mobile zoom stage; print the native A4 document. */
+      #pmPrintPreview .pm-print-scroll {
+        display:block!important; width:210mm!important; height:auto!important; min-height:297mm!important;
+        margin:0!important; padding:0!important; overflow:visible!important; background:#fff!important;
+      }
+      #pmPrintPreview .pm-a4-stage {
+        display:block!important; width:210mm!important; height:auto!important; min-height:297mm!important;
+        margin:0!important; padding:0!important; transform:none!important; position:relative!important;
+      }
+      #pmPrintPreview .pm-a4 {
+        display:block!important; width:210mm!important; min-width:210mm!important; max-width:none!important;
+        min-height:297mm!important; height:auto!important; max-height:none!important;
+        margin:0!important; padding:13mm 14mm 11mm!important; box-sizing:border-box!important;
+        transform:none!important; box-shadow:none!important; overflow:visible!important; break-inside:auto!important;
+      }
+      #pmPrintPreview .pm-terms-signature-row {
+        display:grid!important; grid-template-columns:65% 27%!important; gap:8%!important; align-items:center!important;
+      }
+
+      /* Invoice: same native A4 geometry; zoom/fit never enters the printed page. */
+      #pmInvoiceDocumentPreview .pm-inv-scroll {
+        display:block!important; width:210mm!important; height:auto!important; min-height:297mm!important;
+        margin:0!important; padding:0!important; overflow:visible!important; background:#fff!important;
+      }
+      #pmInvoiceDocumentPreview .pm-inv-stage {
+        display:block!important; width:210mm!important; height:auto!important; min-height:297mm!important;
+        margin:0!important; padding:0!important; transform:none!important; position:relative!important;
+      }
+      #pmInvoiceDocumentPreview .pm-inv-a4 {
+        display:block!important; width:210mm!important; min-width:210mm!important; max-width:none!important;
+        min-height:297mm!important; height:auto!important; max-height:none!important;
+        margin:0!important; padding:0 14mm 11mm!important; box-sizing:border-box!important;
+        transform:none!important; box-shadow:none!important; overflow:visible!important;
+      }
+      #pmInvoiceDocumentPreview .pm-inv-info { grid-template-columns:1.25fr 1fr!important; }
+      #pmInvoiceDocumentPreview .pm-inv-pay { grid-template-columns:1.25fr 1fr!important; }
+      #pmInvoiceDocumentPreview .pm-inv-box+.pm-inv-box {
+        border-left:1px solid #dbe3ef!important; border-top:0!important;
+      }
+      #pmInvoiceDocumentPreview .pm-inv-bottom-row {
+        display:flex!important; justify-content:flex-end!important; align-items:flex-end!important;
+        margin-top:12mm!important;
+      }
+      #pmInvoiceDocumentPreview .pm-inv-sign {
+        width:52mm!important; margin-left:auto!important; margin-right:0!important; text-align:center!important;
+      }
+      #pmInvoiceDocumentPreview .pm-inv-footer { margin-top:9px!important; }
+      #pmPrintPreview .pm-items th,
+      #pmInvoiceDocumentPreview .pm-inv-table th,
+      #pmInvoiceDocumentPreview .pm-inv-extra-total td,
+      #pmInvoiceDocumentPreview .pm-inv-total td,
+      #pmInvoiceDocumentPreview .pm-inv-pack,
+      #pmInvoiceDocumentPreview .pm-inv-box+.pm-inv-box,
+      .pm-top-accent,.pm-total td,.pm-discount-row td,.pm-info-card,.pm-event-section,
+      .pm-section-heading,.pm-section-heading span,.pm-letterhead,.pm-package-print {
+        -webkit-print-color-adjust:exact!important; print-color-adjust:exact!important;
+      }
+      #pmPaymentModal { display:none!important; }
+    }
     @media print {
       html,body { background:#fff!important; }
       body * { visibility:hidden!important; }
