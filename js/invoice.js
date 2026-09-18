@@ -350,7 +350,9 @@
         p_items: items
       });
       if (result.error) throw result.error;
-      window.__PM_LAST_INVOICE_NUMBER = result.data?.nomor_invoice || S(payload.nomor_invoice);
+      const saved = await DB().from('penawaran').select('nomor_invoice').eq('id', current.id).single();
+      if (saved.error) throw saved.error;
+      window.__PM_LAST_INVOICE_NUMBER = S(saved.data?.nomor_invoice || payload.nomor_invoice);
       msg('Invoice berhasil disimpan.');
       await invoicePage();
     } catch (e) {
@@ -456,9 +458,10 @@
       window.__PM_PRINT_FILENAME = `${invoiceNo}.pdf`;
       document.title = invoiceNo;
       root.querySelector('#pmInvClose').onclick = closePreview;
-      root.querySelector('#pmInvPrint').onclick = () => {
+      root.querySelector('#pmInvPrint').onclick = async () => {
         const oldTitle = document.title;
         document.title = `${invoiceNo}`;
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         window.print();
         setTimeout(() => { document.title = oldTitle; }, 700);
       };
