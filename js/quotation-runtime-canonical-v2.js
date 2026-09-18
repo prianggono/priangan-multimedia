@@ -427,10 +427,10 @@
         #pmPrintPreview .pm-info-card{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)!important}
         #pmPrintPreview .pm-info-section{min-width:0!important;padding:8px!important}
         #pmPrintPreview .pm-event-section{border-left:1px solid #dbe3ef!important;border-top:0!important}
-        #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:minmax(0,1.55fr) minmax(0,.85fr)!important;gap:8px!important;align-items:center!important}
+        #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:minmax(0,2.35fr) minmax(0,1fr)!important;gap:8px!important;align-items:center!important}
         #pmPrintPreview .pm-terms,#pmPrintPreview .pm-signature{margin-top:0!important;min-width:0!important}
         #pmPrintPreview .pm-signature{align-self:center!important;margin:0 auto!important}
-        #pmPrintPreview .pm-signature{width:auto!important}
+        #pmPrintPreview .pm-signature{width:100%!important;text-align:center!important;justify-self:end!important}
         #pmPrintPreview .pm-subtotal-line{gap:4px;font-size:6.8px!important}
       }
       #pmPrintPreview .pm-items{table-layout:fixed!important}
