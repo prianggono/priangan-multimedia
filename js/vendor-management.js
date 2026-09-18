@@ -8,6 +8,61 @@
   const getDb=()=>{try{return typeof db!=='undefined'?db:null}catch(_){return null}};
   const msg=t=>typeof window.msg==='function'?window.msg(t):alert(t);
 
+  function installMobileVendorStyles(){
+    if(document.getElementById('pmVendorMobileStyles')) return;
+    const st=document.createElement('style');
+    st.id='pmVendorMobileStyles';
+    st.textContent=`
+      @media(max-width:700px){
+        #content .pm-vendor-list-card .scroll{overflow:visible;width:100%;max-width:100%}
+        #content .pm-vendor-list-table{width:100%;min-width:0;table-layout:auto}
+        #content .pm-vendor-list-table thead{display:none}
+        #content .pm-vendor-list-table tbody{display:block}
+        #content .pm-vendor-list-table tbody tr{
+          display:grid;
+          grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+          gap:2px 18px;
+          padding:9px 0;
+          border-bottom:1px solid #20304b;
+        }
+        #content .pm-vendor-list-table tbody tr:last-child{border-bottom:0}
+        #content .pm-vendor-list-table tbody td{
+          display:flex;
+          align-items:flex-start;
+          justify-content:space-between;
+          gap:8px;
+          min-width:0;
+          padding:5px 0;
+          border:0;
+          white-space:normal!important;
+          overflow-wrap:anywhere;
+          text-align:right!important;
+        }
+        #content .pm-vendor-list-table tbody td::before{
+          flex:0 0 auto;
+          margin-right:auto;
+          color:#7185aa;
+          font-size:10px;
+          font-weight:700;
+          text-align:left;
+        }
+        #content .pm-vendor-list-table tbody td:nth-child(1)::before{content:"No."}
+        #content .pm-vendor-list-table tbody td:nth-child(2)::before{content:"Nama"}
+        #content .pm-vendor-list-table tbody td:nth-child(3)::before{content:"Vendor"}
+        #content .pm-vendor-list-table tbody td:nth-child(4)::before{content:"No. Telepon"}
+        #content .pm-vendor-list-table tbody td:nth-child(5){
+          grid-column:1 / -1;
+          justify-content:flex-start;
+          text-align:left!important;
+          padding-top:8px;
+        }
+        #content .pm-vendor-list-table tbody td:nth-child(5)::before{content:"Aksi"}
+        #content .pm-vendor-list-table tbody td:nth-child(5) .btn{min-height:36px;padding:7px 12px}
+      }
+    `;
+    document.head.appendChild(st);
+  }
+
   function openVendorPage(button){
     document.querySelectorAll('.nav').forEach(x=>x.classList.remove('active'));
     if(button)button.classList.add('active');
@@ -37,6 +92,7 @@
   }
 
   async function render(){
+    installMobileVendorStyles();
     const content=document.querySelector('#content');if(!content)return;
     const d=getDb();
     if(!d){content.innerHTML='<div class="card"><b>Data Vendor</b><p>Supabase belum terhubung.</p></div>';return}
@@ -55,7 +111,7 @@
         </div>
         <div class="actions" style="margin-top:15px"><button class="btn secondary" type="button" id="pmVendorCancel">Batal</button><button class="btn green" type="button" id="pmVendorSave">Simpan</button></div>
       </div>
-      <div class="card"><div class="scroll"><table class="table"><thead><tr><th>No.</th><th>Nama</th><th>Vendor</th><th>Nomor Telepon</th><th>Aksi</th></tr></thead><tbody>
+      <div class="card pm-vendor-list-card"><div class="scroll"><table class="table pm-vendor-list-table"><thead><tr><th>No.</th><th>Nama</th><th>Vendor</th><th>Nomor Telepon</th><th>Aksi</th></tr></thead><tbody>
       ${rows.length?rows.map((v,i)=>`<tr><td>${i+1}</td><td>${esc(v.nama)}</td><td>${esc(v.vendor)}</td><td>${esc(v.telepon||'-')}</td><td><button class="btn secondary sm" data-edit="${v.id}" type="button">Edit</button> <button class="btn red sm" data-del="${v.id}" type="button">Hapus</button></td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted)">Belum ada data vendor.</td></tr>'}
       </tbody></table></div></div>`;
 
