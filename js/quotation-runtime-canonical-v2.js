@@ -204,7 +204,7 @@
   }
 
   function itemSummary(item){
-    const t=typeOf(item),label=S(item.item)||'Item belum dipilih',api=window.__PM_ITEM_DISCOUNT_API,st=api?.state?api.state(item):null,sub=st?st.net:itemSubtotal(item),schedule=item.mulai&&item.selesai?`${item.mulai} → ${item.selesai}`:'Jadwal belum lengkap';
+    const t=typeOf(item),label=S(item.item)||'Item belum dipilih',api=window.__PM_QUOTATION_UI_API,st=api?.state?api.state(item):null,sub=st?st.net:itemSubtotal(item),schedule=item.mulai&&item.selesai?`${item.mulai} → ${item.selesai}`:'Jadwal belum lengkap';
     let metric='';
     if(t==='luas')metric=`${N(item.lebar)} × ${N(item.tinggi)} m`;
     else if(t==='rigging')metric=`Rigging ${N(item.panjang)} × ${N(item.tinggi)} m`;
@@ -325,7 +325,7 @@
       if(type==='luas')q=`${N(item.lebar)} × ${N(item.tinggi)} m²`;
       else if(type==='level'){const led=rows.find(x=>x!==item&&/led|videotron/i.test(`${S(x.item)} ${S(x.kode)}`));q=`${led?N(led.lebar):N(item.lebar)} m`;}
       else if(type==='rigging')q=`${N(item.panjang)} × ${N(item.tinggi)} m`;
-      const net=window.__PM_ITEM_DISCOUNT_API?.state?window.__PM_ITEM_DISCOUNT_API.state(item).net:itemSubtotal(item);
+      const net=window.__PM_QUOTATION_UI_API?.state?window.__PM_QUOTATION_UI_API.state(item).net:itemSubtotal(item);
       return `<tr><td class="center">${index+1}</td><td><strong>${E(displayItemName(item))}</strong><div class="code">${E(item.kode)}</div>${levelPrintMarkup(item)}${quotePackageMarkup(item)}</td><td class="center">${E(q)}</td><td class="center">${E(periodShort(item.mulai,item.selesai))}</td><td class="right nowrap">${M(item.harga)}</td><td class="right nowrap">${M(net)}</td></tr>`;
     }).join('');
     const overlay=document.createElement('div');overlay.id='pmPrintPreview';
