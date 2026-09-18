@@ -436,7 +436,10 @@
       closePreview();
       const quote = d.q;
       const total = quoteTotal(quote) + extrasTotal(d.ex);
-      const packageCount = d.items.reduce((sum,item)=>sum+parsePack((d.masters||[]).find(m=>S(m.kode)===S(item?.kode))?.isi_paket).length,0);\n      const densityScore = d.items.length + d.ex.length + Math.ceil(packageCount/2);\n      const density = densityScore<=6?'normal':densityScore<=10?'compact-1':densityScore<=15?'compact-2':densityScore<=21?'compact-3':densityScore<=28?'compact-4':'compact-5';\n      const rows = d.items.map((item, index) => documentItemRow(item, index + 1)).join('');
+      const packageCount = d.items.reduce((sum,item)=>sum+parsePack((d.masters||[]).find(m=>S(m.kode)===S(item?.kode))?.isi_paket).length,0);
+      const densityScore = d.items.length + d.ex.length + Math.ceil(packageCount/2);
+      const density = densityScore<=6?'normal':densityScore<=10?'compact-1':densityScore<=15?'compact-2':densityScore<=21?'compact-3':densityScore<=28?'compact-4':'compact-5';
+      const rows = d.items.map((item, index) => documentItemRow(item, index + 1)).join('');
       const extraRows = d.ex.map((item, index) => extraRow(item, d.items.length + index + 1)).join('');
       const template = d.template || {};
       const root = document.createElement('div');
