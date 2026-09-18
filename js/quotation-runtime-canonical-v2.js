@@ -61,6 +61,7 @@
     return /videotron|led\s*(indoor|outdoor)|\bled\s*p\.?\d/.test(text);
   }
   function levelSubtotal(item){return item?.level_enabled?N(item.lebar)*N(item.level_harga)*Math.max(1,N(item.qty??item.jumlah)||1):0;}
+  function ledBaseSubtotal(item){if(!isLED(item))return 0;const price=N(item?.harga??item?.harga_jual),duration=days(item?.mulai??item?.tanggal_mulai,item?.selesai??item?.tanggal_selesai),qty=Math.max(1,N(item?.qty??item?.jumlah)||1);return N(item?.lebar)*N(item?.tinggi)*price*qty*duration;}
   function itemSubtotal(item){
     const price=N(item?.harga??item?.harga_jual),duration=days(item?.mulai??item?.tanggal_mulai,item?.selesai??item?.tanggal_selesai),type=typeOf(item),qty=Math.max(1,N(item?.qty??item?.jumlah)||1),width=N(item?.lebar),height=N(item?.tinggi),length=N(item?.panjang);
     let base=type==='luas'?width*height*price*qty*duration:type==='rigging'?((length*2)+(height*2))*price*duration:type==='level'?0:qty*price*duration;
@@ -335,7 +336,11 @@
           else if(type==='level'){const led=rows.find(x=>x!==item&&/led|videotron/i.test(`${S(x.item)} ${S(x.kode)}`));q=`${led?N(led.lebar):N(item.lebar)} m`;}
           else if(type==='rigging')q=`${N(item.panjang)} × ${N(item.tinggi)} m`;
           const net=window.__PM_QUOTATION_UI_API?.state?window.__PM_QUOTATION_UI_API.state(item).net:itemSubtotal(item);
-          return `<tr><td class="center">${index+1}</td><td><strong>${E(displayItemName(item))}</strong><div class="code">${E(item.kode)}</div>${levelPrintMarkup(item)}${quotePackageMarkup(item)}</td><td class="center">${E(q)}</td><td class="center">${E(periodShort(item.mulai,item.selesai))}</td><td class="right nowrap">${M(item.harga)}</td><td class="right nowrap">${M(net)}</td></tr>`;
+          const ledBase=ledBaseSubtotal(item),level=levelSubtotal(item);
+          const subtotalMarkup=isLED(item)&&level>0
+            ? `<div class="pm-subtotal-line"><span>LED</span><strong>${M(ledBase)}</strong></div><div class="pm-subtotal-line pm-level-subtotal"><span>Level ${levelCm(item.level_tinggi)>0?levelCm(item.level_tinggi)+' cm':''}</span><strong>${M(level)}</strong></div>`
+            : `<strong>${M(net)}</strong>`;
+          return `<tr><td class="center">${index+1}</td><td><strong>${E(S(item.item)||'Item belum dipilih')}</strong><div class="code">${E(item.kode)}</div>${quotePackageMarkup(item)}</td><td class="center">${E(q)}</td><td class="center">${E(periodShort(item.mulai,item.selesai))}</td><td class="right nowrap">${M(item.harga)}</td><td class="right pm-subtotal-cell">${subtotalMarkup}</td></tr>`;
         }).join('');
         const area=overlay.querySelector('#pmPrintArea');
         if(!area)throw new Error('Area A4 tidak ditemukan.');
@@ -357,6 +362,17 @@
   function closePreview(){document.getElementById('pmPrintPreview')?.remove();document.body.classList.remove('pm-preview-open');}
   async function executePreview(){if(window.__PM_QUOTATION_PREVIEW_READY)await window.__PM_QUOTATION_PREVIEW_READY;const area=document.getElementById('pmPrintArea');if(!area)return msg('Area A4 tidak ditemukan.');const images=[...area.querySelectorAll('img')];await Promise.all(images.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{let done=false;const finish=()=>{if(done)return;done=true;img.removeEventListener('load',finish);img.removeEventListener('error',finish);resolve();};img.addEventListener('load',finish);img.addEventListener('error',finish);setTimeout(finish,2500);})));forceA4Layout();const no=S(area.querySelector('.pm-doc-tag strong')?.textContent||window.__PM_LAST_QUOTATION_NUMBER||'Penawaran');document.title=`Penawaran - ${no}`;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));window.print();}
   function forceA4Layout(){const id='pmQuotationDomainPrintStyles';if(!document.getElementById(id)){const st=document.createElement('style');st.id=id;st.textContent=`#pmPrintPreview .pm-a4{width:210mm!important;min-width:210mm!important;min-height:297mm!important;height:auto!important;max-height:none!important;box-sizing:border-box!important;margin:0 auto!important;position:relative!important;background:#fff!important;overflow:visible!important}
+      #pmPrintPreview .pm-subtotal-line{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:1px 0}.pm-level-subtotal{color:#475569;font-size:6.8pt}.pm-subtotal-cell{vertical-align:middle!important}
+      @media screen and (max-width:700px){
+        #pmPrintPreview .pm-a4{width:100%!important;min-width:0!important;max-width:100%!important;min-height:0!important;height:auto!important;margin:0!important}
+        #pmPrintPreview .pm-info-card{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)!important}
+        #pmPrintPreview .pm-info-section{min-width:0!important;padding:8px!important}
+        #pmPrintPreview .pm-event-section{border-left:1px solid #dbe3ef!important;border-top:0!important}
+        #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:minmax(0,1.55fr) minmax(0,.85fr)!important;gap:8px!important;align-items:end!important}
+        #pmPrintPreview .pm-terms,#pmPrintPreview .pm-signature{margin-top:0!important;min-width:0!important}
+        #pmPrintPreview .pm-signature{width:auto!important}
+        #pmPrintPreview .pm-subtotal-line{gap:4px;font-size:6.8px!important}
+      }
       #pmPrintPreview .pm-items{table-layout:fixed!important}
       #pmPrintPreview .pm-order-density-compact-1 .pm-items{font-size:7.1pt!important}
       #pmPrintPreview .pm-order-density-compact-1 .pm-items th,#pmPrintPreview .pm-order-density-compact-1 .pm-items td{padding:4px 4px!important;line-height:1.16!important}
