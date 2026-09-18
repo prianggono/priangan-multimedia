@@ -319,10 +319,15 @@
     const area=document.querySelector('#pmPrintPreview .pm-a4');
     if(!scroll||!stage||!area)return;
     const naturalW=area.offsetWidth||794;
-    // Fit is based on the actual preview viewport, not a hard-coded A4 pixel width.
-    // This keeps the document visually A4 while making the full page fill Android width.
-    const viewportW=scroll.getBoundingClientRect().width||scroll.clientWidth||794;
-    const maxFit=Math.min(1.15,Math.max(.35,(viewportW-2)/naturalW));
+    const naturalH=area.offsetHeight||1123;
+    // "Fit" means fit the whole A4 page inside the document viewport,
+    // preserving the 210:297 proportion. It must not stretch the A4 to mobile width.
+    const viewport=scroll.getBoundingClientRect();
+    const viewportW=Math.max(1,viewport.width||scroll.clientWidth||794);
+    const viewportH=Math.max(1,viewport.height||scroll.clientHeight||1123);
+    const fitByWidth=(viewportW-2)/naturalW;
+    const fitByHeight=(viewportH-2)/naturalH;
+    const maxFit=Math.max(.25,Math.min(1,fitByWidth,fitByHeight));
     let z=fit?maxFit:Math.max(maxFit,Math.min(1.8,Number(scale)||maxFit));
     if(!Number.isFinite(z))z=maxFit;
     window.__PM_QUOTATION_ZOOM=z;
@@ -417,7 +422,8 @@
   function forceA4Layout(){const id='pmQuotationDomainPrintStyles';if(!document.getElementById(id)){const st=document.createElement('style');st.id=id;st.textContent=`#pmPrintPreview .pm-a4{width:210mm!important;min-width:210mm!important;min-height:297mm!important;height:auto!important;max-height:none!important;box-sizing:border-box!important;margin:0 auto!important;position:relative!important;background:#fff!important;overflow:visible!important}
       #pmPrintPreview .pm-subtotal-line{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:1px 0}.pm-level-subtotal{color:#475569;font-size:6.8pt}.pm-subtotal-cell{vertical-align:middle!important}
       @media screen and (max-width:700px){
-        #pmPrintPreview .pm-a4{width:100%!important;min-width:0!important;max-width:100%!important;min-height:0!important;height:auto!important;margin:0!important}
+        /* Keep the document itself A4 on mobile. Only the outer stage is zoomed. */
+        #pmPrintPreview .pm-a4{width:210mm!important;min-width:210mm!important;max-width:none!important;min-height:297mm!important;height:auto!important;margin:0!important}
         #pmPrintPreview .pm-info-card{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)!important}
         #pmPrintPreview .pm-info-section{min-width:0!important;padding:8px!important}
         #pmPrintPreview .pm-event-section{border-left:1px solid #dbe3ef!important;border-top:0!important}
