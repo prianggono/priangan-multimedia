@@ -419,50 +419,31 @@
   }
   function closePreview(){document.getElementById('pmPrintPreview')?.remove();document.body.classList.remove('pm-preview-open');}
   async function executePreview(){if(window.__PM_QUOTATION_PREVIEW_READY)await window.__PM_QUOTATION_PREVIEW_READY;const area=document.getElementById('pmPrintArea');if(!area)return msg('Area A4 tidak ditemukan.');const images=[...area.querySelectorAll('img')];await Promise.all(images.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{let done=false;const finish=()=>{if(done)return;done=true;img.removeEventListener('load',finish);img.removeEventListener('error',finish);resolve();};img.addEventListener('load',finish);img.addEventListener('error',finish);setTimeout(finish,2500);})));forceA4Layout();const no=S(area.querySelector('.pm-doc-tag strong')?.textContent||window.__PM_LAST_QUOTATION_NUMBER||'Penawaran');document.title=`Penawaran - ${no}`;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));window.print();}
-  function forceA4Layout(){const id='pmQuotationDomainPrintStyles';if(!document.getElementById(id)){const st=document.createElement('style');st.id=id;st.textContent=`#pmPrintPreview .pm-a4{width:210mm!important;min-width:210mm!important;min-height:297mm!important;height:auto!important;max-height:none!important;box-sizing:border-box!important;margin:0 auto!important;position:relative!important;background:#fff!important;overflow:visible!important}
-      /* Desktop: compact S&K + signature block, matching the approved quotation reference. */
-      @media screen and (min-width:701px){
-        #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:65% 27%!important;gap:8%!important;align-items:start!important}
-        #pmPrintPreview .pm-terms{margin:0!important;min-width:0!important}
-        #pmPrintPreview .pm-terms-body{padding:5px 7px!important;font-size:6.4pt!important;line-height:1.18!important}
-        #pmPrintPreview .pm-section-heading{padding:4px 6px!important}
-        #pmPrintPreview .pm-section-heading span{width:16px!important;height:16px!important;font-size:5.5pt!important}
-        #pmPrintPreview .pm-section-heading strong{font-size:6.6pt!important}
-        #pmPrintPreview .pm-signature{width:120px!important;margin:0 0 0 auto!important;text-align:center!important;justify-self:end!important}
-        #pmPrintPreview .pm-signature-label{font-size:6.2pt!important}
-        #pmPrintPreview .pm-signature-box{min-height:0!important}
-        #pmPrintPreview .pm-signature .signature{max-width:88px!important;height:48px!important}
-        #pmPrintPreview .pm-signature-line{width:120px!important;margin:2px auto 2px!important}
-        #pmPrintPreview .pm-signature-box strong{font-size:6.6pt!important}
-        #pmPrintPreview .pm-signature-role{font-size:5.8pt!important}
-      }
-      #pmPrintPreview .pm-subtotal-line{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:1px 0}.pm-level-subtotal{color:#475569;font-size:6.8pt}.pm-subtotal-cell{vertical-align:middle!important}.pm-quote-level-price{font-size:6.8pt;color:#475569;line-height:1.1;margin-top:1px;white-space:nowrap}
-      @media screen and (max-width:700px){
-        /* Keep the document itself A4 on mobile. Only the outer stage is zoomed. */
-        #pmPrintPreview .pm-a4{width:210mm!important;min-width:210mm!important;max-width:none!important;min-height:297mm!important;height:auto!important;margin:0!important}
-        #pmPrintPreview .pm-info-card{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)!important}
-        #pmPrintPreview .pm-info-section{min-width:0!important;padding:8px!important}
-        #pmPrintPreview .pm-event-section{border-left:1px solid #dbe3ef!important;border-top:0!important}
-        #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:66% 24%!important;gap:10%!important;align-items:start!important}
-      #pmPrintPreview .pm-terms{margin:0!important}
-      #pmPrintPreview .pm-terms-body{padding:4px 6px!important;font-size:5pt!important;line-height:1.15!important}
-      #pmPrintPreview .pm-section-heading{padding:3px 5px!important}
-      #pmPrintPreview .pm-section-heading span{width:14px!important;height:14px!important;font-size:5pt!important}
-      #pmPrintPreview .pm-section-heading strong{font-size:5.8pt!important}
-      #pmPrintPreview .pm-signature{width:120px!important;margin:0 0 0 auto!important;text-align:center!important}
-      #pmPrintPreview .pm-signature-label{font-size:5.5pt!important}
+  function forceA4Layout(){
+    const id='pmQuotationDomainPrintStyles';
+    if(document.getElementById(id))return;
+    const st=document.createElement('style');
+    st.id=id;
+    st.textContent=`#pmPrintPreview .pm-a4{width:210mm!important;min-width:210mm!important;min-height:297mm!important;height:auto!important;max-height:none!important;box-sizing:border-box!important;margin:0 auto!important;position:relative!important;background:#fff!important;overflow:visible!important}
+      /* Quotation document geometry is identical on screen and print. Mobile only scales the outer stage. */
+      #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:65% 27%!important;gap:8%!important;align-items:start!important}
+      #pmPrintPreview .pm-terms{margin:0!important;min-width:0!important}
+      #pmPrintPreview .pm-terms-body{padding:5px 7px!important;font-size:6.4pt!important;line-height:1.18!important}
+      #pmPrintPreview .pm-section-heading{padding:4px 6px!important}
+      #pmPrintPreview .pm-section-heading span{width:16px!important;height:16px!important;font-size:5.5pt!important}
+      #pmPrintPreview .pm-section-heading strong{font-size:6.6pt!important}
+      #pmPrintPreview .pm-signature{width:120px!important;margin:0 0 0 auto!important;text-align:center!important;align-self:start!important;justify-self:end!important}
+      #pmPrintPreview .pm-signature-label{font-size:6.2pt!important}
       #pmPrintPreview .pm-signature-box{min-height:0!important}
-      #pmPrintPreview .pm-signature .signature{max-width:82px!important;height:45px!important}
-      #pmPrintPreview .pm-signature-line{width:110px!important;margin:2px auto 2px!important}
-      #pmPrintPreview .pm-signature-box strong{font-size:6.8pt!important}
-      #pmPrintPreview .pm-signature-role{font-size:5.2pt!important}
-        #pmPrintPreview .pm-terms,#pmPrintPreview .pm-signature{margin-top:0!important;min-width:0!important}
-        #pmPrintPreview .pm-signature{align-self:center!important;margin:0 auto!important}
-        #pmPrintPreview .pm-signature{width:100%!important;text-align:center!important;justify-self:end!important}
-        #pmPrintPreview .pm-subtotal-line{gap:4px;font-size:6.8px!important}
-      }
+      #pmPrintPreview .pm-signature .signature{max-width:88px!important;height:48px!important}
+      #pmPrintPreview .pm-signature-line{width:120px!important;margin:2px auto 2px!important}
+      #pmPrintPreview .pm-signature-box strong{font-size:6.6pt!important}
+      #pmPrintPreview .pm-signature-role{font-size:5.8pt!important}
+      #pmPrintPreview .pm-subtotal-line{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:1px 0}
+      #pmPrintPreview .pm-level-subtotal{color:#475569;font-size:6.8pt}
+      #pmPrintPreview .pm-subtotal-cell{vertical-align:middle!important}
+      #pmPrintPreview .pm-quote-level-price{font-size:6.8pt;color:#475569;line-height:1.1;margin-top:1px;white-space:nowrap}
       #pmPrintPreview .pm-items{table-layout:fixed!important}
-      /* Keep the small table details from stacking/overlapping at zoom. */
       #pmPrintPreview .pm-items th:nth-child(1),#pmPrintPreview .pm-items td:nth-child(1){width:8mm!important;white-space:nowrap!important}
       #pmPrintPreview .pm-items th:nth-child(2),#pmPrintPreview .pm-items td:nth-child(2){width:auto!important;min-width:0!important}
       #pmPrintPreview .pm-items th:nth-child(3),#pmPrintPreview .pm-items td:nth-child(3){width:27mm!important}
@@ -493,62 +474,12 @@
       #pmPrintPreview .pm-order-density-compact-4 .pm-package-print-title{font-size:4.8pt!important;margin-bottom:.5px!important}
       #pmPrintPreview .pm-order-density-compact-4 .pm-package-print-list span{font-size:4.6pt!important;line-height:1!important}
       #pmPrintPreview .pm-order-density-compact-5 .pm-items{font-size:4.9pt!important}
-      #pmPrintPreview .pm-order-density-compact-5 .pm-items th,#pmPrintPreview .pm-order-density-compact-5 .pm-items td{padding:1.3px 1.6px!important;line-height:.98!important}
-      #pmPrintPreview .pm-order-density-compact-5 .pm-package-print{margin-top:0!important;padding:0 1px!important}
-      #pmPrintPreview .pm-order-density-compact-5 .pm-package-print-title{font-size:4.4pt!important;margin-bottom:0!important}
-      #pmPrintPreview .pm-order-density-compact-5 .pm-package-print-list span{font-size:4.2pt!important;line-height:.95!important}
-}}`;document.head.appendChild(st);}const area=document.getElementById('pmPrintArea');if(!area)return;area.style.width='210mm';area.style.minHeight='297mm';area.style.boxSizing='border-box';}
-
-  async function deleteOldChildren(d,id){
-    const old=await d.from('penawaran_items').select('id').eq('penawaran_id',id);if(old.error)throw old.error;
-    const ids=(old.data||[]).map(x=>x.id).filter(Boolean);
-    if(ids.length){const j=await d.from('penawaran_jadwal').delete().in('item_id',ids);if(j.error)throw j.error;}
-    const del=await d.from('penawaran_items').delete().eq('penawaran_id',id);if(del.error)throw del.error;
+      #pmPrintPreview .pm-order-density-compact-5 .pm-items th,#pmPrintPreview .pm-order-density-compact-5 .pm-items td{padding:1.4px 1.6px!important;line-height:.98!important}
+      #pmPrintPreview .pm-order-density-compact-5 .pm-package-print{margin-top:0!important;padding:.3px 1px!important}
+      #pmPrintPreview .pm-order-density-compact-5 .pm-package-print-title{font-size:4.5pt!important;margin-bottom:.3px!important}
+      #pmPrintPreview .pm-order-density-compact-5 .pm-package-print-list span{font-size:4.2pt!important;line-height:.96!important}`;
+    document.head.appendChild(st);
   }
-
-  async function saveQuotation(){
-    const d=dbRef();if(!d)return msg('Supabase belum terhubung.');
-    const client=S(document.querySelector('#qc')?.value),company=S(document.querySelector('#qp')?.value),phone=S(document.querySelector('#qw')?.value),email=S(document.querySelector('#qe')?.value),eventName=S(document.querySelector('#qeve')?.value),start=document.querySelector('#qs')?.value||null,end=document.querySelector('#qe2')?.value||null;
-    const source=items().filter(x=>x&&S(x.kode)&&S(x.item));
-    if(!client||!company||!eventName)return msg('Client, Perusahaan, dan Nama Event wajib diisi.');
-    if(!source.length)return msg('Tambahkan minimal 1 item.');
-    const incomplete=source.filter(x=>!requiredComplete(x));
-    if(incomplete.length){
-      const names=incomplete.map(x=>x.item||x.kode||'Item').join(', ');
-      msg(`Lengkapi data item: ${names}.`);
-      const first=incomplete[0];window.__PM_QUOTATION_OPEN_ITEM_ID=first.id;drawItems();setTimeout(()=>document.querySelector(`#items > .item[data-item-id="${first.id}"]`)?.scrollIntoView({behavior:'smooth',block:'center'}),50);return;
-    }
-    const button=[...document.querySelectorAll('#content button')].find(b=>S(b.textContent)==='Simpan Penawaran');
-    if(button?.dataset.pmSaving==='1')return;
-    if(button){button.dataset.pmSaving='1';button.disabled=true;button.dataset.originalText=button.textContent;button.textContent='Menyimpan...';}
-    try{
-      const state=sync();
-      const editId=N(window.__pmEditingQuotationId||window.__PM_EDIT_QUOTATION_ID),number=S(window.__pmEditingQuotationNumber||window.__PM_EDIT_QUOTATION_NUMBER)||`PM-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
-      const payload={nomor_penawaran:number,nama_client:client,perusahaan:company,telepon_wa:phone,telepon:phone,whatsapp:phone,email,nama_event:eventName,event_name:eventName,tanggal_mulai:start,tanggal_selesai:end,subtotal:state.base,diskon:state.rp,diskon_persen:state.pct,diskon_nominal:state.rp,total:state.total,grand_total:state.total,status:'DRAFT'};
-      let quoteId=editId||null;
-      if(editId){const updated=await d.from('penawaran').update(payload).eq('id',editId).select('id').single();if(updated.error)throw updated.error;quoteId=updated.data.id;await deleteOldChildren(d,quoteId);}else{const inserted=await d.from('penawaran').insert([payload]).select('id').single();if(inserted.error)throw inserted.error;quoteId=inserted.data.id;}
-      const itemPayload=source.map(item=>({penawaran_id:quoteId,kode:item.kode,item:item.item,nama_item:item.item,harga_jual:N(item.harga),harga:N(item.harga),harga_modal:N(item.harga_modal)||0,tipe_perhitungan:typeOf(item),tipe:typeOf(item),qty:Math.max(1,N(item.qty)||1),jumlah:Math.max(1,N(item.qty)||1),lebar:N(item.lebar)||null,tinggi:N(item.tinggi)||null,panjang:N(item.panjang)||null,tanggal_mulai:item.mulai,tanggal_selesai:item.selesai,durasi:days(item.mulai,item.selesai),subtotal:itemSubtotal(item)}));
-      const itemResult=await d.from('penawaran_items').insert(itemPayload).select('id');if(itemResult.error)throw itemResult.error;
-      const saved=itemResult.data||[];
-      const schedules=saved.map((row,index)=>{const item=source[index],duration=days(item.mulai,item.selesai);return{item_id:row.id,penawaran_item_id:row.id,penawaran_id:quoteId,qty:Math.max(1,N(item.qty)||1),tanggal_mulai:item.mulai,tanggal_selesai:item.selesai,durasi_hari:duration,durasi:duration,subtotal:itemSubtotal(item)};});
-      if(schedules.length){const sr=await d.from('penawaran_jadwal').insert(schedules);if(sr.error)throw sr.error;}
-      const check=await d.from('penawaran_items').select('subtotal').eq('penawaran_id',quoteId);if(check.error)throw check.error;
-      const savedSubtotal=(check.data||[]).reduce((sum,row)=>sum+N(row.subtotal),0);
-      const verify=await d.from('penawaran').select('id,subtotal,diskon,diskon_persen,diskon_nominal,total,grand_total,nama_event').eq('id',quoteId).single();if(verify.error)throw verify.error;
-      const v=verify.data||{};
-      const ok=Math.round(savedSubtotal)===Math.round(state.base)&&Math.round(N(v.subtotal))===Math.round(state.base)&&Math.round(N(v.diskon_nominal))===Math.round(state.rp)&&Math.round(N(v.total))===Math.round(state.total)&&Math.round(N(v.grand_total))===Math.round(state.total)&&Math.round(N(v.diskon_persen))===Math.round(state.pct);
-      if(!ok)throw new Error('Verifikasi database gagal: nilai item/subtotal/diskon/total berbeda dari form.');
-      window.__pmEditingQuotationId=null;window.__PM_EDIT_QUOTATION_ID=null;window.__pmEditingQuotationNumber=null;window.__PM_EDIT_QUOTATION_NUMBER=null;window.__PM_LAST_QUOTATION_NUMBER=number;window.items=[];
-      msg((editId?'Penawaran berhasil diperbarui: ':'Penawaran berhasil disimpan: ')+number);
-      if(typeof load==='function')await load();
-      if(typeof go==='function')go('history');else{window.page='history';if(typeof render==='function')render();}
-    }catch(e){console.error('[PM] quotation save',e);msg('Gagal menyimpan penawaran: '+(e.message||e));}
-    finally{if(button){button.disabled=false;button.dataset.pmSaving='0';button.textContent=button.dataset.originalText||'Simpan Penawaran';}}
-  }
-
-  window.addItem=addItem;window.removeItem=removeItem;window.toggleQuotationItem=toggleItem;window.pick=pick;window.upd=upd;window.drawItems=drawItems;window.saveQuote=saveQuotation;window.printQuote=preview;window.closePrintPreview=closePreview;window.executePrintPreview=executePreview;
-  window.__PM_QUOTATION_CORE={N,M,S,E,days,masterFor,itemMode,typeOf,itemSubtotal,baseTotal,discountState,sync,renderMargin,saveQuotation,addItem,removeItem,pick,upd,drawItems,toggleItem,periodFull,periodShort,quotePackageMarkup,displayItemName,levelSubtotal,isLED};
-
   function boot(){installQuotationStyles();ensureDiscountUI();if(document.querySelector('#items'))drawItems();else sync();forceA4Layout();}
   [0,150,350,700,1200].forEach(ms=>setTimeout(boot,ms));
   document.addEventListener('input',e=>{if(e.target?.id==='pmDiscPct'||e.target?.id==='pmDisc'){clearTimeout(window.__pmQuotationSyncTimer);window.__pmQuotationSyncTimer=setTimeout(sync,40);}},true);
