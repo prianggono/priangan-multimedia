@@ -422,7 +422,7 @@
   function forceA4Layout(){const id='pmQuotationDomainPrintStyles';if(!document.getElementById(id)){const st=document.createElement('style');st.id=id;st.textContent=`#pmPrintPreview .pm-a4{width:210mm!important;min-width:210mm!important;min-height:297mm!important;height:auto!important;max-height:none!important;box-sizing:border-box!important;margin:0 auto!important;position:relative!important;background:#fff!important;overflow:visible!important}
       /* Desktop: compact S&K + signature block, matching the approved quotation reference. */
       @media screen and (min-width:701px){
-        #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:65% 27%!important;gap:8%!important;align-items:center!important}
+        #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:65% 27%!important;gap:8%!important;align-items:start!important}
         #pmPrintPreview .pm-terms{margin:0!important;min-width:0!important}
         #pmPrintPreview .pm-terms-body{padding:5px 7px!important;font-size:6.4pt!important;line-height:1.18!important}
         #pmPrintPreview .pm-section-heading{padding:4px 6px!important}
@@ -443,7 +443,7 @@
         #pmPrintPreview .pm-info-card{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)!important}
         #pmPrintPreview .pm-info-section{min-width:0!important;padding:8px!important}
         #pmPrintPreview .pm-event-section{border-left:1px solid #dbe3ef!important;border-top:0!important}
-        #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:66% 24%!important;gap:10%!important;align-items:center!important}
+        #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:66% 24%!important;gap:10%!important;align-items:start!important}
       #pmPrintPreview .pm-terms{margin:0!important}
       #pmPrintPreview .pm-terms-body{padding:4px 6px!important;font-size:5pt!important;line-height:1.15!important}
       #pmPrintPreview .pm-section-heading{padding:3px 5px!important}
@@ -497,8 +497,7 @@
       #pmPrintPreview .pm-order-density-compact-5 .pm-package-print{margin-top:0!important;padding:0 1px!important}
       #pmPrintPreview .pm-order-density-compact-5 .pm-package-print-title{font-size:4.4pt!important;margin-bottom:0!important}
       #pmPrintPreview .pm-order-density-compact-5 .pm-package-print-list span{font-size:4.2pt!important;line-height:.95!important}
-      @page{size:A4 portrait;margin:0}
-      @media print{html,body{margin:0!important;padding:0!important;background:#fff!important;width:100%!important;min-width:0!important;overflow:visible!important}#pmPrintPreview{position:absolute!important;inset:0!important;width:100%!important;display:block!important;background:#fff!important;overflow:visible!important}#pmPrintPreview .pm-print-toolbar{display:none!important}#pmPrintPreview .pm-print-scroll{display:block!important;width:210mm!important;overflow:visible!important;margin:0!important;padding:0!important}#pmPrintPreview .pm-a4{width:210mm!important;min-width:210mm!important;min-height:297mm!important;height:auto!important;max-height:none!important;padding:13mm 14mm 11mm!important;box-sizing:border-box!important;box-shadow:none!important;overflow:visible!important;break-inside:auto!important}}`;document.head.appendChild(st);}const area=document.getElementById('pmPrintArea');if(!area)return;area.style.width='210mm';area.style.minHeight='297mm';area.style.boxSizing='border-box';}
+}}`;document.head.appendChild(st);}const area=document.getElementById('pmPrintArea');if(!area)return;area.style.width='210mm';area.style.minHeight='297mm';area.style.boxSizing='border-box';}
 
   async function deleteOldChildren(d,id){
     const old=await d.from('penawaran_items').select('id').eq('penawaran_id',id);if(old.error)throw old.error;
