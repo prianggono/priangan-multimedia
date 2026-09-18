@@ -429,17 +429,17 @@
         #pmPrintPreview .pm-event-section{border-left:1px solid #dbe3ef!important;border-top:0!important}
         #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:66% 24%!important;gap:10%!important;align-items:center!important}
       #pmPrintPreview .pm-terms{margin:0!important}
-      #pmPrintPreview .pm-terms-body{padding:6px 8px!important;font-size:6.4pt!important;line-height:1.25!important}
-      #pmPrintPreview .pm-section-heading{padding:5px 7px!important}
-      #pmPrintPreview .pm-section-heading span{width:17px!important;height:17px!important;font-size:5.8pt!important}
-      #pmPrintPreview .pm-section-heading strong{font-size:6.8pt!important}
-      #pmPrintPreview .pm-signature{width:150px!important;margin:0 0 0 auto!important;text-align:center!important}
-      #pmPrintPreview .pm-signature-label{font-size:6.5pt!important}
+      #pmPrintPreview .pm-terms-body{padding:4px 6px!important;font-size:5pt!important;line-height:1.15!important}
+      #pmPrintPreview .pm-section-heading{padding:3px 5px!important}
+      #pmPrintPreview .pm-section-heading span{width:14px!important;height:14px!important;font-size:5pt!important}
+      #pmPrintPreview .pm-section-heading strong{font-size:5.8pt!important}
+      #pmPrintPreview .pm-signature{width:120px!important;margin:0 0 0 auto!important;text-align:center!important}
+      #pmPrintPreview .pm-signature-label{font-size:5.5pt!important}
       #pmPrintPreview .pm-signature-box{min-height:0!important}
-      #pmPrintPreview .pm-signature .signature{max-width:110px!important;height:58px!important}
-      #pmPrintPreview .pm-signature-line{width:140px!important;margin:2px auto 3px!important}
+      #pmPrintPreview .pm-signature .signature{max-width:82px!important;height:45px!important}
+      #pmPrintPreview .pm-signature-line{width:110px!important;margin:2px auto 2px!important}
       #pmPrintPreview .pm-signature-box strong{font-size:6.8pt!important}
-      #pmPrintPreview .pm-signature-role{font-size:6.2pt!important}
+      #pmPrintPreview .pm-signature-role{font-size:5.2pt!important}
         #pmPrintPreview .pm-terms,#pmPrintPreview .pm-signature{margin-top:0!important;min-width:0!important}
         #pmPrintPreview .pm-signature{align-self:center!important;margin:0 auto!important}
         #pmPrintPreview .pm-signature{width:100%!important;text-align:center!important;justify-self:end!important}
