@@ -55,21 +55,18 @@
 
   function typeOf(item){ return itemMode(masterFor(item)) || S(item?.tipe || item?.tipe_perhitungan) || 'qty'; }
 
-  function itemSubtotal(item){
-    const price = N(item?.harga ?? item?.harga_jual);
-    const duration = days(item?.mulai ?? item?.tanggal_mulai, item?.selesai ?? item?.tanggal_selesai);
-    const type = typeOf(item);
-    const qty = Math.max(1,N(item?.qty ?? item?.jumlah)||1);
-    const width=N(item?.lebar), height=N(item?.tinggi), length=N(item?.panjang);
-    if(type==='luas') return width*height*price*duration;
-    if(type==='rigging') return ((length*2)+(height*2))*price*duration;
-    if(type==='level'){
-      const led = items().find(x => x!==item && /led|videotron/i.test(`${S(x.item)} ${S(x.kode)}`));
-      return (led?N(led.lebar):width)*price*duration;
-    }
-    return qty*price*duration;
+  function isLED(item){
+    const master=masterFor(item), text=`${S(master?.item)} ${S(master?.kategori)} ${S(master?.kode)} ${S(item?.item)} ${S(item?.kode)}`.toLowerCase();
+    if(/led\s*tv|televisi|tv\s*[- ]?\d{2,3}\b/.test(text))return false;
+    return /videotron|led\s*(indoor|outdoor)|\bled\s*p\.?\d/.test(text);
   }
-
+  function levelSubtotal(item){return item?.level_enabled?N(item.lebar)*N(item.level_harga)*Math.max(1,N(item.qty??item.jumlah)||1):0;}
+  function itemSubtotal(item){
+    const price=N(item?.harga??item?.harga_jual),duration=days(item?.mulai??item?.tanggal_mulai,item?.selesai??item?.tanggal_selesai),type=typeOf(item),qty=Math.max(1,N(item?.qty??item?.jumlah)||1),width=N(item?.lebar),height=N(item?.tinggi),length=N(item?.panjang);
+    let base=type==='luas'?width*height*price*qty*duration:type==='rigging'?((length*2)+(height*2))*price*duration:type==='level'?0:qty*price*duration;
+    if(isLED(item))base=width*height*price*qty*duration+levelSubtotal(item);
+    return Math.max(0,base);
+  }
   function baseTotal(){ return Math.round(items().filter(x=>x&&S(x.kode)&&S(x.item)).reduce((a,x)=>a+itemSubtotal(x),0)); }
 
   function discountState(){
@@ -414,7 +411,7 @@
   }
 
   window.addItem=addItem;window.removeItem=removeItem;window.toggleQuotationItem=toggleItem;window.pick=pick;window.upd=upd;window.drawItems=drawItems;window.saveQuote=saveQuotation;window.printQuote=preview;window.closePrintPreview=closePreview;window.executePrintPreview=executePreview;
-  window.__PM_QUOTATION_CORE={N,M,S,E,days,masterFor,itemMode,typeOf,itemSubtotal,baseTotal,discountState,sync,renderMargin,saveQuotation,addItem,removeItem,pick,upd,drawItems,toggleItem,periodFull,periodShort,quotePackageMarkup,displayItemName,levelSubtotal};
+  window.__PM_QUOTATION_CORE={N,M,S,E,days,masterFor,itemMode,typeOf,itemSubtotal,baseTotal,discountState,sync,renderMargin,saveQuotation,addItem,removeItem,pick,upd,drawItems,toggleItem,periodFull,periodShort,quotePackageMarkup,displayItemName,levelSubtotal,isLED};
 
   function boot(){installQuotationStyles();ensureDiscountUI();if(document.querySelector('#items'))drawItems();else sync();forceA4Layout();}
   [0,150,350,700,1200].forEach(ms=>setTimeout(boot,ms));
