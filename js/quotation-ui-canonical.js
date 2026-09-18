@@ -25,9 +25,8 @@
   /* Level is a one-time charge per set: width × saved/edited price × set. */
   function levelSubtotal(item){if(!item?.level_enabled)return 0;return N(item.lebar)*N(item.level_harga)*Math.max(1,N(item.qty)||1);}
   function ledBase(item){return Math.max(0,N(item.lebar)*N(item.tinggi)*N(item.harga??item.harga_jual)*Math.max(1,N(item.qty)||1)*days(item));}
-  const originalSubtotal=typeof core().itemSubtotal==='function'?core().itemSubtotal:null;
-  function baseSubtotal(item){if(isLED(item))return ledBase(item)+levelSubtotal(item);const t=mode(item).toLowerCase();if(t==='level')return 0;return originalSubtotal?Math.max(0,N(originalSubtotal(item))):0;}
-  function patchCore(){const c=core();if(!c.itemSubtotal)return false;if(!c.__pmUnifiedBaseSubtotal)c.__pmUnifiedBaseSubtotal=c.itemSubtotal;const base=c.__pmUnifiedBaseSubtotal;c.itemSubtotal=function(item){return baseSubtotal(item);};c.__pmQuotationUiSubtotalPatched=true;return true;}
+  function baseSubtotal(item){return typeof core().itemSubtotal==='function'?Math.max(0,N(core().itemSubtotal(item))):ledBase(item)+levelSubtotal(item);}
+  function patchCore(){return typeof core().itemSubtotal==='function';}
   function discount(item){const base=baseSubtotal(item),pct=Math.max(0,Math.min(100,N(item.diskon_persen))),rp=pct>0?Math.min(base,Math.round(base*pct/100)):Math.min(base,Math.max(0,N(item.diskon_nominal)));return{base,pct,rp,net:Math.max(0,base-rp)};}
   function displayName(item){const base=S(item?.item)||'Item belum dipilih';if(!item?.level_enabled)return base;const h=N(item?.level_tinggi);return h>0?`${base} + Level ${h.toLocaleString('id-ID',{maximumFractionDigits:2})} m`:`${base} + Level`;}
   function hideLevelProducts(){document.querySelectorAll('#items > .item select').forEach(select=>{[...select.options].forEach(o=>{const m=masters().find(x=>S(x.kode)===S(o.value));if(isLevelMaster(m))o.hidden=true;});});}
