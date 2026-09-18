@@ -87,50 +87,38 @@ function installPackageStyles(){
       .pm-package-master-head{align-items:stretch;flex-direction:column}
       .pm-package-master-head .btn{width:100%}
 
-      /* Master Harga: keep every column independent on Android.
-         The table scrolls horizontally instead of letting nowrap text overlap. */
-      #content .card:has(.table) .scroll{
-        width:100%;
-        max-width:100%;
-        overflow-x:auto;
-        overflow-y:hidden;
-        -webkit-overflow-scrolling:touch;
-        overscroll-behavior-x:contain;
+      /* Android: compact vertical rows — no horizontal scrolling. */
+      #content .card:has(.table) .scroll{width:100%;max-width:100%;overflow:visible}
+      #content .card:has(.table) .table{width:100%;min-width:0;table-layout:auto;border-collapse:separate;border-spacing:0}
+      #content .card:has(.table) .table thead{display:none}
+      #content .card:has(.table) .table tbody{display:block}
+      #content .card:has(.table) .table tbody tr{
+        display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+        gap:0 18px;padding:8px 0;border-bottom:1px solid #20304b;
       }
-      #content .card:has(.table) .table{
-        width:max-content;
-        min-width:920px;
-        table-layout:auto;
+      #content .card:has(.table) .table tbody tr:last-child{border-bottom:0}
+      #content .card:has(.table) .table tbody td{
+        display:flex;align-items:center;justify-content:space-between;gap:8px;
+        min-width:0;padding:6px 0;border:0;white-space:normal;overflow-wrap:anywhere;word-break:normal;
       }
-      #content .card:has(.table) .table th,
-      #content .card:has(.table) .table td{
-        white-space:nowrap;
-        overflow:visible;
-        overflow-wrap:normal;
-        word-break:normal;
-        vertical-align:middle;
+      #content .card:has(.table) .table tbody td::before{
+        flex:0 0 auto;color:#7185aa;font-size:10px;font-weight:700;
       }
-      #content .card:has(.table) .table th:nth-child(1),
-      #content .card:has(.table) .table td:nth-child(1){min-width:80px}
-      #content .card:has(.table) .table th:nth-child(2),
-      #content .card:has(.table) .table td:nth-child(2){min-width:190px}
-      #content .card:has(.table) .table th:nth-child(3),
-      #content .card:has(.table) .table td:nth-child(3){min-width:140px}
-      #content .card:has(.table) .table th:nth-child(4),
-      #content .card:has(.table) .table td:nth-child(4){min-width:100px}
-      #content .card:has(.table) .table th:nth-child(5),
-      #content .card:has(.table) .table td:nth-child(5),
-      #content .card:has(.table) .table th:nth-child(6),
-      #content .card:has(.table) .table td:nth-child(6){min-width:150px}
-      #content .card:has(.table) .table th:nth-child(7),
-      #content .card:has(.table) .table td:nth-child(7){min-width:80px}
-      #content .card:has(.table) .table th:nth-child(8),
-      #content .card:has(.table) .table td:nth-child(8){min-width:150px}
-      #content .card:has(.table) .table td:last-child .actions{
-        flex-wrap:nowrap;
-        justify-content:flex-start!important;
-        white-space:nowrap;
+      #content .card:has(.table) .table tbody td:nth-child(1)::before{content:"Kode"}
+      #content .card:has(.table) .table tbody td:nth-child(2)::before{content:"Item"}
+      #content .card:has(.table) .table tbody td:nth-child(3)::before{content:"Kategori"}
+      #content .card:has(.table) .table tbody td:nth-child(4)::before{content:"Satuan"}
+      #content .card:has(.table) .table tbody td:nth-child(5)::before{content:"Modal"}
+      #content .card:has(.table) .table tbody td:nth-child(6)::before{content:"Jual"}
+      #content .card:has(.table) .table tbody td:nth-child(7)::before{content:"Aktif"}
+      #content .card:has(.table) .table tbody td:nth-child(8){
+        grid-column:1 / -1;justify-content:flex-start;gap:10px;padding-top:8px;
       }
+      #content .card:has(.table) .table tbody td:nth-child(8)::before{content:"Aksi"}
+      #content .card:has(.table) .table tbody td:last-child .actions{
+        flex-wrap:nowrap;justify-content:flex-start!important;gap:8px;
+      }
+      #content .card:has(.table) .table tbody td:last-child .btn{min-width:72px}
     }
   `;document.head.appendChild(st);
 }
