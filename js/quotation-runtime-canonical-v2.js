@@ -422,7 +422,7 @@
   function forceA4Layout(){const id='pmQuotationDomainPrintStyles';if(!document.getElementById(id)){const st=document.createElement('style');st.id=id;st.textContent=`#pmPrintPreview .pm-a4{width:210mm!important;min-width:210mm!important;min-height:297mm!important;height:auto!important;max-height:none!important;box-sizing:border-box!important;margin:0 auto!important;position:relative!important;background:#fff!important;overflow:visible!important}
       /* Desktop: compact S&K + signature block, matching the approved quotation reference. */
       @media screen and (min-width:701px){
-        #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:65% 27%!important;gap:8%!important;align-items:center!important}
+        #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:65% 27%!important;gap:8%!important;align-items:start!important}
         #pmPrintPreview .pm-terms{margin:0!important;min-width:0!important}
         #pmPrintPreview .pm-terms-body{padding:5px 7px!important;font-size:6.4pt!important;line-height:1.18!important}
         #pmPrintPreview .pm-section-heading{padding:4px 6px!important}
@@ -443,7 +443,7 @@
         #pmPrintPreview .pm-info-card{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)!important}
         #pmPrintPreview .pm-info-section{min-width:0!important;padding:8px!important}
         #pmPrintPreview .pm-event-section{border-left:1px solid #dbe3ef!important;border-top:0!important}
-        #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:66% 24%!important;gap:10%!important;align-items:center!important}
+        #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:66% 24%!important;gap:10%!important;align-items:start!important}
       #pmPrintPreview .pm-terms{margin:0!important}
       #pmPrintPreview .pm-terms-body{padding:4px 6px!important;font-size:5pt!important;line-height:1.15!important}
       #pmPrintPreview .pm-section-heading{padding:3px 5px!important}
