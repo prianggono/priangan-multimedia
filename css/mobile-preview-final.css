@@ -1,4 +1,4 @@
-@media (max-width:700px){
+@media screen and (max-width:700px){
   body.pm-preview-open{overflow:auto!important}
   #pmPrintPreview{position:absolute!important;inset:0!important;z-index:99999!important;overflow:hidden!important;background:#e9edf3!important}
   #pmPrintPreview .pm-print-toolbar{height:auto!important;min-height:58px!important;padding:8px 10px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;flex-wrap:wrap!important}
