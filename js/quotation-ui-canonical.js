@@ -46,5 +46,5 @@
   document.addEventListener('change',e=>{if(e.target?.closest?.('#items'))requestAnimationFrame(enhance);},true);
   wrapDraw();
   window.addEventListener('load',()=>{enhance();});
-  window.__PM_QUOTATION_UI_API={enhance,updateTotal,isLED,levelSubtotal,baseSubtotal,discount,displayName};
+  window.__PM_QUOTATION_UI_API={enhance,updateTotal,isLED,levelSubtotal,baseSubtotal,discount,state:discount,displayName};
 })();
