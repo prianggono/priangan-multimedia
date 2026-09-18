@@ -82,7 +82,56 @@ function installPackageStyles(){
     .pm-package-remove{height:38px;margin-bottom:0}
     .pm-package-add-actions{margin-top:8px!important}
     .pm-package-master-note{margin-top:10px;color:var(--muted,#9aa7bd);font-size:12px}
-    @media(max-width:700px){.pm-package-edit-row{grid-template-columns:1fr 120px auto}.pm-package-master-head{align-items:stretch;flex-direction:column}.pm-package-master-head .btn{width:100%}}
+    @media(max-width:700px){
+      .pm-package-edit-row{grid-template-columns:1fr 120px auto}
+      .pm-package-master-head{align-items:stretch;flex-direction:column}
+      .pm-package-master-head .btn{width:100%}
+
+      /* Master Harga: keep every column independent on Android.
+         The table scrolls horizontally instead of letting nowrap text overlap. */
+      #content .card:has(.table) .scroll{
+        width:100%;
+        max-width:100%;
+        overflow-x:auto;
+        overflow-y:hidden;
+        -webkit-overflow-scrolling:touch;
+        overscroll-behavior-x:contain;
+      }
+      #content .card:has(.table) .table{
+        width:max-content;
+        min-width:920px;
+        table-layout:auto;
+      }
+      #content .card:has(.table) .table th,
+      #content .card:has(.table) .table td{
+        white-space:nowrap;
+        overflow:visible;
+        overflow-wrap:normal;
+        word-break:normal;
+        vertical-align:middle;
+      }
+      #content .card:has(.table) .table th:nth-child(1),
+      #content .card:has(.table) .table td:nth-child(1){min-width:80px}
+      #content .card:has(.table) .table th:nth-child(2),
+      #content .card:has(.table) .table td:nth-child(2){min-width:190px}
+      #content .card:has(.table) .table th:nth-child(3),
+      #content .card:has(.table) .table td:nth-child(3){min-width:140px}
+      #content .card:has(.table) .table th:nth-child(4),
+      #content .card:has(.table) .table td:nth-child(4){min-width:100px}
+      #content .card:has(.table) .table th:nth-child(5),
+      #content .card:has(.table) .table td:nth-child(5),
+      #content .card:has(.table) .table th:nth-child(6),
+      #content .card:has(.table) .table td:nth-child(6){min-width:150px}
+      #content .card:has(.table) .table th:nth-child(7),
+      #content .card:has(.table) .table td:nth-child(7){min-width:80px}
+      #content .card:has(.table) .table th:nth-child(8),
+      #content .card:has(.table) .table td:nth-child(8){min-width:150px}
+      #content .card:has(.table) .table td:last-child .actions{
+        flex-wrap:nowrap;
+        justify-content:flex-start!important;
+        white-space:nowrap;
+      }
+    }
   `;document.head.appendChild(st);
 }
 
