@@ -310,6 +310,51 @@
     return `<div class="pm-package-print"><div class="pm-package-print-title">ISI PAKET</div><div class="pm-package-print-list">${rows.map(r=>`<span><b>${E(r.komponen)}</b><em>${E(r.qty)}</em></span>`).join('')}</div></div>`;
   }
 
+  function mobileA4Scale(){
+    return window.matchMedia && window.matchMedia('(max-width:700px)').matches;
+  }
+  function applyMobileA4Zoom(scale,fit=false){
+    const scroll=document.querySelector('#pmPrintPreview .pm-print-scroll');
+    const stage=document.querySelector('#pmPrintPreview .pm-a4-stage');
+    const area=document.querySelector('#pmPrintPreview .pm-a4');
+    if(!scroll||!stage||!area)return;
+    const naturalW=area.offsetWidth||794;
+    const maxFit=Math.min(1,Math.max(.35,(scroll.clientWidth-20)/naturalW));
+    let z=fit?maxFit:Math.max(maxFit,Math.min(1.8,Number(scale)||maxFit));
+    if(!Number.isFinite(z))z=maxFit;
+    window.__PM_QUOTATION_ZOOM=z;
+    area.style.transform=`scale(${z})`;
+    area.style.transformOrigin='top left';
+    stage.style.width=`${Math.round(naturalW*z)}px`;
+    stage.style.height=`${Math.max(1,Math.round(area.offsetHeight*z))}px`;
+    stage.style.margin='0 auto';
+    const label=document.querySelector('#pmPrintPreview .pm-zoom-value');
+    if(label)label.textContent=`${Math.round(z*100)}%`;
+  }
+  function fitMobileA4(){applyMobileA4Zoom(0,true);}
+  function zoomMobileA4(delta){
+    const current=Number(window.__PM_QUOTATION_ZOOM)||0.5;
+    applyMobileA4Zoom(current+delta,false);
+  }
+  window.pmQuotationZoom=zoomMobileA4;
+  window.pmQuotationFit=fitMobileA4;
+  function bindMobileA4Gestures(){
+    const scroll=document.querySelector('#pmPrintPreview .pm-print-scroll');
+    if(!scroll||scroll.__pmA4GestureBound)return;
+    scroll.__pmA4GestureBound=true;
+    let startDistance=0,startZoom=0;
+    const distance=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+    scroll.addEventListener('touchstart',e=>{
+      if(e.touches.length===2){startDistance=distance(e.touches[0],e.touches[1]);startZoom=Number(window.__PM_QUOTATION_ZOOM)||.5;}
+    },{passive:true});
+    scroll.addEventListener('touchmove',e=>{
+      if(e.touches.length===2&&startDistance>0){
+        const next=startZoom*(distance(e.touches[0],e.touches[1])/startDistance);
+        applyMobileA4Zoom(next,false);
+      }
+    },{passive:true});
+    scroll.addEventListener('touchend',e=>{if(e.touches.length<2)startDistance=0;},{passive:true});
+  }
   function preview(){
     if(window.__PM_QUOTATION_PREVIEW_BUILDING)return;
     const stale=document.getElementById('pmPrintPreview'); if(stale) stale.remove(); document.body.classList.remove('pm-preview-open');
@@ -318,7 +363,7 @@
     if(!client||!company||!eventName)return msg('Isi Client, Perusahaan, dan Nama Event terlebih dahulu.');
     const number=S(window.__pmEditingQuotationNumber||window.__PM_EDIT_QUOTATION_NUMBER||window.__PM_LAST_QUOTATION_NUMBER)||`PM-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
     const overlay=document.createElement('div');overlay.id='pmPrintPreview';
-    overlay.innerHTML=`<div class="pm-print-toolbar"><div><strong>Preview Surat Penawaran</strong><span>A4 Portrait • ${E(number)}</span></div><div class="pm-print-actions"><button type="button" class="pm-close" onclick="closePrintPreview()">Tutup</button><button type="button" class="pm-print" onclick="executePrintPreview()" disabled>Menyiapkan...</button></div></div><div class="pm-print-scroll"><main class="pm-a4" id="pmPrintArea"><div style="padding:30px;text-align:center;color:#64748b;font-family:Arial,sans-serif">Menyiapkan preview A4...</div></main></div>`;
+    overlay.innerHTML=`<div class="pm-print-toolbar"><div><strong>Preview Surat Penawaran</strong><span>A4 Portrait • ${E(number)}</span></div><div class="pm-print-actions"><button type="button" class="pm-zoom-btn" onclick="pmQuotationZoom(-.1)" aria-label="Zoom out">−</button><span class="pm-zoom-value">Fit</span><button type="button" class="pm-zoom-btn" onclick="pmQuotationZoom(.1)" aria-label="Zoom in">+</button><button type="button" class="pm-zoom-fit" onclick="pmQuotationFit()">Fit</button><button type="button" class="pm-close" onclick="closePrintPreview()">Tutup</button><button type="button" class="pm-print" onclick="executePrintPreview()" disabled>Menyiapkan...</button></div></div><div class="pm-print-scroll"><div class="pm-a4-stage"><main class="pm-a4" id="pmPrintArea"><div style="padding:30px;text-align:center;color:#64748b;font-family:Arial,sans-serif">Menyiapkan preview A4...</div></main></div></div>`;
     document.body.appendChild(overlay);document.body.classList.add('pm-preview-open');
     window.__PM_QUOTATION_PREVIEW_BUILDING=true;
     let resolveReady;
@@ -347,6 +392,11 @@
         area.className=`pm-a4 pm-order-density-${density}`;
         area.innerHTML=`<div class="pm-top-accent"></div><header class="pm-letterhead"><div class="pm-logo-wrap">${t.logo_url?`<img class="logo" src="${E(t.logo_url)}" alt="Logo">`:'<div class="logo-fallback">PM</div>'}</div><div class="pm-brand"><div class="pm-brand-name">${E(t.kop_text||'PRIANGAN MULTIMEDIA')}</div><div class="pm-brand-sub">SALES & QUOTATION</div>${t.alamat?`<p>${E(t.alamat)}</p>`:''}<p>${E(t.telepon||t.whatsapp||'')}${t.email?' • '+E(t.email):''}</p></div><div class="pm-doc-tag"><span>QUOTATION</span><strong>${E(number)}</strong></div></header><div class="pm-title-row"><div><div class="pm-eyebrow">OFFICIAL BUSINESS PROPOSAL</div><h1>SURAT PENAWARAN HARGA</h1></div><div class="pm-date-box"><span>TANGGAL</span><strong>${periodFull(new Date().toISOString().slice(0,10),new Date().toISOString().slice(0,10))}</strong></div></div><section class="pm-info-card"><div class="pm-info-section"><div class="pm-section-label">DITUJUKAN KEPADA</div><div class="pm-client-name">${E(client)}</div><div>${E(company)}</div><div>${E(S(document.querySelector('#qw')?.value))}</div><div>${E(S(document.querySelector('#qe')?.value))}</div></div><div class="pm-info-section pm-event-section"><div class="pm-section-label">EVENT / PROJECT</div><div class="pm-event-name">${E(eventName)}</div><div class="pm-period-label">PERIODE</div><div>${E(periodFull(eventStart,eventEnd))}</div></div></section><p class="pm-opening">Dengan hormat,<br>Bersama ini kami sampaikan penawaran harga untuk kebutuhan event / project tersebut sebagai berikut:</p><table class="pm-items"><thead><tr><th>No.</th><th>Produk / Jasa</th><th>Qty / Dimensi</th><th>Jadwal</th><th>Harga</th><th>Subtotal</th></tr></thead><tbody>${htmlRows}${d.rp>0?`<tr class="pm-discount-row"><td colspan="5" class="right">DISKON (${Math.round(d.pct)}%)</td><td class="right">- ${M(d.rp)}</td></tr>`:''}<tr class="pm-total"><td colspan="5" class="right">GRAND TOTAL</td><td class="right">${M(d.total)}</td></tr></tbody></table><div class="pm-terms-signature-row"><section class="pm-terms"><div class="pm-section-heading"><span>01</span><strong>SYARAT &amp; KETENTUAN</strong></div><div class="pm-terms-body">${E(t.ketentuan||'Penawaran harga berlaku sesuai kesepakatan dan spesifikasi event.').replace(/\r?\n/g,'<br>')}</div></section><section class="pm-signature"><div class="pm-signature-label">HORMAT KAMI,</div><div class="pm-signature-box">${t.ttd_url?`<img class="signature" src="${E(t.ttd_url)}" alt="TTD">`:''}<div class="pm-signature-line"></div><strong>${E(t.nama_penandatangan||'____________________________')}</strong>${t.jabatan_penandatangan?`<div class="pm-signature-role">${E(t.jabatan_penandatangan)}</div>`:''}</div></section></div><footer class="pm-footer"><div>Terima kasih atas kepercayaan dan kesempatan yang diberikan kepada Priangan Multimedia.</div><strong>${E(t.kop_text||'PRIANGAN MULTIMEDIA')}</strong></footer>`;
         forceA4Layout();
+        bindMobileA4Gestures();
+        if(mobileA4Scale()){
+          requestAnimationFrame(()=>fitMobileA4());
+          window.addEventListener('resize',fitMobileA4,{passive:true});
+        }
         const printButton=overlay.querySelector('.pm-print');
         if(printButton){printButton.disabled=false;printButton.textContent='Cetak / Simpan PDF';}
         window.__PM_QUOTATION_PREVIEW_BUILDING=false;
