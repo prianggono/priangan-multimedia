@@ -166,20 +166,6 @@
       }
       #pmPaymentModal { display:none!important; }
     }
-    @media print {
-      html,body { background:#fff!important; }
-      body * { visibility:hidden!important; }
-      #pmPrintPreview,#pmPrintPreview *,#pmInvoiceDocumentPreview,#pmInvoiceDocumentPreview * { visibility:visible!important; }
-      #pmPrintPreview,#pmInvoiceDocumentPreview { position:absolute!important; inset:0!important; display:block!important; background:#fff!important; }
-      #pmPrintPreview .pm-print-toolbar,#pmInvoiceDocumentPreview .pm-inv-toolbar { display:none!important; }
-      #pmPrintPreview .pm-print-scroll,#pmInvoiceDocumentPreview .pm-inv-scroll { overflow:visible!important; padding:0!important; }
-      #pmPrintPreview .pm-a4,#pmInvoiceDocumentPreview .pm-inv-a4 { width:210mm!important; min-height:297mm!important; margin:0!important; box-shadow:none!important; }
-      #pmPrintPreview .pm-terms-signature-row { grid-template-columns:minmax(0,1.55fr) minmax(0,.85fr)!important; gap:8mm!important; }
-      .pm-items th { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-      .pm-top-accent,.pm-total td,.pm-discount-row td,.pm-info-card,.pm-event-section,.pm-section-heading,.pm-section-heading span,.pm-letterhead,.pm-package-print { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-      .pm-logo-wrap { background:transparent!important; border:0!important; box-shadow:none!important; }
-      .pm-letterhead .logo { background:transparent!important; border:0!important; box-shadow:none!important; }
-    }
   `;
 
   document.head.appendChild(style);
