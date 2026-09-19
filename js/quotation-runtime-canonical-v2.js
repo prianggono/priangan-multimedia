@@ -52,7 +52,7 @@
     return 'qty';
   }
 
-  function typeOf(item){ return itemMode(masterFor(item)) || S(item?.tipe || item?.tipe_perhitungan) || 'qty'; }
+  function typeOf(item){ return itemMode(masterFor(item)) || S(item?.tipe_perhitungan || item?.tipe) || 'qty'; }
 
   function isLED(item){
     const master=masterFor(item), text=`${S(master?.item)} ${S(master?.kategori)} ${S(master?.kode)} ${S(item?.item)} ${S(item?.kode)}`.toLowerCase();
