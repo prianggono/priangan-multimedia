@@ -111,6 +111,10 @@
       #pmPrintPreview .pm-print-scroll { display:block!important; width:210mm!important; height:auto!important; min-height:297mm!important; margin:0!important; padding:0!important; overflow:visible!important; background:#fff!important; }
       #pmPrintPreview .pm-a4-stage { display:block!important; width:210mm!important; height:auto!important; min-height:297mm!important; margin:0!important; padding:0!important; transform:none!important; position:relative!important; }
       #pmPrintPreview .pm-a4 { transform:none!important; box-shadow:none!important; overflow:visible!important; break-inside:auto!important; }
+      /* Keep the current quotation on one physical A4 page. */
+      #pmPrintPreview .pm-terms-signature-row { margin-top:6px!important; }
+      #pmPrintPreview .pm-terms { margin-top:0!important; }
+      #pmPrintPreview .pm-footer { margin-top:4px!important; padding-top:4px!important; }
 
       /* Invoice: same native A4 geometry; zoom/fit never enters the printed page. */
       #pmInvoiceDocumentPreview .pm-inv-scroll {
