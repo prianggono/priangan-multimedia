@@ -71,8 +71,8 @@
     .center { text-align:center!important; }
     .right { text-align:right!important; }
     .pm-total td { background:#eff6ff!important; color:#172554; font-weight:800; padding-top:8px; padding-bottom:8px; }
-    .pm-discount-row td { background:#f8fafc!important; color:#172554!important; font-weight:700; }
-    .pm-item-discount-line { color:#475569!important; font-size:6.8pt!important; }
+    .pm-discount-row td { background:#fff7ed!important; color:#9a3412!important; font-weight:700; }
+    .pm-item-discount-line { color:#b45309!important; font-size:6.8pt!important; }
     .pm-terms { margin-top:12px; border:1px solid #dbe3ef; border-radius:7px; overflow:hidden; }
     .pm-section-heading { display:flex; align-items:center; gap:6px; padding:4px 7px; background:#f8fafc; border-bottom:1px solid #dbe3ef; }
     .pm-section-heading span { display:inline-flex; width:16px; height:16px; align-items:center; justify-content:center; border-radius:4px; background:#2563eb; color:#fff; font-size:5.6pt; font-weight:800; }
