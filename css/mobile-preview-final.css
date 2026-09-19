@@ -18,6 +18,7 @@
 }
 #pmPrintPreview .pm-level-subtotal{color:#475569;font-size:6.8pt}
 #pmPrintPreview .pm-subtotal-cell{vertical-align:middle!important}
+#pmPrintPreview .pm-discount-row td{background:#fee2e2!important;color:#b91c1c!important;font-weight:800!important;}
 #pmPrintPreview .pm-quote-level-price{font-size:6.8pt;color:#475569;line-height:1.1;margin-top:1px;white-space:nowrap}
 #pmPrintPreview .pm-items{table-layout:fixed!important}
 #pmPrintPreview .pm-items th:nth-child(1),#pmPrintPreview .pm-items td:nth-child(1){width:8mm!important;white-space:nowrap!important}
