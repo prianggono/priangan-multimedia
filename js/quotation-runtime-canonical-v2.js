@@ -377,7 +377,7 @@
     if(!client||!company||!eventName)return msg('Isi Client, Perusahaan, dan Nama Event terlebih dahulu.');
     const number=S(window.__pmEditingQuotationNumber||window.__PM_EDIT_QUOTATION_NUMBER||window.__PM_LAST_QUOTATION_NUMBER)||`PM-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
     const overlay=document.createElement('div');overlay.id='pmPrintPreview';
-    overlay.innerHTML=`<div class="pm-print-toolbar"><div><strong>Preview Surat Penawaran</strong><span>A4 Portrait • ${E(number)}</span></div><div class="pm-print-actions"><button type="button" class="pm-zoom-btn" onclick="pmQuotationZoom(-.1)" aria-label="Zoom out">−</button><span class="pm-zoom-value">Fit</span><button type="button" class="pm-zoom-btn" onclick="pmQuotationZoom(.1)" aria-label="Zoom in">+</button><button type="button" class="pm-zoom-fit" onclick="pmQuotationFit()">Fit</button><button type="button" class="pm-close" onclick="closePrintPreview()">Tutup</button><button type="button" class="pm-print" onclick="executePrintPreview()" disabled>Menyiapkan...</button></div></div><div class="pm-print-scroll"><div class="pm-a4-stage"><main class="pm-a4" id="pmPrintArea"><div style="padding:30px;text-align:center;color:#64748b;font-family:Arial,sans-serif">Menyiapkan preview A4...</div></main></div></div>`;
+    overlay.innerHTML=`<div class="pm-print-toolbar"><div><strong>Preview Surat Penawaran</strong><span>A4 Portrait • ${E(number)}</span></div><div class="pm-print-actions"><button type="button" class="pm-zoom-btn" onclick="pmQuotationZoom(-.1)" aria-label="Zoom out">−</button><span class="pm-zoom-value">Fit</span><button type="button" class="pm-zoom-btn" onclick="pmQuotationZoom(.1)" aria-label="Zoom in">+</button><button type="button" class="pm-zoom-fit" onclick="pmQuotationFit()">Fit</button><button type="button" class="pm-share" onclick="shareQuotationWhatsApp()">WhatsApp</button><button type="button" class="pm-close" onclick="closePrintPreview()">Tutup</button><button type="button" class="pm-print" onclick="executePrintPreview()" disabled>Menyiapkan...</button></div></div><div class="pm-print-scroll"><div class="pm-a4-stage"><main class="pm-a4" id="pmPrintArea"><div style="padding:30px;text-align:center;color:#64748b;font-family:Arial,sans-serif">Menyiapkan preview A4...</div></main></div></div>`;
     document.body.appendChild(overlay);document.body.classList.add('pm-preview-open');
     window.__PM_QUOTATION_PREVIEW_BUILDING=true;
     let resolveReady;
@@ -428,6 +428,32 @@
       }finally{resolveReady();}
     },0);
   }
+  function shareQuotationWhatsApp(){
+    const number=S(document.querySelector('#qw')?.value);
+    const client=S(document.querySelector('#qc')?.value);
+    const company=S(document.querySelector('#qp')?.value);
+    const eventName=S(document.querySelector('#qeve')?.value);
+    const no=S(window.__pmEditingQuotationNumber||window.__PM_EDIT_QUOTATION_NUMBER||window.__PM_LAST_QUOTATION_NUMBER)||'Penawaran';
+    const total=N(window.__pmNetTotal);
+    const text=[
+      'Halo Bapak/Ibu '+(client||''),
+      '',
+      'Berikut kami kirimkan Surat Penawaran Harga dari Priangan Multimedia.',
+      'No. Penawaran: '+no,
+      company?'Perusahaan: '+company:'',
+      eventName?'Event / Project: '+eventName:'',
+      total?'Grand Total: '+M(total):'',
+      '',
+      'Terima kasih.'
+    ].filter(Boolean).join('\n');
+    const digits=number.replace(/\D/g,'');
+    let wa=digits;
+    if(wa.startsWith('0'))wa='62'+wa.slice(1);
+    else if(wa.startsWith('8'))wa='62'+wa;
+    const url='https://wa.me/'+(wa||'')+'?text='+encodeURIComponent(text);
+    window.open(url,'_blank','noopener,noreferrer');
+  }
+
   function closePreview(){document.getElementById('pmPrintPreview')?.remove();document.body.classList.remove('pm-preview-open');}
   async function executePreview(){if(window.__PM_QUOTATION_PREVIEW_READY)await window.__PM_QUOTATION_PREVIEW_READY;const area=document.getElementById('pmPrintArea');if(!area)return msg('Area A4 tidak ditemukan.');const images=[...area.querySelectorAll('img')];await Promise.all(images.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{let done=false;const finish=()=>{if(done)return;done=true;img.removeEventListener('load',finish);img.removeEventListener('error',finish);resolve();};img.addEventListener('load',finish);img.addEventListener('error',finish);setTimeout(finish,2500);})));forceA4Layout();const no=S(area.querySelector('.pm-doc-tag strong')?.textContent||window.__PM_LAST_QUOTATION_NUMBER||'Penawaran');document.title=`Penawaran - ${no}`;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));window.print();}
   function forceA4Layout(){
@@ -495,7 +521,7 @@
   }
 
 
-  window.addItem=addItem;window.removeItem=removeItem;window.toggleQuotationItem=toggleItem;window.pick=pick;window.upd=upd;window.drawItems=drawItems;window.printQuote=preview;window.closePrintPreview=closePreview;window.executePrintPreview=executePreview;
+  window.addItem=addItem;window.removeItem=removeItem;window.toggleQuotationItem=toggleItem;window.pick=pick;window.upd=upd;window.drawItems=drawItems;window.printQuote=preview;window.closePrintPreview=closePreview;window.executePrintPreview=executePrintPreview;window.shareQuotationWhatsApp=shareQuotationWhatsApp;
   window.__PM_QUOTATION_CORE={N,M,S,E,days,masterFor,itemMode,typeOf,itemSubtotal,baseTotal,itemDiscountState,discountState,sync,renderMargin,addItem,removeItem,pick,upd,drawItems,toggleItem,periodFull,periodShort,quotePackageMarkup,displayItemName,levelSubtotal,isLED};
 
   function boot(){installQuotationStyles();ensureDiscountUI();if(document.querySelector('#items'))drawItems();else sync();forceA4Layout();}
