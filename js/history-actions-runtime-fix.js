@@ -94,7 +94,7 @@
       if(!qr.data) return window.msg?.('Penawaran tidak ditemukan.');
 
       const q=qr.data,ss=sr.data||[],map=new Map();
-      ss.forEach(s=>map.set(String(s.penawaran_item_id??s.item_id),s));
+      ss.forEach(s=>map.set(String(s.item_id),s));
       window.items=(ir.data||[]).map((r,i)=>{
         const s=map.get(String(r.id))||ss[i]||{};
         const quotePrice = N(r.harga ?? r.harga_jual);
