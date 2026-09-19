@@ -20,7 +20,7 @@
 }
 #pmPrintPreview .pm-level-subtotal{color:#475569;font-size:6.8pt}
 #pmPrintPreview .pm-subtotal-cell{vertical-align:middle!important}
-#pmPrintPreview .pm-discount-row td{background:#f8fafc!important;color:#172554!important;font-weight:700!important;}
+#pmPrintPreview .pm-discount-row td{background:#fff7ed!important;color:#9a3412!important;font-weight:700!important;}
 #pmPrintPreview .pm-quote-level-price{font-size:6.8pt;color:#475569;line-height:1.1;margin-top:1px;white-space:nowrap}
 #pmPrintPreview .pm-items{table-layout:fixed!important}
 #pmPrintPreview .pm-items th:nth-child(1),#pmPrintPreview .pm-items td:nth-child(1){width:8mm!important;white-space:nowrap!important}
@@ -51,7 +51,7 @@
 #pmPrintPreview .pm-signature-line{width:125px!important;margin:2px auto 2px!important;}
 #pmPrintPreview .pm-signature-box strong{font-size:6.8pt!important;}
 #pmPrintPreview .pm-signature-role{font-size:6pt!important;}
-#pmPrintPreview .pm-item-discount-line{color:#475569!important;font-size:6.8pt!important;}
+#pmPrintPreview .pm-item-discount-line{color:#b45309!important;font-size:6.8pt!important;}
 #pmPrintPreview .pm-package-print-list{
   display:grid!important;
   grid-template-columns:minmax(0,1fr) auto!important;
