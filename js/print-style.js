@@ -88,6 +88,14 @@
     .pm-footer { margin-top:9px; padding-top:7px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; gap:15px; color:#94a3b8; font-size:6.6pt; }
     .pm-footer strong { color:#64748b; white-space:nowrap; }
 
+    /* FINAL INFO CARD: keep all client/event details visible in one A4 page. */
+    .pm-info-card{overflow:visible!important;}
+    .pm-info-section{padding:5px 8px!important;height:auto!important;min-height:0!important;overflow:visible!important;line-height:1.08!important;}
+    .pm-section-label{font-size:5.8pt!important;margin-bottom:2px!important;line-height:1.05!important;}
+    .pm-client-name,.pm-event-name{font-size:7.5pt!important;line-height:1.08!important;}
+    .pm-info-section > div:not(.pm-section-label):not(.pm-client-name):not(.pm-event-name){font-size:6.4pt!important;line-height:1.08!important;}
+    .pm-period-label{font-size:5.6pt!important;margin-top:3px!important;line-height:1.05!important;}
+
     /* Single print authority for quotation + invoice. Preview zoom is screen-only. */
     @page { size:A4 portrait; margin:0; }
     @media print {
