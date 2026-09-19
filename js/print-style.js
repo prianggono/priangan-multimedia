@@ -110,8 +110,8 @@
 
       /* Quotation: print the same native A4 DOM and geometry used by the preview. Only viewer chrome is removed. */
       #pmPrintPreview .pm-print-scroll { display:block!important; width:210mm!important; height:auto!important; min-height:297mm!important; margin:0!important; padding:0!important; overflow:visible!important; background:#fff!important; }
-      #pmPrintPreview .pm-a4-stage { display:block!important; width:210mm!important; height:auto!important; min-height:297mm!important; margin:0!important; padding:0!important; transform:none!important; position:relative!important; }
-      #pmPrintPreview .pm-a4 { display:flex!important; flex-direction:column!important; transform:none!important; box-shadow:none!important; overflow:visible!important; break-inside:auto!important; }
+      #pmPrintPreview .pm-a4-stage { display:block!important; width:210mm!important; height:297mm!important; min-height:297mm!important; max-height:297mm!important; margin:0!important; padding:0!important; transform:none!important; position:relative!important; }
+      #pmPrintPreview .pm-a4 { display:flex!important; flex-direction:column!important; width:210mm!important; min-width:210mm!important; height:297mm!important; min-height:297mm!important; max-height:297mm!important; transform:none!important; box-shadow:none!important; overflow:hidden!important; break-inside:avoid!important; page-break-after:avoid!important; }
       /* Keep the current quotation on one physical A4 page. */
       #pmPrintPreview .pm-terms-signature-row { margin-top:auto!important; }
       #pmPrintPreview .pm-terms { margin-top:0!important; }
