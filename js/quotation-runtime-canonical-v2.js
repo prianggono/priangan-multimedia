@@ -427,6 +427,27 @@
       }finally{resolveReady();}
     },0);
   }
+  function closePreview(){
+    const overlay=document.getElementById('pmPrintPreview');
+    if(overlay)overlay.remove();
+    document.body.classList.remove('pm-preview-open');
+    window.__PM_QUOTATION_PREVIEW_BUILDING=false;
+    window.__PM_QUOTATION_PREVIEW_READY=null;
+  }
+
+  async function executePreview(){
+    const overlay=document.getElementById('pmPrintPreview');
+    if(!overlay)return msg('Preview A4 belum dibuka.');
+    try{
+      if(window.__PM_QUOTATION_PREVIEW_READY) await window.__PM_QUOTATION_PREVIEW_READY;
+      if(!document.getElementById('pmPrintArea'))return msg('Preview A4 belum siap.');
+      requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
+    }catch(e){
+      console.error('[PM] quotation print',e);
+      msg('Gagal menyiapkan cetak: '+(e.message||e));
+    }
+  }
+
   async function shareQuotationWhatsApp(){
     const number=S(document.querySelector('#qw')?.value);
     const client=S(document.querySelector('#qc')?.value);
@@ -565,7 +586,7 @@
   window.addItem=addItem;window.removeItem=removeItem;window.toggleQuotationItem=toggleItem;window.pick=pick;window.upd=upd;window.drawItems=drawItems;window.printQuote=preview;window.closePrintPreview=closePreview;window.executePrintPreview=executePreview;window.shareQuotationWhatsApp=shareQuotationWhatsApp;
   window.__PM_QUOTATION_CORE={N,M,S,E,days,masterFor,itemMode,typeOf,itemSubtotal,baseTotal,itemDiscountState,discountState,sync,renderMargin,addItem,removeItem,pick,upd,drawItems,toggleItem,periodFull,periodShort,quotePackageMarkup,displayItemName,levelSubtotal,isLED};
 
-  function boot(){installQuotationStyles();ensureDiscountUI();if(document.querySelector('#items'))drawItems();else sync();forceA4Layout();}
+  function boot(){installQuotationStyles();ensureDiscountUI();if(document.querySelector('#items'))drawItems();else sync();}
   [0,150,350,700,1200].forEach(ms=>setTimeout(boot,ms));
   document.addEventListener('input',e=>{if(e.target?.id==='pmDiscPct'||e.target?.id==='pmDisc'){clearTimeout(window.__pmQuotationSyncTimer);window.__pmQuotationSyncTimer=setTimeout(sync,40);}},true);
   document.addEventListener('change',e=>{if(e.target?.closest?.('#items')){clearTimeout(window.__pmQuotationItemsTimer);window.__pmQuotationItemsTimer=setTimeout(sync,40);}},true);
