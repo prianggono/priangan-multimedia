@@ -495,10 +495,17 @@
       clone.remove();
 
       const file=new File([blob],filename,{type:'application/pdf'});
-      if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
-        await navigator.share({title:'Surat Penawaran '+no,text:caption,files:[file]});
-        msg('PDF siap dibagikan.');
-        return;
+      if(navigator.share){
+        try{
+          if(!navigator.canShare || navigator.canShare({files:[file]})){
+            await navigator.share({title:'Surat Penawaran '+no,text:caption,files:[file]});
+            msg('PDF siap dibagikan.');
+            return;
+          }
+        }catch(e){
+          if(e?.name==='AbortError') return;
+          console.warn('[PM] file share tidak tersedia, mencoba share biasa',e);
+        }
       }
 
       const downloadUrl=URL.createObjectURL(blob);
@@ -510,9 +517,20 @@
       a.remove();
       setTimeout(()=>URL.revokeObjectURL(downloadUrl),30000);
 
-      const waUrl='https://wa.me/'+(wa||'')+'?text='+encodeURIComponent(caption);
-      window.open(waUrl,'_blank','noopener,noreferrer');
-      msg('PDF sudah diunduh. Lampirkan file PDF tersebut di WhatsApp.');
+      if(navigator.share){
+        try{
+          await navigator.share({
+            title:'Surat Penawaran '+no,
+            text:caption+'\\n\\nFile PDF sudah diunduh ke perangkat. Silakan pilih WhatsApp atau aplikasi lain untuk mengirimkannya.'
+          });
+          msg('PDF sudah diunduh dan menu berbagi aplikasi dibuka.');
+          return;
+        }catch(e){
+          if(e?.name==='AbortError') return;
+        }
+      }
+
+      msg('PDF sudah diunduh. Pilih aplikasi untuk mengirim file PDF tersebut.');
     }catch(e){
       const leftover=document.getElementById('pmPdfExportArea');
       if(leftover)leftover.remove();
