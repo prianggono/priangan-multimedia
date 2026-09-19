@@ -513,7 +513,7 @@
       await window.__PM_QUOTATION_PREVIEW_READY;
       const clone=source.cloneNode(true);
       clone.id='pmPdfExportArea';
-      clone.style.cssText='position:absolute;left:-100000px;top:0;width:210mm;min-width:210mm;max-width:none;min-height:297mm;height:auto;margin:0;background:#fff;color:#111;transform:none!important;overflow:visible!important;box-sizing:border-box;';
+      clone.style.cssText='position:absolute;left:-100000px;top:0;width:210mm;min-width:210mm;max-width:none;height:297mm;min-height:297mm;max-height:297mm;margin:0;background:#fff;color:#111;transform:none!important;overflow:hidden!important;box-sizing:border-box;break-inside:avoid;page-break-after:avoid;';
       clone.querySelectorAll('*').forEach(el=>{
         el.style.maxWidth=el.style.maxWidth==='none'?'none':el.style.maxWidth;
         el.style.transform='none';
@@ -528,7 +528,7 @@
         image:{type:'jpeg',quality:.98},
         html2canvas:{scale:2,useCORS:true,backgroundColor:'#fff',logging:false},
         jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},
-        pagebreak:{mode:['css','legacy']}
+        pagebreak:{mode:['css'],avoid:['.pm-terms-signature-row','.pm-footer']}
       };
 
       const blob=await html2pdf().set(opt).from(clone).outputPdf('blob');
