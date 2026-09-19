@@ -442,6 +442,12 @@
     try{
       if(window.__PM_QUOTATION_PREVIEW_READY) await window.__PM_QUOTATION_PREVIEW_READY;
       if(!document.getElementById('pmPrintArea'))return msg('Preview A4 belum siap.');
+      const previousTitle=document.title;
+      const quotationNo=S(window.__pmEditingQuotationNumber||window.__PM_EDIT_QUOTATION_NUMBER||window.__PM_LAST_QUOTATION_NUMBER)||'Penawaran';
+      const safeTitle=quotationNo.replace(/[^a-z0-9_-]+/gi,'-').replace(/^-+|-+$/g,'')||'Penawaran';
+      document.title=safeTitle;
+      const restoreTitle=()=>{document.title=previousTitle;window.removeEventListener('afterprint',restoreTitle);};
+      window.addEventListener('afterprint',restoreTitle,{once:true});
       requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
     }catch(e){
       console.error('[PM] quotation print',e);
