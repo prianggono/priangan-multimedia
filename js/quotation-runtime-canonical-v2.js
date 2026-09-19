@@ -377,7 +377,7 @@
     if(!client||!company||!eventName)return msg('Isi Client, Perusahaan, dan Nama Event terlebih dahulu.');
     const number=S(window.__pmEditingQuotationNumber||window.__PM_EDIT_QUOTATION_NUMBER||window.__PM_LAST_QUOTATION_NUMBER)||`PM-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
     const overlay=document.createElement('div');overlay.id='pmPrintPreview';
-    overlay.innerHTML=`<div class="pm-print-toolbar"><div><strong>Preview Surat Penawaran</strong><span>A4 Portrait • ${E(number)}</span></div><div class="pm-print-actions"><button type="button" class="pm-zoom-btn" onclick="pmQuotationZoom(-.1)" aria-label="Zoom out">−</button><span class="pm-zoom-value">Fit</span><button type="button" class="pm-zoom-btn" onclick="pmQuotationZoom(.1)" aria-label="Zoom in">+</button><button type="button" class="pm-zoom-fit" onclick="pmQuotationFit()">Fit</button><button type="button" class="pm-share" onclick="shareQuotationWhatsApp()">Share</button><button type="button" class="pm-close" onclick="closePrintPreview()">Tutup</button><button type="button" class="pm-print" onclick="executePrintPreview()" disabled>Menyiapkan...</button></div></div><div class="pm-print-scroll"><div class="pm-a4-stage"><main class="pm-a4" id="pmPrintArea"><div style="padding:30px;text-align:center;color:#64748b;font-family:Arial,sans-serif">Menyiapkan preview A4...</div></main></div></div>`;
+    overlay.innerHTML=`<div class="pm-print-toolbar"><div><strong>Preview Surat Penawaran</strong><span>A4 Portrait • ${E(number)}</span></div><div class="pm-print-actions"><button type="button" class="pm-zoom-btn" onclick="pmQuotationZoom(-.1)" aria-label="Zoom out">−</button><span class="pm-zoom-value">Fit</span><button type="button" class="pm-zoom-btn" onclick="pmQuotationZoom(.1)" aria-label="Zoom in">+</button><button type="button" class="pm-zoom-fit" onclick="pmQuotationFit()">Fit</button><button type="button" class="pm-share" onclick="shareQuotationWhatsApp()">Kirim PDF</button><button type="button" class="pm-close" onclick="closePrintPreview()">Tutup</button><button type="button" class="pm-print" onclick="executePrintPreview()" disabled>Menyiapkan...</button></div></div><div class="pm-print-scroll"><div class="pm-a4-stage"><main class="pm-a4" id="pmPrintArea"><div style="padding:30px;text-align:center;color:#64748b;font-family:Arial,sans-serif">Menyiapkan preview A4...</div></main></div></div>`;
     document.body.appendChild(overlay);document.body.classList.add('pm-preview-open');
     window.__PM_QUOTATION_PREVIEW_BUILDING=true;
     let resolveReady;
@@ -428,14 +428,14 @@
       }finally{resolveReady();}
     },0);
   }
-  function shareQuotationWhatsApp(){
+  async function shareQuotationWhatsApp(){
     const number=S(document.querySelector('#qw')?.value);
     const client=S(document.querySelector('#qc')?.value);
     const company=S(document.querySelector('#qp')?.value);
     const eventName=S(document.querySelector('#qeve')?.value);
     const no=S(window.__pmEditingQuotationNumber||window.__PM_EDIT_QUOTATION_NUMBER||window.__PM_LAST_QUOTATION_NUMBER)||'Penawaran';
     const total=N(window.__pmNetTotal);
-    const text=[
+    const caption=[
       'Halo Bapak/Ibu '+(client||''),
       '',
       'Berikut kami kirimkan Surat Penawaran Harga dari Priangan Multimedia.',
@@ -446,81 +446,86 @@
       '',
       'Terima kasih.'
     ].filter(Boolean).join('\n');
+
     const digits=number.replace(/\D/g,'');
     let wa=digits;
     if(wa.startsWith('0'))wa='62'+wa.slice(1);
     else if(wa.startsWith('8'))wa='62'+wa;
-    const url='https://wa.me/'+(wa||'')+'?text='+encodeURIComponent(text);
-    window.open(url,'_blank','noopener,noreferrer');
+
+    if(typeof html2pdf==='undefined'){
+      msg('Pembuat PDF belum siap. Tunggu sebentar lalu coba lagi.');
+      return;
+    }
+
+    const source=document.querySelector('#pmPrintArea');
+    if(!source){
+      msg('Preview A4 belum siap.');
+      return;
+    }
+
+    const shareButton=document.querySelector('#pmPrintPreview .pm-share');
+    if(shareButton){
+      shareButton.disabled=true;
+      shareButton.textContent='Membuat PDF...';
+    }
+
+    try{
+      await window.__PM_QUOTATION_PREVIEW_READY;
+      const clone=source.cloneNode(true);
+      clone.id='pmPdfExportArea';
+      clone.style.cssText='position:absolute;left:-100000px;top:0;width:210mm;min-width:210mm;max-width:none;min-height:297mm;height:auto;margin:0;background:#fff;color:#111;transform:none!important;overflow:visible!important;box-sizing:border-box;';
+      clone.querySelectorAll('*').forEach(el=>{
+        el.style.maxWidth=el.style.maxWidth==='none'?'none':el.style.maxWidth;
+        el.style.transform='none';
+      });
+      document.body.appendChild(clone);
+
+      const safeNo=no.replace(/[^a-z0-9_-]+/gi,'-').replace(/^-+|-+$/g,'')||'Penawaran';
+      const filename=safeNo+'.pdf';
+      const opt={
+        margin:0,
+        filename,
+        image:{type:'jpeg',quality:.98},
+        html2canvas:{scale:2,useCORS:true,backgroundColor:'#fff',logging:false},
+        jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},
+        pagebreak:{mode:['css','legacy']}
+      };
+
+      const blob=await html2pdf().set(opt).from(clone).outputPdf('blob');
+      clone.remove();
+
+      const file=new File([blob],filename,{type:'application/pdf'});
+      if(navigator.share && navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({title:'Surat Penawaran '+no,text:caption,files:[file]});
+        msg('PDF siap dibagikan.');
+        return;
+      }
+
+      const downloadUrl=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=downloadUrl;
+      a.download=filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(()=>URL.revokeObjectURL(downloadUrl),30000);
+
+      const waUrl='https://wa.me/'+(wa||'')+'?text='+encodeURIComponent(caption);
+      window.open(waUrl,'_blank','noopener,noreferrer');
+      msg('PDF sudah diunduh. Lampirkan file PDF tersebut di WhatsApp.');
+    }catch(e){
+      const leftover=document.getElementById('pmPdfExportArea');
+      if(leftover)leftover.remove();
+      console.error('[PM] PDF share',e);
+      if(e?.name==='AbortError') return;
+      msg('Gagal membuat PDF: '+(e.message||e));
+    }finally{
+      if(shareButton){
+        shareButton.disabled=false;
+        shareButton.textContent='Kirim PDF';
+      }
+    }
   }
-
-  function closePreview(){document.getElementById('pmPrintPreview')?.remove();document.body.classList.remove('pm-preview-open');}
-  async function executePreview(){if(window.__PM_QUOTATION_PREVIEW_READY)await window.__PM_QUOTATION_PREVIEW_READY;const area=document.getElementById('pmPrintArea');if(!area)return msg('Area A4 tidak ditemukan.');const images=[...area.querySelectorAll('img')];await Promise.all(images.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{let done=false;const finish=()=>{if(done)return;done=true;img.removeEventListener('load',finish);img.removeEventListener('error',finish);resolve();};img.addEventListener('load',finish);img.addEventListener('error',finish);setTimeout(finish,2500);})));forceA4Layout();const no=S(area.querySelector('.pm-doc-tag strong')?.textContent||window.__PM_LAST_QUOTATION_NUMBER||'Penawaran');document.title=`Penawaran - ${no}`;await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));window.print();}
-  function forceA4Layout(){
-    const id='pmQuotationDomainPrintStyles';
-    if(document.getElementById(id))return;
-    const st=document.createElement('style');
-    st.id=id;
-    st.textContent=`#pmPrintPreview .pm-a4{width:210mm!important;min-width:210mm!important;min-height:297mm!important;height:auto!important;max-height:none!important;box-sizing:border-box!important;margin:0 auto!important;position:relative!important;background:#fff!important;overflow:visible!important}
-      /* Quotation document geometry is identical on screen and print. Mobile only scales the outer stage. */
-      #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:65% 27%!important;gap:8%!important;align-items:start!important}
-      #pmPrintPreview .pm-terms{margin:0!important;min-width:0!important}
-      #pmPrintPreview .pm-terms-body{padding:3px 6px!important;font-size:5.4pt!important;line-height:1.06!important}
-      #pmPrintPreview .pm-section-heading{padding:3px 5px!important}
-      #pmPrintPreview .pm-section-heading span{width:15px!important;height:15px!important;font-size:5pt!important}
-      #pmPrintPreview .pm-section-heading strong{font-size:5.7pt!important}
-      #pmPrintPreview .pm-signature{width:120px!important;margin:27px 0 0 auto!important;text-align:center!important;align-self:start!important;justify-self:end!important}
-      #pmPrintPreview .pm-signature-label{font-size:5.4pt!important}
-      #pmPrintPreview .pm-signature-box{min-height:0!important}
-      #pmPrintPreview .pm-signature .signature{max-width:82px!important;height:44px!important}
-      #pmPrintPreview .pm-signature-line{width:112px!important;margin:2px auto 2px!important}
-      #pmPrintPreview .pm-signature-box strong{font-size:6.1pt!important}
-      #pmPrintPreview .pm-signature-role{font-size:5.8pt!important}
-      #pmPrintPreview .pm-subtotal-line{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:1px 0}
-      #pmPrintPreview .pm-level-subtotal{color:#475569;font-size:6.8pt}
-      #pmPrintPreview .pm-item-discount-line{color:#b45309;font-size:6.8pt}
-      #pmPrintPreview .pm-item-net-line{font-weight:700}
-      #pmPrintPreview .pm-subtotal-cell{vertical-align:middle!important}
-      #pmPrintPreview .pm-quote-level-price{font-size:6.8pt;color:#475569;line-height:1.1;margin-top:1px;white-space:nowrap}
-      #pmPrintPreview .pm-items{table-layout:fixed!important}
-      #pmPrintPreview .pm-items th:nth-child(1),#pmPrintPreview .pm-items td:nth-child(1){width:8mm!important;white-space:nowrap!important}
-      #pmPrintPreview .pm-items th:nth-child(2),#pmPrintPreview .pm-items td:nth-child(2){width:auto!important;min-width:0!important}
-      #pmPrintPreview .pm-items th:nth-child(3),#pmPrintPreview .pm-items td:nth-child(3){width:27mm!important}
-      #pmPrintPreview .pm-items th:nth-child(4),#pmPrintPreview .pm-items td:nth-child(4){width:29mm!important}
-      #pmPrintPreview .pm-items th:nth-child(5),#pmPrintPreview .pm-items td:nth-child(5){width:31mm!important}
-      #pmPrintPreview .pm-items th:nth-child(6),#pmPrintPreview .pm-items td:nth-child(6){width:34mm!important}
-      #pmPrintPreview .pm-items td.right{white-space:nowrap!important}
-      #pmPrintPreview .pm-package-print-list{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:1px 8px!important}
-      #pmPrintPreview .pm-package-print-list span{display:contents!important}
-      #pmPrintPreview .pm-package-print-list span b{min-width:0!important;overflow-wrap:break-word!important;word-break:normal!important}
-      #pmPrintPreview .pm-package-print-list span em{grid-column:2!important;white-space:nowrap!important;text-align:right!important}
-      #pmPrintPreview .pm-order-density-compact-1 .pm-items{font-size:7.1pt!important}
-      #pmPrintPreview .pm-order-density-compact-1 .pm-items th,#pmPrintPreview .pm-order-density-compact-1 .pm-items td{padding:4px 4px!important;line-height:1.16!important}
-      #pmPrintPreview .pm-order-density-compact-1 .pm-package-print{margin-top:3px!important;padding:3px 4px 2px!important}
-      #pmPrintPreview .pm-order-density-compact-1 .pm-package-print-list span{font-size:6pt!important;line-height:1.12!important}
-      #pmPrintPreview .pm-order-density-compact-2 .pm-items{font-size:6.5pt!important}
-      #pmPrintPreview .pm-order-density-compact-2 .pm-items th,#pmPrintPreview .pm-order-density-compact-2 .pm-items td{padding:3px 3px!important;line-height:1.08!important}
-      #pmPrintPreview .pm-order-density-compact-2 .pm-package-print{margin-top:2px!important;padding:2px 3px 1px!important}
-      #pmPrintPreview .pm-order-density-compact-2 .pm-package-print-list span{font-size:5.6pt!important;line-height:1.05!important}
-      #pmPrintPreview .pm-order-density-compact-3 .pm-items{font-size:5.9pt!important}
-      #pmPrintPreview .pm-order-density-compact-3 .pm-items th,#pmPrintPreview .pm-order-density-compact-3 .pm-items td{padding:2.4px 2.5px!important;line-height:1.02!important}
-      #pmPrintPreview .pm-order-density-compact-3 .pm-package-print{margin-top:1px!important;padding:1px 2px!important;border-left-width:2px!important}
-      #pmPrintPreview .pm-order-density-compact-3 .pm-package-print-title{font-size:5.2pt!important;margin-bottom:1px!important}
-      #pmPrintPreview .pm-order-density-compact-3 .pm-package-print-list span{font-size:5pt!important;line-height:1!important}
-      #pmPrintPreview .pm-order-density-compact-4 .pm-items{font-size:5.4pt!important}
-      #pmPrintPreview .pm-order-density-compact-4 .pm-items th,#pmPrintPreview .pm-order-density-compact-4 .pm-items td{padding:1.8px 2px!important;line-height:1!important}
-      #pmPrintPreview .pm-order-density-compact-4 .pm-package-print{margin-top:.5px!important;padding:.5px 1.5px!important}
-      #pmPrintPreview .pm-order-density-compact-4 .pm-package-print-title{font-size:4.8pt!important;margin-bottom:.5px!important}
-      #pmPrintPreview .pm-order-density-compact-4 .pm-package-print-list span{font-size:4.6pt!important;line-height:1!important}
-      #pmPrintPreview .pm-order-density-compact-5 .pm-items{font-size:4.9pt!important}
-      #pmPrintPreview .pm-order-density-compact-5 .pm-items th,#pmPrintPreview .pm-order-density-compact-5 .pm-items td{padding:1.4px 1.6px!important;line-height:.98!important}
-      #pmPrintPreview .pm-order-density-compact-5 .pm-package-print{margin-top:0!important;padding:.3px 1px!important}
-      #pmPrintPreview .pm-order-density-compact-5 .pm-package-print-title{font-size:4.5pt!important;margin-bottom:.3px!important}
-      #pmPrintPreview .pm-order-density-compact-5 .pm-package-print-list span{font-size:4.2pt!important;line-height:.96!important}`;
-    document.head.appendChild(st);
-  }
-
-
   window.addItem=addItem;window.removeItem=removeItem;window.toggleQuotationItem=toggleItem;window.pick=pick;window.upd=upd;window.drawItems=drawItems;window.printQuote=preview;window.closePrintPreview=closePreview;window.executePrintPreview=executePreview;window.shareQuotationWhatsApp=shareQuotationWhatsApp;
   window.__PM_QUOTATION_CORE={N,M,S,E,days,masterFor,itemMode,typeOf,itemSubtotal,baseTotal,itemDiscountState,discountState,sync,renderMargin,addItem,removeItem,pick,upd,drawItems,toggleItem,periodFull,periodShort,quotePackageMarkup,displayItemName,levelSubtotal,isLED};
 
