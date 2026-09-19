@@ -591,5 +591,4 @@
   document.addEventListener('input',e=>{if(e.target?.id==='pmDiscPct'||e.target?.id==='pmDisc'){clearTimeout(window.__pmQuotationSyncTimer);window.__pmQuotationSyncTimer=setTimeout(sync,40);}},true);
   document.addEventListener('change',e=>{if(e.target?.closest?.('#items')){clearTimeout(window.__pmQuotationItemsTimer);window.__pmQuotationItemsTimer=setTimeout(sync,40);}},true);
   document.addEventListener('click',e=>{if(e.target?.closest?.('[data-p="quotation"]')){window.__PM_DISC_MODE='rp';window.__pmDiscountBase=0;window.__pmDiscountValue=0;window.__pmDiscountPct=0;window.__pmNetTotal=0;window.__PM_QUOTATION_OPEN_ITEM_ID=null;window.__pmEditingQuotationId=null;window.__PM_EDIT_QUOTATION_ID=null;window.__pmEditingQuotationNumber=null;window.__PM_EDIT_QUOTATION_NUMBER=null;setTimeout(()=>{ensureDiscountUI();if(document.querySelector('#items'))drawItems();else sync();},80);}},true);
-  window.addEventListener('beforeprint',()=>{forceA4Layout();},true);
 })();
