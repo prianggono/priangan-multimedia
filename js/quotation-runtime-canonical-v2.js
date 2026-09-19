@@ -427,16 +427,16 @@
       /* Quotation document geometry is identical on screen and print. Mobile only scales the outer stage. */
       #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:65% 27%!important;gap:8%!important;align-items:start!important}
       #pmPrintPreview .pm-terms{margin:0!important;min-width:0!important}
-      #pmPrintPreview .pm-terms-body{padding:4px 6px!important;font-size:5.8pt!important;line-height:1.12!important}
+      #pmPrintPreview .pm-terms-body{padding:3px 6px!important;font-size:5.4pt!important;line-height:1.06!important}
       #pmPrintPreview .pm-section-heading{padding:3px 5px!important}
       #pmPrintPreview .pm-section-heading span{width:15px!important;height:15px!important;font-size:5pt!important}
-      #pmPrintPreview .pm-section-heading strong{font-size:6pt!important}
-      #pmPrintPreview .pm-signature{width:120px!important;margin:18px 0 0 auto!important;text-align:center!important;align-self:start!important;justify-self:end!important}
-      #pmPrintPreview .pm-signature-label{font-size:6.2pt!important}
+      #pmPrintPreview .pm-section-heading strong{font-size:5.7pt!important}
+      #pmPrintPreview .pm-signature{width:120px!important;margin:27px 0 0 auto!important;text-align:center!important;align-self:start!important;justify-self:end!important}
+      #pmPrintPreview .pm-signature-label{font-size:5.4pt!important}
       #pmPrintPreview .pm-signature-box{min-height:0!important}
-      #pmPrintPreview .pm-signature .signature{max-width:88px!important;height:48px!important}
-      #pmPrintPreview .pm-signature-line{width:120px!important;margin:2px auto 2px!important}
-      #pmPrintPreview .pm-signature-box strong{font-size:6.6pt!important}
+      #pmPrintPreview .pm-signature .signature{max-width:82px!important;height:44px!important}
+      #pmPrintPreview .pm-signature-line{width:112px!important;margin:2px auto 2px!important}
+      #pmPrintPreview .pm-signature-box strong{font-size:6.1pt!important}
       #pmPrintPreview .pm-signature-role{font-size:5.8pt!important}
       #pmPrintPreview .pm-subtotal-line{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:1px 0}
       #pmPrintPreview .pm-level-subtotal{color:#475569;font-size:6.8pt}
