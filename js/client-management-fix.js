@@ -84,7 +84,7 @@
           <div class="field"><label>Nama Client *</label><input id="cn" value="${esc(c?.nama_client)}"></div>
           <div class="field"><label>Perusahaan</label><input id="cp" value="${esc(c?.perusahaan)}"></div>
           <div class="field"><label>Telepon</label><input id="ct" value="${esc(c?.telepon_wa || c?.telepon || c?.whatsapp)}"></div>
-          <div class="field"><label>WhatsApp</label><input id="cw" value="${esc(c?.whatsapp || c?.telepon_wa || c?.telepon)}"></div>
+          <div class="field"><label>WhatsApp</label><input id="cw" value="${esc(c?.telepon_wa || c?.whatsapp || c?.telepon)}"></div>
           <div class="field"><label>Email</label><input id="ce" type="email" value="${esc(c?.email)}"></div>
           <div class="field"><label>Alamat</label><input id="ca" value="${esc(c?.alamat)}"></div>
         </div>
