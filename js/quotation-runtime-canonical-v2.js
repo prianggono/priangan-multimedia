@@ -427,11 +427,11 @@
       /* Quotation document geometry is identical on screen and print. Mobile only scales the outer stage. */
       #pmPrintPreview .pm-terms-signature-row{display:grid!important;grid-template-columns:65% 27%!important;gap:8%!important;align-items:start!important}
       #pmPrintPreview .pm-terms{margin:0!important;min-width:0!important}
-      #pmPrintPreview .pm-terms-body{padding:5px 7px!important;font-size:6.4pt!important;line-height:1.18!important}
-      #pmPrintPreview .pm-section-heading{padding:4px 6px!important}
-      #pmPrintPreview .pm-section-heading span{width:16px!important;height:16px!important;font-size:5.5pt!important}
-      #pmPrintPreview .pm-section-heading strong{font-size:6.6pt!important}
-      #pmPrintPreview .pm-signature{width:120px!important;margin:0 0 0 auto!important;text-align:center!important;align-self:start!important;justify-self:end!important}
+      #pmPrintPreview .pm-terms-body{padding:4px 6px!important;font-size:5.8pt!important;line-height:1.12!important}
+      #pmPrintPreview .pm-section-heading{padding:3px 5px!important}
+      #pmPrintPreview .pm-section-heading span{width:15px!important;height:15px!important;font-size:5pt!important}
+      #pmPrintPreview .pm-section-heading strong{font-size:6pt!important}
+      #pmPrintPreview .pm-signature{width:120px!important;margin:18px 0 0 auto!important;text-align:center!important;align-self:start!important;justify-self:end!important}
       #pmPrintPreview .pm-signature-label{font-size:6.2pt!important}
       #pmPrintPreview .pm-signature-box{min-height:0!important}
       #pmPrintPreview .pm-signature .signature{max-width:88px!important;height:48px!important}
