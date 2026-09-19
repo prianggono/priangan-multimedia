@@ -57,6 +57,10 @@
     background:#334155!important;
     color:#fff!important;
   }
+  #pmPrintPreview .pm-share{
+    background:#16a34a!important;
+    color:#fff!important;
+  }
   #pmPrintPreview .pm-zoom-value{
     display:inline-flex!important;
     align-items:center!important;
