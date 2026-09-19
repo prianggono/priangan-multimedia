@@ -69,8 +69,15 @@
   }
   function baseTotal(){ return Math.round(items().filter(x=>x&&S(x.kode)&&S(x.item)).reduce((a,x)=>a+itemSubtotal(x),0)); }
 
+  function itemDiscountState(item){
+    const base=Math.max(0,N(itemSubtotal(item)));
+    const pct=Math.max(0,Math.min(100,N(item?.diskon_persen)));
+    const explicit=Math.max(0,N(item?.diskon_nominal));
+    const nominal=pct>0?Math.min(base,Math.round(base*pct/100)):Math.min(base,Math.round(explicit));
+    return {base,rp:nominal,net:Math.max(0,base-nominal)};
+  }
   function discountState(){
-    const base=Math.max(0,baseTotal());
+    const base=Math.max(0,items().filter(x=>x&&S(x.kode)&&S(x.item)).reduce((sum,item)=>sum+itemDiscountState(item).net,0));
     const p=document.querySelector('#pmDiscPct'), r=document.querySelector('#pmDisc');
     let mode=window.__PM_DISC_MODE||'rp';
     if(p && document.activeElement===p) mode='pct';
@@ -482,7 +489,7 @@
 
 
   window.addItem=addItem;window.removeItem=removeItem;window.toggleQuotationItem=toggleItem;window.pick=pick;window.upd=upd;window.drawItems=drawItems;window.printQuote=preview;window.closePrintPreview=closePreview;window.executePrintPreview=executePreview;
-  window.__PM_QUOTATION_CORE={N,M,S,E,days,masterFor,itemMode,typeOf,itemSubtotal,baseTotal,discountState,sync,renderMargin,addItem,removeItem,pick,upd,drawItems,toggleItem,periodFull,periodShort,quotePackageMarkup,displayItemName,levelSubtotal,isLED};
+  window.__PM_QUOTATION_CORE={N,M,S,E,days,masterFor,itemMode,typeOf,itemSubtotal,baseTotal,itemDiscountState,discountState,sync,renderMargin,addItem,removeItem,pick,upd,drawItems,toggleItem,periodFull,periodShort,quotePackageMarkup,displayItemName,levelSubtotal,isLED};
 
   function boot(){installQuotationStyles();ensureDiscountUI();if(document.querySelector('#items'))drawItems();else sync();forceA4Layout();}
   [0,150,350,700,1200].forEach(ms=>setTimeout(boot,ms));
