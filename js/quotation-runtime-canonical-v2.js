@@ -453,8 +453,27 @@
     else if(wa.startsWith('8'))wa='62'+wa;
 
     if(typeof html2pdf==='undefined'){
-      msg('Pembuat PDF belum siap. Tunggu sebentar lalu coba lagi.');
-      return;
+      try{
+        await new Promise((resolve,reject)=>{
+          const existing=document.querySelector('script[data-pm-html2pdf]');
+          if(existing){
+            existing.addEventListener('load',resolve,{once:true});
+            existing.addEventListener('error',reject,{once:true});
+            return;
+          }
+          const script=document.createElement('script');
+          script.src='https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js';
+          script.async=true;
+          script.dataset.pmHtml2pdf='1';
+          script.onload=resolve;
+          script.onerror=()=>reject(new Error('Library PDF gagal dimuat'));
+          document.head.appendChild(script);
+        });
+      }catch(e){
+        console.error('[PM] html2pdf load',e);
+        msg('Pembuat PDF gagal dimuat. Coba refresh halaman.');
+        return;
+      }
     }
 
     const source=document.querySelector('#pmPrintArea');
