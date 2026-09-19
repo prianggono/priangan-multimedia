@@ -394,11 +394,16 @@
           if(type==='luas')q=`${N(item.lebar)} × ${N(item.tinggi)} m²`;
           else if(type==='level'){const led=rows.find(x=>x!==item&&/led|videotron/i.test(`${S(x.item)} ${S(x.kode)}`));q=`${led?N(led.lebar):N(item.lebar)} m`;}
           else if(type==='rigging')q=`${N(item.panjang)} × ${N(item.tinggi)} m`;
-          const net=window.__PM_QUOTATION_UI_API?.state?window.__PM_QUOTATION_UI_API.state(item).net:itemSubtotal(item);
+          const itemState=window.__PM_QUOTATION_UI_API?.state?window.__PM_QUOTATION_UI_API.state(item):{base:itemSubtotal(item),rp:0,pct:0,net:itemSubtotal(item)};
+          const net=N(itemState.net),itemDisc=N(itemState.rp),itemPct=N(itemState.pct);
           const ledBase=ledBaseSubtotal(item),level=levelSubtotal(item);
-          const subtotalMarkup=isLED(item)&&level>0
+          const grossMarkup=isLED(item)&&level>0
             ? `<div class="pm-subtotal-line"><span>LED</span><strong>${M(ledBase)}</strong></div><div class="pm-subtotal-line pm-level-subtotal"><span>Level ${levelCm(item.level_tinggi)>0?levelCm(item.level_tinggi)+' cm':''}</span><strong>${M(level)}</strong></div>`
-            : `<strong>${M(net)}</strong>`;
+            : `<strong>${M(N(itemState.base))}</strong>`;
+          const discountMarkup=itemDisc>0
+            ? `<div class="pm-subtotal-line pm-item-discount-line"><span>Diskon (${Number(itemPct.toFixed(2))}%)</span><strong>- ${M(itemDisc)}</strong></div><div class="pm-subtotal-line pm-item-net-line"><span>Net</span><strong>${M(net)}</strong></div>`
+            : '';
+          const subtotalMarkup=grossMarkup+discountMarkup;
           return `<tr><td class="center">${index+1}</td><td><strong>${E(displayItemName(item))}</strong><div class="code">${E(item.kode)}</div>${quotePackageMarkup(item)}</td><td class="center">${E(q)}</td><td class="center">${E(periodShort(item.mulai,item.selesai))}</td><td class="right nowrap">${M(item.harga)}${item?.level_enabled&&N(item.level_harga)>0?`<div class="pm-quote-level-price">Level: ${M(item.level_harga)}/m</div>`:""}</td><td class="right pm-subtotal-cell">${subtotalMarkup}</td></tr>`;
         }).join('');
         const area=overlay.querySelector('#pmPrintArea');
@@ -447,6 +452,8 @@
       #pmPrintPreview .pm-signature-role{font-size:5.8pt!important}
       #pmPrintPreview .pm-subtotal-line{display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:1px 0}
       #pmPrintPreview .pm-level-subtotal{color:#475569;font-size:6.8pt}
+      #pmPrintPreview .pm-item-discount-line{color:#b45309;font-size:6.8pt}
+      #pmPrintPreview .pm-item-net-line{font-weight:700}
       #pmPrintPreview .pm-subtotal-cell{vertical-align:middle!important}
       #pmPrintPreview .pm-quote-level-price{font-size:6.8pt;color:#475569;line-height:1.1;margin-top:1px;white-space:nowrap}
       #pmPrintPreview .pm-items{table-layout:fixed!important}
