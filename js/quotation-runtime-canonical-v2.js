@@ -521,7 +521,7 @@
   }
 
 
-  window.addItem=addItem;window.removeItem=removeItem;window.toggleQuotationItem=toggleItem;window.pick=pick;window.upd=upd;window.drawItems=drawItems;window.printQuote=preview;window.closePrintPreview=closePreview;window.executePrintPreview=executePrintPreview;window.shareQuotationWhatsApp=shareQuotationWhatsApp;
+  window.addItem=addItem;window.removeItem=removeItem;window.toggleQuotationItem=toggleItem;window.pick=pick;window.upd=upd;window.drawItems=drawItems;window.printQuote=preview;window.closePrintPreview=closePreview;window.executePrintPreview=executePreview;window.shareQuotationWhatsApp=shareQuotationWhatsApp;
   window.__PM_QUOTATION_CORE={N,M,S,E,days,masterFor,itemMode,typeOf,itemSubtotal,baseTotal,itemDiscountState,discountState,sync,renderMargin,addItem,removeItem,pick,upd,drawItems,toggleItem,periodFull,periodShort,quotePackageMarkup,displayItemName,levelSubtotal,isLED};
 
   function boot(){installQuotationStyles();ensureDiscountUI();if(document.querySelector('#items'))drawItems();else sync();forceA4Layout();}
