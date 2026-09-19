@@ -19,7 +19,7 @@
     .pm-print-scroll { flex:1 1 auto; overflow:auto; padding:32px; }
 
     .pm-a4 { width:210mm; min-height:297mm; margin:0 auto; padding:13mm 14mm 11mm; box-sizing:border-box; background:#fff; color:#172033; font-family:Arial,Helvetica,sans-serif; font-size:9.4pt; line-height:1.38; box-shadow:0 16px 55px rgba(0,0,0,.48); position:relative; overflow:hidden; }
-    .pm-top-accent { height:4px; margin:-13mm -14mm 10mm; background:linear-gradient(90deg,#2563eb 0%,#4f46e5 55%,#06b6d4 100%); }
+    .pm-top-accent { height:4px; margin:-13mm -14mm 4mm; background:linear-gradient(90deg,#2563eb 0%,#4f46e5 55%,#06b6d4 100%); }
     .pm-letterhead { position:relative; display:flex; align-items:center; gap:16px; min-height:112px; padding:9px 16px; border:1px solid #163d76; border-radius:10px; overflow:hidden; background:radial-gradient(circle at 82% 12%,rgba(59,130,246,.46) 0,rgba(59,130,246,0) 30%),radial-gradient(circle at 100% 100%,rgba(6,182,212,.28) 0,rgba(6,182,212,0) 36%),linear-gradient(120deg,#020817 0%,#071a38 48%,#0b2a4a 100%); box-shadow:0 7px 22px rgba(15,23,42,.22); }
     .pm-letterhead::before { content:""; position:absolute; inset:0; pointer-events:none; opacity:.24; background-image:linear-gradient(135deg,transparent 0 47%,rgba(255,255,255,.16) 48%,transparent 50%),linear-gradient(45deg,transparent 0 47%,rgba(34,211,238,.18) 48%,transparent 50%); background-size:36px 36px,48px 48px; }
     .pm-letterhead::after { content:""; position:absolute; left:0; right:0; bottom:0; height:4px; background:linear-gradient(90deg,#2563eb,#06b6d4,#60a5fa); }
