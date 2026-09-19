@@ -205,3 +205,11 @@
 #pmPrintPreview .pm-order-density-normal .pm-package-print{margin-top:2px!important;padding:2px 3px 1px!important;}
 #pmPrintPreview .pm-order-density-normal .pm-package-print-list{gap:0!important;}
 #pmPrintPreview .pm-order-density-normal .pm-package-print-list span{font-size:5.7pt!important;line-height:1.02!important;}
+
+/* FINAL INFO CARD: compact typography, never clip client/event details. */
+#pmPrintPreview .pm-info-card{overflow:visible!important;}
+#pmPrintPreview .pm-info-section{padding:5px 8px!important;height:auto!important;min-height:0!important;overflow:visible!important;line-height:1.08!important;}
+#pmPrintPreview .pm-section-label{font-size:5.8pt!important;margin-bottom:2px!important;line-height:1.05!important;}
+#pmPrintPreview .pm-client-name,#pmPrintPreview .pm-event-name{font-size:7.5pt!important;line-height:1.08!important;}
+#pmPrintPreview .pm-info-section > div:not(.pm-section-label):not(.pm-client-name):not(.pm-event-name){font-size:6.4pt!important;line-height:1.08!important;}
+#pmPrintPreview .pm-period-label{font-size:5.6pt!important;margin-top:3px!important;line-height:1.05!important;}
