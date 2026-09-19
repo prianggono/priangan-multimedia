@@ -102,7 +102,7 @@
   function itemAmount(i) {
     const saved = N(i?.subtotal);
     if (saved > 0) return saved;
-    const price = N(i?.harga_jual ?? i?.harga);
+    const price = N(i?.harga ?? i?.harga_jual);
     const qty = Math.max(1, N(i?.qty ?? i?.jumlah) || 1);
     const dur = days(i?.tanggal_mulai, i?.tanggal_selesai);
     const w = N(i?.lebar), h = N(i?.tinggi), l = N(i?.panjang);

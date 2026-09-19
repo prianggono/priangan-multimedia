@@ -52,7 +52,7 @@
     return 'qty';
   }
 
-  function typeOf(item){ return itemMode(masterFor(item)) || S(item?.tipe || item?.tipe_perhitungan) || 'qty'; }
+  function typeOf(item){ return itemMode(masterFor(item)) || S(item?.tipe_perhitungan || item?.tipe) || 'qty'; }
 
   function isLED(item){
     const master=masterFor(item), text=`${S(master?.item)} ${S(master?.kategori)} ${S(master?.kode)} ${S(item?.item)} ${S(item?.kode)}`.toLowerCase();
@@ -60,7 +60,7 @@
     return /videotron|led\s*(indoor|outdoor)|\bled\s*p\.?\d/.test(text);
   }
   function levelSubtotal(item){return item?.level_enabled?N(item.lebar)*N(item.level_harga)*Math.max(1,N(item.qty??item.jumlah)||1):0;}
-  function ledBaseSubtotal(item){if(!isLED(item))return 0;const price=N(item?.harga??item?.harga_jual),duration=days(item?.mulai??item?.tanggal_mulai,item?.selesai??item?.tanggal_selesai),qty=Math.max(1,N(item?.qty??item?.jumlah)||1);return N(item?.lebar)*N(item?.tinggi)*price*qty*duration;}
+  function ledBaseSubtotal(item){if(!isLED(item))return 0;const price=N(item?.harga ?? item?.harga_jual),duration=days(item?.mulai??item?.tanggal_mulai,item?.selesai??item?.tanggal_selesai),qty=Math.max(1,N(item?.qty??item?.jumlah)||1);return N(item?.lebar)*N(item?.tinggi)*price*qty*duration;}
   function itemSubtotal(item){
     const price=N(item?.harga??item?.harga_jual),duration=days(item?.mulai??item?.tanggal_mulai,item?.selesai??item?.tanggal_selesai),type=typeOf(item),qty=Math.max(1,N(item?.qty??item?.jumlah)||1),width=N(item?.lebar),height=N(item?.tinggi),length=N(item?.panjang);
     let base=type==='luas'?width*height*price*qty*duration:type==='rigging'?((length*2)+(height*2))*price*duration:type==='level'?0:qty*price*duration;

@@ -41,10 +41,10 @@
     const unit = N(i.harga_modal) > 0 ? N(i.harga_modal) : N(m?.harga_modal);
     if (unit <= 0) return 0;
     const type = S(i.tipe_perhitungan || i.tipe).toLowerCase();
-    const rows = (schedules || []).filter(s => String(s.penawaran_item_id ?? s.item_id) === String(i.id));
+    const rows = (schedules || []).filter(s => String(s.item_id) === String(i.id));
     const calc = (s) => {
       const dur = Math.max(1, N(s?.durasi) || N(s?.durasi_hari) || days(s?.tanggal_mulai || i.tanggal_mulai, s?.tanggal_selesai || i.tanggal_selesai));
-      const qty = Math.max(1, N(s?.qty ?? s?.jumlah ?? i.qty ?? i.jumlah ?? 1));
+      const qty = Math.max(1, N(s?.qty ?? i.qty ?? i.jumlah ?? 1));
       const w = N(i.lebar), h = N(i.tinggi), l = N(i.panjang);
       if (type === 'luas') return w*h*unit*Math.max(1,N(s?.qty ?? 1))*dur;
       if (type === 'level') return w*unit*Math.max(1,N(s?.qty ?? 1))*dur;
