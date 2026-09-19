@@ -41,7 +41,7 @@
     .pm-date-box span { display:block; color:#64748b; font-size:6.5pt; font-weight:800; letter-spacing:1px; }
     .pm-date-box strong { display:block; margin-top:2px; font-size:8pt; color:#1e293b; }
     .pm-info-card { display:grid; grid-template-columns:1.25fr 1fr; border:1px solid #dbe3ef; border-radius:8px; overflow:hidden; background:#f8fafc; }
-    .pm-terms-signature-row { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,.85fr); gap:8mm; align-items:center; margin-top:12px; }
+    .pm-terms-signature-row { display:grid; grid-template-columns:minmax(0,1.9fr) minmax(0,.7fr); gap:5mm; align-items:end; margin-top:12px; }
     .pm-info-section { padding:9px 11px; }
     .pm-event-section { border-left:1px solid #dbe3ef; background:#f1f5f9; }
     .pm-section-label { margin-bottom:4px; color:#64748b; font-size:6.6pt; font-weight:800; letter-spacing:1px; }
@@ -72,18 +72,19 @@
     .right { text-align:right!important; }
     .pm-total td { background:#eff6ff!important; color:#172554; font-weight:800; padding-top:8px; padding-bottom:8px; }
     .pm-discount-row td { background:#f8fafc!important; color:#172554!important; font-weight:700; }
+    .pm-item-discount-line { color:#475569!important; font-size:6.8pt!important; }
     .pm-terms { margin-top:12px; border:1px solid #dbe3ef; border-radius:7px; overflow:hidden; }
-    .pm-section-heading { display:flex; align-items:center; gap:7px; padding:7px 9px; background:#f8fafc; border-bottom:1px solid #dbe3ef; }
-    .pm-section-heading span { display:inline-flex; width:20px; height:20px; align-items:center; justify-content:center; border-radius:5px; background:#2563eb; color:#fff; font-size:6.5pt; font-weight:800; }
-    .pm-section-heading strong { font-size:7.5pt; letter-spacing:.5px; }
-    .pm-terms-body { padding:8px 10px; color:#475569; font-size:7.4pt; line-height:1.45; }
-    .pm-signature { width:220px; margin:0 auto; text-align:center; align-self:center; }
-    .pm-signature-label { color:#475569; font-size:7.5pt; font-weight:700; }
+    .pm-section-heading { display:flex; align-items:center; gap:6px; padding:4px 7px; background:#f8fafc; border-bottom:1px solid #dbe3ef; }
+    .pm-section-heading span { display:inline-flex; width:16px; height:16px; align-items:center; justify-content:center; border-radius:4px; background:#2563eb; color:#fff; font-size:5.6pt; font-weight:800; }
+    .pm-section-heading strong { font-size:6.5pt; letter-spacing:.4px; }
+    .pm-terms-body { padding:5px 7px; color:#475569; font-size:6pt; line-height:1.18; }
+    .pm-signature { width:150px; margin:0 auto; text-align:center; align-self:end; }
+    .pm-signature-label { color:#475569; font-size:6.2pt; font-weight:700; }
     .pm-signature-box { min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; }
-    .pm-signature .signature { display:block; width:auto; max-width:190px; height:82px; max-height:82px; object-fit:contain; margin:1px auto 0; }
-    .pm-signature-line { width:190px; border-bottom:1px solid #334155; margin:4px auto 4px; }
-    .pm-signature-box strong { display:block; font-size:8.2pt; color:#111827; }
-    .pm-signature-role { margin-top:1px; color:#64748b; font-size:7.2pt; }
+    .pm-signature .signature { display:block; width:auto; max-width:125px; height:48px; max-height:48px; object-fit:contain; margin:0 auto; }
+    .pm-signature-line { width:125px; border-bottom:1px solid #334155; margin:2px auto 2px; }
+    .pm-signature-box strong { display:block; font-size:6.8pt; color:#111827; }
+    .pm-signature-role { margin-top:1px; color:#64748b; font-size:6pt; }
     .pm-footer { margin-top:9px; padding-top:7px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; gap:15px; color:#94a3b8; font-size:6.6pt; }
     .pm-footer strong { color:#64748b; white-space:nowrap; }
 
