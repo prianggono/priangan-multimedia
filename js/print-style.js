@@ -71,7 +71,7 @@
     .center { text-align:center!important; }
     .right { text-align:right!important; }
     .pm-total td { background:#eff6ff!important; color:#172554; font-weight:800; padding-top:8px; padding-bottom:8px; }
-    .pm-discount-row td { background:#fff7ed!important; color:#9a3412; font-weight:700; }
+    .pm-discount-row td { background:#f8fafc!important; color:#172554!important; font-weight:700; }
     .pm-terms { margin-top:12px; border:1px solid #dbe3ef; border-radius:7px; overflow:hidden; }
     .pm-section-heading { display:flex; align-items:center; gap:7px; padding:7px 9px; background:#f8fafc; border-bottom:1px solid #dbe3ef; }
     .pm-section-heading span { display:inline-flex; width:20px; height:20px; align-items:center; justify-content:center; border-radius:5px; background:#2563eb; color:#fff; font-size:6.5pt; font-weight:800; }
@@ -110,9 +110,9 @@
       /* Quotation: print the same native A4 DOM and geometry used by the preview. Only viewer chrome is removed. */
       #pmPrintPreview .pm-print-scroll { display:block!important; width:210mm!important; height:auto!important; min-height:297mm!important; margin:0!important; padding:0!important; overflow:visible!important; background:#fff!important; }
       #pmPrintPreview .pm-a4-stage { display:block!important; width:210mm!important; height:auto!important; min-height:297mm!important; margin:0!important; padding:0!important; transform:none!important; position:relative!important; }
-      #pmPrintPreview .pm-a4 { transform:none!important; box-shadow:none!important; overflow:visible!important; break-inside:auto!important; }
+      #pmPrintPreview .pm-a4 { display:flex!important; flex-direction:column!important; transform:none!important; box-shadow:none!important; overflow:visible!important; break-inside:auto!important; }
       /* Keep the current quotation on one physical A4 page. */
-      #pmPrintPreview .pm-terms-signature-row { margin-top:6px!important; }
+      #pmPrintPreview .pm-terms-signature-row { margin-top:auto!important; }
       #pmPrintPreview .pm-terms { margin-top:0!important; }
       #pmPrintPreview .pm-footer { margin-top:4px!important; padding-top:4px!important; }
 
