@@ -388,7 +388,8 @@
         const eventStart=S(document.querySelector('#qs')?.value),eventEnd=S(document.querySelector('#qe2')?.value);
         const packageCount=rows.reduce((sum,item)=>sum+parsePackageRows(masterFor(item)?.isi_paket).length,0);
         const densityScore=rows.length;
-        const density=densityScore<=6?'normal':densityScore<=15?'compact-1':densityScore<=21?'compact-2':'compact-3';
+        /* Locked quotation baseline: keep the readable approved layout through 15 rows. */
+        const density=densityScore<=15?'normal':densityScore<=21?'compact-1':'compact-2';
         const htmlRows=rows.map((item,index)=>{
           const type=typeOf(item);let q=N(item.qty)||1;
           if(type==='luas')q=`${N(item.lebar)} × ${N(item.tinggi)} m²`;
