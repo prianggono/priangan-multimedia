@@ -387,8 +387,8 @@
         const rawDiscount=discountState(),itemNet=rows.reduce((sum,item)=>sum+(window.__PM_QUOTATION_UI_API?.state?N(window.__PM_QUOTATION_UI_API.state(item).net):N(itemSubtotal(item))),0),globalDiscount=Math.min(itemNet,Math.max(0,N(window.__pmDiscountValue))),d={...rawDiscount,base:itemNet,rp:globalDiscount,total:Math.max(0,itemNet-globalDiscount)},t=window.template&&typeof window.template==='object'?window.template:{};
         const eventStart=S(document.querySelector('#qs')?.value),eventEnd=S(document.querySelector('#qe2')?.value);
         const packageCount=rows.reduce((sum,item)=>sum+parsePackageRows(masterFor(item)?.isi_paket).length,0);
-        const densityScore=rows.length+Math.ceil(packageCount/2);
-        const density=densityScore<=6?'normal':densityScore<=10?'compact-1':densityScore<=15?'compact-2':densityScore<=21?'compact-3':densityScore<=28?'compact-4':'compact-5';
+        const densityScore=rows.length;
+        const density=densityScore<=6?'normal':densityScore<=15?'compact-1':densityScore<=21?'compact-2':'compact-3';
         const htmlRows=rows.map((item,index)=>{
           const type=typeOf(item);let q=N(item.qty)||1;
           if(type==='luas')q=`${N(item.lebar)} × ${N(item.tinggi)} m²`;
