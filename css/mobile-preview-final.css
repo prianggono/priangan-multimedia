@@ -1,3 +1,64 @@
+
+/* Quotation A4 preview geometry and density — screen only.
+   Keeps the A4 renderer compact without changing print authority. */
+#pmPrintPreview .pm-a4{
+  width:210mm!important;
+  min-width:210mm!important;
+  min-height:297mm!important;
+  height:auto!important;
+  max-height:none!important;
+  box-sizing:border-box!important;
+  margin:0 auto!important;
+  position:relative!important;
+  background:#fff!important;
+  overflow:visible!important;
+}
+#pmPrintPreview .pm-subtotal-line{
+  display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:1px 0;
+}
+#pmPrintPreview .pm-level-subtotal{color:#475569;font-size:6.8pt}
+#pmPrintPreview .pm-subtotal-cell{vertical-align:middle!important}
+#pmPrintPreview .pm-quote-level-price{font-size:6.8pt;color:#475569;line-height:1.1;margin-top:1px;white-space:nowrap}
+#pmPrintPreview .pm-items{table-layout:fixed!important}
+#pmPrintPreview .pm-items th:nth-child(1),#pmPrintPreview .pm-items td:nth-child(1){width:8mm!important;white-space:nowrap!important}
+#pmPrintPreview .pm-items th:nth-child(2),#pmPrintPreview .pm-items td:nth-child(2){width:auto!important;min-width:0!important}
+#pmPrintPreview .pm-items th:nth-child(3),#pmPrintPreview .pm-items td:nth-child(3){width:27mm!important}
+#pmPrintPreview .pm-items th:nth-child(4),#pmPrintPreview .pm-items td:nth-child(4){width:29mm!important}
+#pmPrintPreview .pm-items th:nth-child(5),#pmPrintPreview .pm-items td:nth-child(5){width:31mm!important}
+#pmPrintPreview .pm-items th:nth-child(6),#pmPrintPreview .pm-items td:nth-child(6){width:34mm!important}
+#pmPrintPreview .pm-items td.right{white-space:nowrap!important}
+#pmPrintPreview .pm-package-print-list{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  gap:1px 8px!important;
+}
+#pmPrintPreview .pm-package-print-list span{display:contents!important}
+#pmPrintPreview .pm-package-print-list span b{min-width:0!important;overflow-wrap:break-word!important;word-break:normal!important}
+#pmPrintPreview .pm-package-print-list span em{grid-column:2!important;white-space:nowrap!important;text-align:right!important}
+#pmPrintPreview .pm-order-density-compact-1 .pm-items{font-size:7.1pt!important}
+#pmPrintPreview .pm-order-density-compact-1 .pm-items th,#pmPrintPreview .pm-order-density-compact-1 .pm-items td{padding:4px 4px!important;line-height:1.16!important}
+#pmPrintPreview .pm-order-density-compact-1 .pm-package-print{margin-top:3px!important;padding:3px 4px 2px!important}
+#pmPrintPreview .pm-order-density-compact-1 .pm-package-print-list span{font-size:6pt!important;line-height:1.12!important}
+#pmPrintPreview .pm-order-density-compact-2 .pm-items{font-size:6.5pt!important}
+#pmPrintPreview .pm-order-density-compact-2 .pm-items th,#pmPrintPreview .pm-order-density-compact-2 .pm-items td{padding:3px 3px!important;line-height:1.08!important}
+#pmPrintPreview .pm-order-density-compact-2 .pm-package-print{margin-top:2px!important;padding:2px 3px 1px!important}
+#pmPrintPreview .pm-order-density-compact-2 .pm-package-print-list span{font-size:5.6pt!important;line-height:1.05!important}
+#pmPrintPreview .pm-order-density-compact-3 .pm-items{font-size:5.9pt!important}
+#pmPrintPreview .pm-order-density-compact-3 .pm-items th,#pmPrintPreview .pm-order-density-compact-3 .pm-items td{padding:2.4px 2.5px!important;line-height:1.02!important}
+#pmPrintPreview .pm-order-density-compact-3 .pm-package-print{margin-top:1px!important;padding:1px 2px!important;border-left-width:2px!important}
+#pmPrintPreview .pm-order-density-compact-3 .pm-package-print-title{font-size:5.2pt!important;margin-bottom:1px!important}
+#pmPrintPreview .pm-order-density-compact-3 .pm-package-print-list span{font-size:5pt!important;line-height:1!important}
+#pmPrintPreview .pm-order-density-compact-4 .pm-items{font-size:5.4pt!important}
+#pmPrintPreview .pm-order-density-compact-4 .pm-items th,#pmPrintPreview .pm-order-density-compact-4 .pm-items td{padding:1.8px 2px!important;line-height:1!important}
+#pmPrintPreview .pm-order-density-compact-4 .pm-package-print{margin-top:.5px!important;padding:.5px 1.5px!important}
+#pmPrintPreview .pm-order-density-compact-4 .pm-package-print-title{font-size:4.8pt!important;margin-bottom:.5px!important}
+#pmPrintPreview .pm-order-density-compact-4 .pm-package-print-list span{font-size:4.6pt!important;line-height:1!important}
+#pmPrintPreview .pm-order-density-compact-5 .pm-items{font-size:4.9pt!important}
+#pmPrintPreview .pm-order-density-compact-5 .pm-items th,#pmPrintPreview .pm-order-density-compact-5 .pm-items td{padding:1.3px 1.6px!important;line-height:.98!important}
+#pmPrintPreview .pm-order-density-compact-5 .pm-package-print{margin-top:0!important;padding:0 1px!important}
+#pmPrintPreview .pm-order-density-compact-5 .pm-package-print-title{font-size:4.4pt!important;margin-bottom:0!important}
+#pmPrintPreview .pm-order-density-compact-5 .pm-package-print-list span{font-size:4.2pt!important;line-height:.95!important}
+
 @media screen and (max-width:700px){
   body.pm-preview-open{overflow:hidden!important}
   #pmPrintPreview{
