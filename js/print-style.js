@@ -165,3 +165,9 @@
 
   document.head.appendChild(style);
 })();
+
+/* LOCKED APPROVED QUOTATION: table typography only. */
+.pm-order-density-normal .pm-items{font-size:7.35pt!important;}
+.pm-order-density-normal .pm-items th,.pm-order-density-normal .pm-items td{padding:5px 4px!important;line-height:1.12!important;}
+.pm-order-density-normal .pm-package-print{margin-top:3px!important;padding:3px 4px 2px!important;}
+.pm-order-density-normal .pm-package-print-list span{font-size:6pt!important;line-height:1.08!important;}
