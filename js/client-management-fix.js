@@ -71,7 +71,7 @@
     document.querySelector('#content').innerHTML = `
       <div class="head"><div><h1>Client</h1><p>Kontak identik digabung saat tampil; kontak berbeda dalam perusahaan tetap terpisah.</p></div><button class="btn" type="button" onclick="clientForm()">+ Tambah Client</button></div>
       <div class="card pm-client-table-card"><div class="scroll"><table class="table"><thead><tr><th>Nama</th><th>Perusahaan</th><th>No. Tlp / WA</th><th>E-mail</th><th>Aksi</th></tr></thead><tbody>
-      ${unique.map(c => `<tr><td>${esc(c.nama_client)}</td><td>${esc(c.perusahaan)}</td><td>${esc(c.whatsapp || c.telepon_wa || c.telepon)}</td><td>${esc(c.email)}</td><td><div class="actions"><button class="btn secondary" type="button" onclick="clientEdit(${Number(c.id)})">Edit</button><button class="btn danger" type="button" onclick="clientDelete(${Number(c.id)})">Hapus</button></div></td></tr>`).join('') || '<tr><td colspan="5" class="empty">Belum ada data client.</td></tr>'}
+      ${unique.map(c => `<tr><td>${esc(c.nama_client)}</td><td>${esc(c.perusahaan)}</td><td>${esc(c.telepon_wa || c.whatsapp || c.telepon)}</td><td>${esc(c.email)}</td><td><div class="actions"><button class="btn secondary" type="button" onclick="clientEdit(${Number(c.id)})">Edit</button><button class="btn danger" type="button" onclick="clientDelete(${Number(c.id)})">Hapus</button></div></td></tr>`).join('') || '<tr><td colspan="5" class="empty">Belum ada data client.</td></tr>'}
       </tbody></table></div></div>`;
   };
 
