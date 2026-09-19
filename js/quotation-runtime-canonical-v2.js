@@ -480,6 +480,46 @@
       #pmPrintPreview .pm-order-density-compact-5 .pm-package-print-list span{font-size:4.2pt!important;line-height:.96!important}`;
     document.head.appendChild(st);
   }
+  async function saveQuotation(){
+    const d=dbRef();if(!d)return msg('Supabase belum terhubung.');
+    const client=S(document.querySelector('#qc')?.value),company=S(document.querySelector('#qp')?.value),phone=S(document.querySelector('#qw')?.value),email=S(document.querySelector('#qe')?.value),eventName=S(document.querySelector('#qeve')?.value),start=document.querySelector('#qs')?.value||null,end=document.querySelector('#qe2')?.value||null;
+    const source=items().filter(x=>x&&S(x.kode)&&S(x.item));
+    if(!client||!company||!eventName)return msg('Client, Perusahaan, dan Nama Event wajib diisi.');
+    if(!source.length)return msg('Tambahkan minimal 1 item.');
+    const incomplete=source.filter(x=>!requiredComplete(x));
+    if(incomplete.length){
+      const names=incomplete.map(x=>x.item||x.kode||'Item').join(', ');
+      msg(`Lengkapi data item: ${names}.`);
+      const first=incomplete[0];window.__PM_QUOTATION_OPEN_ITEM_ID=first.id;drawItems();setTimeout(()=>document.querySelector(`#items > .item[data-item-id="${first.id}"]`)?.scrollIntoView({behavior:'smooth',block:'center'}),50);return;
+    }
+    const button=[...document.querySelectorAll('#content button')].find(b=>S(b.textContent)==='Simpan Penawaran');
+    if(button?.dataset.pmSaving==='1')return;
+    if(button){button.dataset.pmSaving='1';button.disabled=true;button.dataset.originalText=button.textContent;button.textContent='Menyimpan...';}
+    try{
+      const state=sync();
+      const editId=N(window.__pmEditingQuotationId||window.__PM_EDIT_QUOTATION_ID),number=S(window.__pmEditingQuotationNumber||window.__PM_EDIT_QUOTATION_NUMBER)||`PM-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+      const payload={nomor_penawaran:number,nama_client:client,perusahaan:company,telepon_wa:phone,telepon:phone,whatsapp:phone,email,nama_event:eventName,event_name:eventName,tanggal_mulai:start,tanggal_selesai:end,subtotal:state.base,diskon:state.rp,diskon_persen:state.pct,diskon_nominal:state.rp,total:state.total,grand_total:state.total,status:'DRAFT'};
+      let quoteId=editId||null;
+      if(editId){const updated=await d.from('penawaran').update(payload).eq('id',editId).select('id').single();if(updated.error)throw updated.error;quoteId=updated.data.id;await deleteOldChildren(d,quoteId);}else{const inserted=await d.from('penawaran').insert([payload]).select('id').single();if(inserted.error)throw inserted.error;quoteId=inserted.data.id;}
+      const itemPayload=source.map(item=>({penawaran_id:quoteId,kode:item.kode,item:item.item,nama_item:item.item,harga_jual:N(item.harga),harga:N(item.harga),harga_modal:N(item.harga_modal)||0,tipe_perhitungan:typeOf(item),tipe:typeOf(item),qty:Math.max(1,N(item.qty)||1),jumlah:Math.max(1,N(item.qty)||1),lebar:N(item.lebar)||null,tinggi:N(item.tinggi)||null,panjang:N(item.panjang)||null,tanggal_mulai:item.mulai,tanggal_selesai:item.selesai,durasi:days(item.mulai,item.selesai),subtotal:itemSubtotal(item)}));
+      const itemResult=await d.from('penawaran_items').insert(itemPayload).select('id');if(itemResult.error)throw itemResult.error;
+      const saved=itemResult.data||[];
+      const schedules=saved.map((row,index)=>{const item=source[index],duration=days(item.mulai,item.selesai);return{item_id:row.id,penawaran_item_id:row.id,penawaran_id:quoteId,qty:Math.max(1,N(item.qty)||1),tanggal_mulai:item.mulai,tanggal_selesai:item.selesai,durasi_hari:duration,durasi:duration,subtotal:itemSubtotal(item)};});
+      if(schedules.length){const sr=await d.from('penawaran_jadwal').insert(schedules);if(sr.error)throw sr.error;}
+      const check=await d.from('penawaran_items').select('subtotal').eq('penawaran_id',quoteId);if(check.error)throw check.error;
+      const savedSubtotal=(check.data||[]).reduce((sum,row)=>sum+N(row.subtotal),0);
+      const verify=await d.from('penawaran').select('id,subtotal,diskon,diskon_persen,diskon_nominal,total,grand_total,nama_event').eq('id',quoteId).single();if(verify.error)throw verify.error;
+      const v=verify.data||{};
+      const ok=Math.round(savedSubtotal)===Math.round(state.base)&&Math.round(N(v.subtotal))===Math.round(state.base)&&Math.round(N(v.diskon_nominal))===Math.round(state.rp)&&Math.round(N(v.total))===Math.round(state.total)&&Math.round(N(v.grand_total))===Math.round(state.total)&&Math.round(N(v.diskon_persen))===Math.round(state.pct);
+      if(!ok)throw new Error('Verifikasi database gagal: nilai item/subtotal/diskon/total berbeda dari form.');
+      window.__pmEditingQuotationId=null;window.__PM_EDIT_QUOTATION_ID=null;window.__pmEditingQuotationNumber=null;window.__PM_EDIT_QUOTATION_NUMBER=null;window.__PM_LAST_QUOTATION_NUMBER=number;window.items=[];
+      msg((editId?'Penawaran berhasil diperbarui: ':'Penawaran berhasil disimpan: ')+number);
+      if(typeof load==='function')await load();
+      if(typeof go==='function')go('history');else{window.page='history';if(typeof render==='function')render();}
+    }catch(e){console.error('[PM] quotation save',e);msg('Gagal menyimpan penawaran: '+(e.message||e));}
+    finally{if(button){button.disabled=false;button.dataset.pmSaving='0';button.textContent=button.dataset.originalText||'Simpan Penawaran';}}
+  }
+
   window.addItem=addItem;window.removeItem=removeItem;window.toggleQuotationItem=toggleItem;window.pick=pick;window.upd=upd;window.drawItems=drawItems;window.saveQuote=saveQuotation;window.printQuote=preview;window.closePrintPreview=closePreview;window.executePrintPreview=executePreview;
   window.__PM_QUOTATION_CORE={N,M,S,E,days,masterFor,itemMode,typeOf,itemSubtotal,baseTotal,discountState,sync,renderMargin,saveQuotation,addItem,removeItem,pick,upd,drawItems,toggleItem,periodFull,periodShort,quotePackageMarkup,displayItemName,levelSubtotal,isLED};
 
