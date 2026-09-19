@@ -30,7 +30,28 @@
 #pmPrintPreview .pm-items th:nth-child(5),#pmPrintPreview .pm-items td:nth-child(5){width:31mm!important}
 #pmPrintPreview .pm-items th:nth-child(6),#pmPrintPreview .pm-items td:nth-child(6){width:34mm!important}
 #pmPrintPreview .pm-items td.right{white-space:nowrap!important}
-#pmPrintPreview .pm-terms-signature-row{margin-top:auto!important;}
+#pmPrintPreview .pm-terms-signature-row{
+  margin-top:auto!important;
+  grid-template-columns:minmax(0,1.9fr) minmax(0,.7fr)!important;
+  gap:5mm!important;
+  align-items:end!important;
+}
+#pmPrintPreview .pm-terms{margin-top:0!important;}
+#pmPrintPreview .pm-section-heading{padding:4px 7px!important;}
+#pmPrintPreview .pm-section-heading span{width:16px!important;height:16px!important;font-size:5.6pt!important;}
+#pmPrintPreview .pm-section-heading strong{font-size:6.5pt!important;}
+#pmPrintPreview .pm-terms-body{
+  padding:5px 7px!important;
+  font-size:6pt!important;
+  line-height:1.18!important;
+}
+#pmPrintPreview .pm-signature{width:150px!important;max-width:100%!important;}
+#pmPrintPreview .pm-signature-label{font-size:6.2pt!important;}
+#pmPrintPreview .pm-signature .signature{max-width:125px!important;height:48px!important;max-height:48px!important;margin:0 auto!important;}
+#pmPrintPreview .pm-signature-line{width:125px!important;margin:2px auto 2px!important;}
+#pmPrintPreview .pm-signature-box strong{font-size:6.8pt!important;}
+#pmPrintPreview .pm-signature-role{font-size:6pt!important;}
+#pmPrintPreview .pm-item-discount-line{color:#475569!important;font-size:6.8pt!important;}
 #pmPrintPreview .pm-package-print-list{
   display:grid!important;
   grid-template-columns:minmax(0,1fr) auto!important;
