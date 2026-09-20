@@ -1,0 +1,234 @@
+
+/* Quotation A4 preview geometry and density — screen only.
+   Keeps the A4 renderer compact without changing print authority. */
+#pmPrintPreview .pm-a4{
+  width:210mm!important;
+  min-width:210mm!important;
+  min-height:297mm!important;
+  height:auto!important;
+  max-height:none!important;
+  display:flex!important;
+  flex-direction:column!important;
+  box-sizing:border-box!important;
+  margin:0 auto!important;
+  position:relative!important;
+  background:#fff!important;
+  overflow:visible!important;
+}
+#pmPrintPreview .pm-subtotal-line{
+  display:flex;justify-content:space-between;gap:8px;align-items:baseline;padding:1px 0;
+}
+#pmPrintPreview .pm-level-subtotal{color:#475569;font-size:6.8pt}
+#pmPrintPreview .pm-subtotal-cell{vertical-align:middle!important}
+#pmPrintPreview .pm-discount-row td{background:#fff7ed!important;color:#9a3412!important;font-weight:700!important;}
+#pmPrintPreview .pm-quote-level-price{font-size:6.8pt;color:#475569;line-height:1.1;margin-top:1px;white-space:nowrap}
+#pmPrintPreview .pm-items{table-layout:fixed!important}
+#pmPrintPreview .pm-items th:nth-child(1),#pmPrintPreview .pm-items td:nth-child(1){width:8mm!important;white-space:nowrap!important}
+#pmPrintPreview .pm-items th:nth-child(2),#pmPrintPreview .pm-items td:nth-child(2){width:auto!important;min-width:0!important}
+#pmPrintPreview .pm-items th:nth-child(3),#pmPrintPreview .pm-items td:nth-child(3){width:27mm!important}
+#pmPrintPreview .pm-items th:nth-child(4),#pmPrintPreview .pm-items td:nth-child(4){width:29mm!important}
+#pmPrintPreview .pm-items th:nth-child(5),#pmPrintPreview .pm-items td:nth-child(5){width:31mm!important}
+#pmPrintPreview .pm-items th:nth-child(6),#pmPrintPreview .pm-items td:nth-child(6){width:34mm!important}
+#pmPrintPreview .pm-items td.right{white-space:nowrap!important}
+#pmPrintPreview .pm-terms-signature-row{
+  margin-top:auto!important;
+  grid-template-columns:minmax(0,1.9fr) minmax(0,.7fr)!important;
+  gap:5mm!important;
+  align-items:end!important;
+}
+#pmPrintPreview .pm-terms{margin-top:0!important;}
+#pmPrintPreview .pm-section-heading{padding:4px 7px!important;}
+#pmPrintPreview .pm-section-heading span{width:16px!important;height:16px!important;font-size:5.6pt!important;}
+#pmPrintPreview .pm-section-heading strong{font-size:6.5pt!important;}
+#pmPrintPreview .pm-terms-body{
+  padding:5px 7px!important;
+  font-size:6pt!important;
+  line-height:1.18!important;
+}
+#pmPrintPreview .pm-signature{width:150px!important;max-width:100%!important;}
+#pmPrintPreview .pm-signature-label{font-size:6.2pt!important;}
+#pmPrintPreview .pm-signature .signature{max-width:125px!important;height:48px!important;max-height:48px!important;margin:0 auto!important;}
+#pmPrintPreview .pm-signature-line{width:125px!important;margin:2px auto 2px!important;}
+#pmPrintPreview .pm-signature-box strong{font-size:6.8pt!important;}
+#pmPrintPreview .pm-signature-role{font-size:6pt!important;}
+#pmPrintPreview .pm-item-discount-line{color:#b45309!important;font-size:6.8pt!important;}
+#pmPrintPreview .pm-package-print-list{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  gap:1px 8px!important;
+}
+#pmPrintPreview .pm-package-print-list span{display:contents!important}
+#pmPrintPreview .pm-package-print-list span b{min-width:0!important;overflow-wrap:break-word!important;word-break:normal!important}
+#pmPrintPreview .pm-package-print-list span em{grid-column:2!important;white-space:nowrap!important;text-align:right!important}
+#pmPrintPreview .pm-order-density-compact-1 .pm-items{font-size:7.1pt!important}
+#pmPrintPreview .pm-order-density-compact-1 .pm-items th,#pmPrintPreview .pm-order-density-compact-1 .pm-items td{padding:4px 4px!important;line-height:1.16!important}
+#pmPrintPreview .pm-order-density-compact-1 .pm-package-print{margin-top:3px!important;padding:3px 4px 2px!important}
+#pmPrintPreview .pm-order-density-compact-1 .pm-package-print-list span{font-size:6pt!important;line-height:1.12!important}
+#pmPrintPreview .pm-order-density-compact-2 .pm-items{font-size:6.5pt!important}
+#pmPrintPreview .pm-order-density-compact-2 .pm-items th,#pmPrintPreview .pm-order-density-compact-2 .pm-items td{padding:3px 3px!important;line-height:1.08!important}
+#pmPrintPreview .pm-order-density-compact-2 .pm-package-print{margin-top:2px!important;padding:2px 3px 1px!important}
+#pmPrintPreview .pm-order-density-compact-2 .pm-package-print-list span{font-size:5.6pt!important;line-height:1.05!important}
+#pmPrintPreview .pm-order-density-compact-3 .pm-items{font-size:5.9pt!important}
+#pmPrintPreview .pm-order-density-compact-3 .pm-items th,#pmPrintPreview .pm-order-density-compact-3 .pm-items td{padding:2.4px 2.5px!important;line-height:1.02!important}
+#pmPrintPreview .pm-order-density-compact-3 .pm-package-print{margin-top:1px!important;padding:1px 2px!important;border-left-width:2px!important}
+#pmPrintPreview .pm-order-density-compact-3 .pm-package-print-title{font-size:5.2pt!important;margin-bottom:1px!important}
+#pmPrintPreview .pm-order-density-compact-3 .pm-package-print-list span{font-size:5pt!important;line-height:1!important}
+#pmPrintPreview .pm-order-density-compact-4 .pm-items{font-size:5.4pt!important}
+#pmPrintPreview .pm-order-density-compact-4 .pm-items th,#pmPrintPreview .pm-order-density-compact-4 .pm-items td{padding:1.8px 2px!important;line-height:1!important}
+#pmPrintPreview .pm-order-density-compact-4 .pm-package-print{margin-top:.5px!important;padding:.5px 1.5px!important}
+#pmPrintPreview .pm-order-density-compact-4 .pm-package-print-title{font-size:4.8pt!important;margin-bottom:.5px!important}
+#pmPrintPreview .pm-order-density-compact-4 .pm-package-print-list span{font-size:4.6pt!important;line-height:1!important}
+#pmPrintPreview .pm-order-density-compact-5 .pm-items{font-size:4.9pt!important}
+#pmPrintPreview .pm-order-density-compact-5 .pm-items th,#pmPrintPreview .pm-order-density-compact-5 .pm-items td{padding:1.3px 1.6px!important;line-height:.98!important}
+#pmPrintPreview .pm-order-density-compact-5 .pm-package-print{margin-top:0!important;padding:0 1px!important}
+#pmPrintPreview .pm-order-density-compact-5 .pm-package-print-title{font-size:4.4pt!important;margin-bottom:0!important}
+#pmPrintPreview .pm-order-density-compact-5 .pm-package-print-list span{font-size:4.2pt!important;line-height:.95!important}
+
+@media screen and (max-width:700px){
+  body.pm-preview-open{overflow:hidden!important}
+  #pmPrintPreview{
+    position:fixed!important;
+    inset:0!important;
+    z-index:99999!important;
+    overflow:hidden!important;
+    background:#000!important;
+  }
+  #pmPrintPreview .pm-print-toolbar{
+    height:auto!important;
+    min-height:58px!important;
+    padding:8px 10px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    gap:8px!important;
+    flex-wrap:wrap!important;
+    box-sizing:border-box!important;
+  }
+  #pmPrintPreview .pm-print-toolbar>div:first-child{
+    min-width:0!important;
+    flex:1 1 150px!important;
+  }
+  #pmPrintPreview .pm-print-toolbar strong{
+    font-size:13px!important;
+    white-space:nowrap!important;
+  }
+  #pmPrintPreview .pm-print-toolbar span{
+    font-size:10px!important;
+  }
+  #pmPrintPreview .pm-print-actions{
+    display:flex!important;
+    align-items:center!important;
+    gap:5px!important;
+    flex-wrap:nowrap!important;
+  }
+  #pmPrintPreview .pm-print-actions button,
+  #pmPrintPreview .pm-zoom-value{
+    min-height:34px!important;
+    box-sizing:border-box!important;
+  }
+  #pmPrintPreview .pm-print-actions button{
+    font-size:10px!important;
+    padding:8px 9px!important;
+    border-radius:7px!important;
+  }
+  #pmPrintPreview .pm-zoom-btn{
+    width:34px!important;
+    padding:0!important;
+    background:#1e293b!important;
+    color:#fff!important;
+    font-size:18px!important;
+    line-height:1!important;
+  }
+  #pmPrintPreview .pm-zoom-fit{
+    background:#334155!important;
+    color:#fff!important;
+  }
+  #pmPrintPreview .pm-share{
+    background:#16a34a!important;
+    color:#fff!important;
+  }
+  #pmPrintPreview .pm-zoom-value{
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    min-width:42px!important;
+    color:#cbd5e1!important;
+    font-size:10px!important;
+    font-weight:700!important;
+  }
+  #pmPrintPreview .pm-print-scroll{
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    box-sizing:border-box!important;
+    overflow:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior:contain!important;
+    touch-action:pan-x pan-y!important;
+    padding:0 0 24px!important;
+  }
+  #pmPrintPreview .pm-a4-stage{
+    position:relative!important;
+    flex:0 0 auto!important;
+    margin:0 auto!important;
+  }
+  /* IMPORTANT: the document itself stays true A4.
+     Mobile only scales the rendered page through JS. */
+  #pmPrintPreview .pm-a4{
+    width:210mm!important;
+    min-width:210mm!important;
+    max-width:none!important;
+    min-height:297mm!important;
+    height:auto!important;
+    max-height:none!important;
+    margin:0!important;
+    box-sizing:border-box!important;
+    overflow:visible!important;
+    transform-origin:top left!important;
+  }
+}
+
+/* LOCKED APPROVED QUOTATION: table typography only — do not alter page geometry. */
+#pmPrintPreview .pm-order-density-normal .pm-items{font-size:7.35pt!important;}
+#pmPrintPreview .pm-order-density-normal .pm-items th,
+#pmPrintPreview .pm-order-density-normal .pm-items td{padding:5px 4px!important;line-height:1.12!important;}
+#pmPrintPreview .pm-order-density-normal .pm-package-print{margin-top:3px!important;padding:3px 4px 2px!important;}
+#pmPrintPreview .pm-order-density-normal .pm-package-print-list span{font-size:6pt!important;line-height:1.08!important;}
+
+/* FINAL MICRO-SPACING: preserve geometry, reclaim vertical space only. */
+#pmPrintPreview .pm-title-row{margin:8px 0 7px!important;}
+#pmPrintPreview .pm-info-section{padding:6px 9px!important;}
+#pmPrintPreview .pm-opening{margin:6px 0 6px!important;}
+#pmPrintPreview .pm-order-density-normal .pm-items th,
+#pmPrintPreview .pm-order-density-normal .pm-items td{padding:3.5px 4px!important;line-height:1.06!important;}
+#pmPrintPreview .pm-order-density-normal .pm-package-print{margin-top:2px!important;padding:2px 3px 1px!important;}
+#pmPrintPreview .pm-order-density-normal .pm-package-print-list{gap:0!important;}
+#pmPrintPreview .pm-order-density-normal .pm-package-print-list span{font-size:5.7pt!important;line-height:1.02!important;}
+
+/* FINAL INFO CARD: compact typography, never clip client/event details. */
+#pmPrintPreview .pm-info-card{overflow:visible!important;}
+#pmPrintPreview .pm-info-section{padding:5px 8px!important;height:auto!important;min-height:0!important;overflow:visible!important;line-height:1.08!important;}
+#pmPrintPreview .pm-section-label{font-size:5.8pt!important;margin-bottom:2px!important;line-height:1.05!important;}
+#pmPrintPreview .pm-client-name,#pmPrintPreview .pm-event-name{font-size:7.5pt!important;line-height:1.08!important;}
+#pmPrintPreview .pm-info-section > div:not(.pm-section-label):not(.pm-client-name):not(.pm-event-name){font-size:6.4pt!important;line-height:1.08!important;}
+#pmPrintPreview .pm-period-label{font-size:5.6pt!important;margin-top:3px!important;line-height:1.05!important;}
+
+/* FINAL TIGHTEN: reclaim vertical space without changing typography or geometry. */
+#pmPrintPreview .pm-title-row{margin:6px 0 5px!important;}
+#pmPrintPreview .pm-info-section{padding:4px 7px!important;}
+#pmPrintPreview .pm-opening{margin:4px 0 4px!important;}
+#pmPrintPreview .pm-order-density-normal .pm-items th,
+#pmPrintPreview .pm-order-density-normal .pm-items td{padding:2.8px 3.5px!important;line-height:1.03!important;}
+#pmPrintPreview .pm-order-density-normal .pm-package-print{margin-top:1px!important;padding:1.5px 2.5px 1px!important;}
+#pmPrintPreview .pm-order-density-normal .pm-package-print-list span{line-height:.98!important;}
+
+/* FINAL A4 FIT: only compact table text and vertical gaps. */
+#pmPrintPreview .pm-title-row{margin:5px 0 4px!important;}
+#pmPrintPreview .pm-info-section{padding:3.5px 6px!important;}
+#pmPrintPreview .pm-opening{margin:3px 0 3px!important;}
+#pmPrintPreview .pm-order-density-normal .pm-items{font-size:6.9pt!important;}
+#pmPrintPreview .pm-order-density-normal .pm-items th,
+#pmPrintPreview .pm-order-density-normal .pm-items td{padding:2.4px 3px!important;line-height:1.01!important;}
+#pmPrintPreview .pm-order-density-normal .pm-package-print{margin-top:.5px!important;padding:1px 2px!important;}
+#pmPrintPreview .pm-order-density-normal .pm-package-print-list span{font-size:5.4pt!important;line-height:.96!important;}
