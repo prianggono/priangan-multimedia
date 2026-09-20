@@ -185,18 +185,17 @@
       main { margin:0!important; }
       #pmPrintPreview .pm-inv-head { margin:0 0 12px!important; overflow:hidden!important; }
       #pmPrintPreview .pm-inv-head-image { display:block!important; width:100%!important; height:auto!important; max-width:100%!important; object-fit:contain!important; }
-      /* LOCKED APPROVED QUOTATION: table typography only. */
-      .pm-order-density-normal .pm-items{font-size:7.35pt!important;}
-      .pm-order-density-normal .pm-items th,.pm-order-density-normal .pm-items td{padding:5px 4px!important;line-height:1.12!important;}
-      .pm-order-density-normal .pm-package-print{margin-top:3px!important;padding:3px 4px 2px!important;}
-      .pm-order-density-normal .pm-package-print-list span{font-size:5.7pt!important;line-height:1.02!important;}
-      .pm-title-row{margin:8px 0 7px!important;}
-      .pm-info-section{padding:6px 9px!important;}
-      .pm-opening{margin:6px 0 6px!important;}
-      .pm-order-density-normal .pm-items th,.pm-order-density-normal .pm-items td{padding:3.5px 4px!important;line-height:1.06!important;}
-      .pm-order-density-normal .pm-package-print{margin-top:2px!important;padding:2px 3px 1px!important;}
+      /* PRINT = PREVIEW: exact same compact A4 geometry. */
+      .pm-title-row{margin:5px 0 4px!important;}
+      .pm-info-section{padding:3.5px 6px!important;}
+      .pm-opening{margin:3px 0 3px!important;}
+      .pm-order-density-normal .pm-items{font-size:6.9pt!important;}
+      .pm-order-density-normal .pm-items th,.pm-order-density-normal .pm-items td{padding:2.4px 3px!important;line-height:1.01!important;}
+      .pm-order-density-normal .pm-package-print{margin-top:.5px!important;padding:1px 2px!important;}
       .pm-order-density-normal .pm-package-print-list{gap:0!important;}
-    }
+      .pm-order-density-normal .pm-package-print-list span{font-size:5.4pt!important;line-height:.96!important;}
+      #pmPrintPreview .pm-print-scroll,#pmPrintPreview .pm-a4-stage,#pmPrintPreview .pm-a4{width:210mm!important;max-width:210mm!important;}
+      #pmPrintPreview .pm-a4{height:297mm!important;max-height:297mm!important;min-height:297mm!important;overflow:hidden!important;}
   `;
 
   document.head.appendChild(style);
