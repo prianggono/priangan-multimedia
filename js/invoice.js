@@ -504,16 +504,16 @@
       const amountInput = root.querySelector('#pmPaymentAmount');
       const formatPaymentAmount = () => {
         if (!amountInput) return;
-        const digits = String(amountInput.value || '').replace(/\\D/g, '');
+        const digits = String(amountInput.value || '').replace(/\D/g, '');
         amountInput.value = digits ? M(Number(digits)) : '';
       };
       amountInput?.addEventListener('input', () => {
-        const digits = String(amountInput.value || '').replace(/\\D/g, '');
+        const digits = String(amountInput.value || '').replace(/\D/g, '');
         amountInput.value = digits ? M(Number(digits)) : '';
       });
       amountInput?.addEventListener('focus', () => {
         if (amountInput.value) {
-          const digits = String(amountInput.value).replace(/\\D/g, '');
+          const digits = String(amountInput.value).replace(/\D/g, '');
           amountInput.value = digits ? M(Number(digits)) : '';
           requestAnimationFrame(() => amountInput.select());
         }
