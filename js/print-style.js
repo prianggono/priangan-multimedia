@@ -96,6 +96,15 @@
     .pm-order-density-normal .pm-package-print{margin-top:1px!important;padding:1.5px 2.5px 1px!important;}
     .pm-order-density-normal .pm-package-print-list span{line-height:.98!important;}
 
+    /* FINAL A4 FIT: only compact table text and vertical gaps. */
+    .pm-title-row{margin:5px 0 4px!important;}
+    .pm-info-section{padding:3.5px 6px!important;}
+    .pm-opening{margin:3px 0 3px!important;}
+    .pm-order-density-normal .pm-items{font-size:6.9pt!important;}
+    .pm-order-density-normal .pm-items th,.pm-order-density-normal .pm-items td{padding:2.4px 3px!important;line-height:1.01!important;}
+    .pm-order-density-normal .pm-package-print{margin-top:.5px!important;padding:1px 2px!important;}
+    .pm-order-density-normal .pm-package-print-list span{font-size:5.4pt!important;line-height:.96!important;}
+
     /* FINAL INFO CARD: keep all client/event details visible in one A4 page. */
     .pm-info-card{overflow:visible!important;}
     .pm-info-section{padding:5px 8px!important;height:auto!important;min-height:0!important;overflow:visible!important;line-height:1.08!important;}
