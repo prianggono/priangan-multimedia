@@ -95,5 +95,5 @@ function installMobileNavigation(){
   window.pmOpenSidebar=openSidebar;
   window.pmCloseSidebar=closeSidebar;
 }
-\ninit();
+init();
 })();
