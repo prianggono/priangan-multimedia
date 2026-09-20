@@ -319,7 +319,27 @@
     document.head.appendChild(st);
   }
 
+  function installInvoiceExtraStyles(){
+    if(document.getElementById('pmInvoiceExtraStyles')) return;
+    const st=document.createElement('style');
+    st.id='pmInvoiceExtraStyles';
+    st.textContent=`
+      #content .pm-invoice-extra-card .itemhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+      #content .pm-extra-head-actions{display:flex;align-items:center;gap:8px}
+      #content .pm-invoice-extra-card.is-collapsed{padding-bottom:12px}
+      #content .pm-invoice-extra-card.is-collapsed .pm-extra-body{display:none}
+      #content .pm-extra-summary{display:none;align-items:center;justify-content:space-between;gap:12px}
+      #content .pm-invoice-extra-card.is-collapsed .pm-extra-summary{display:flex}
+      #content .pm-extra-summary>div{min-width:0;display:flex;flex-direction:column;gap:3px}
+      #content .pm-extra-summary strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      #content .pm-extra-summary span{font-size:12px;color:var(--muted,#9aa7bd)}
+      #content .pm-extra-summary>b{color:#35e6a5;white-space:nowrap}
+    `;
+    document.head.appendChild(st);
+  }
+
   async function openForm(id) {
+    installInvoiceExtraStyles();
     setPage();
     try {
       const d = await load(id);
@@ -378,6 +398,34 @@
     updateSummary();
   }
 
+  function extraComplete(x) {
+    const type = S(x?.tipe_perhitungan || 'qty').toLowerCase();
+    if (type === 'overtime') return N(x?.qty) > 0 && N(x?.harga) > 0;
+    if (!S(x?.kode) || !S(x?.nama_item) || !x?.tanggal_mulai || !x?.tanggal_selesai) return false;
+    if (type === 'luas') return N(x.lebar) > 0 && N(x.tinggi) > 0;
+    if (type === 'rigging') return N(x.panjang) > 0 && N(x.tinggi) > 0;
+    if (type === 'level') return N(x.lebar) > 0;
+    return N(x.qty) > 0;
+  }
+
+  function extraMetric(x) {
+    const type = S(x?.tipe_perhitungan || 'qty').toLowerCase();
+    if (type === 'overtime') return `${Math.max(1, N(x.qty) || 1)} jam`;
+    if (type === 'luas') return `${N(x.lebar)} × ${N(x.tinggi)} m`;
+    if (type === 'rigging') return `Rigging ${N(x.panjang)} × ${N(x.tinggi)} m`;
+    if (type === 'level') return `Level ${N(x.lebar)} m`;
+    return `Qty ${Math.max(1, N(x.qty) || 1)}`;
+  }
+
+  function toggleExtra(index) {
+    const card = document.querySelector(`#invoiceExtras [data-extra-index="${index}"]`);
+    if (!card) return;
+    const collapsed = !card.classList.contains('is-collapsed');
+    card.classList.toggle('is-collapsed', collapsed);
+    const btn = card.querySelector('[data-toggle-extra]');
+    if (btn) btn.textContent = collapsed ? 'Buka' : 'Ringkas';
+  }
+
   function renderExtras() {
     if (!current) return;
     const c = document.querySelector('#invoiceExtras');
@@ -385,9 +433,23 @@
     const activeMasters = (current.masters || []).filter((m) => m.aktif !== false && String(m.aktif).toUpperCase() !== 'FALSE');
     c.innerHTML = current.ex.map((x, i) => {
       const type = S(x.tipe_perhitungan || 'qty').toLowerCase();
+      const complete = extraComplete(x);
       const masterOptions = activeMasters.map((m) =>
         `<option value="${E(m.kode)}" ${S(x.kode) === S(m.kode) ? 'selected' : ''}>[${E(m.kode)}] ${E(m.item)}</option>`
       ).join('');
+
+      if (type === 'overtime') {
+        return `<div class="card pm-invoice-extra-card ${complete ? 'is-collapsed' : ''}" data-extra-index="${i}">
+          <div class="itemhead"><span class="blue">OVERTIME #${i + 1}</span><div class="pm-extra-head-actions">${complete ? '<button class="btn secondary sm" type="button" data-toggle-extra>Buka</button>' : ''}<button class="btn red sm" type="button" data-remove-extra="${i}">Hapus</button></div></div>
+          <div class="pm-extra-summary"><div><strong>Overtime</strong><span>${E(extraMetric(x))}</span></div><b>${M(x.subtotal)}</b></div>
+          <div class="pm-extra-body">
+            <div class="grid g2"><div class="field"><label>Jumlah (Jam)</label><input type="number" min="1" step="1" data-f="qty" value="${Math.max(1, N(x.qty) || 1)}"></div><div class="field"><label>Harga / Jam</label><input type="text" inputmode="numeric" data-f="harga" value="${M(x.harga)}"></div></div>
+            <div class="sched"><b>Jadwal Pemakaian</b><div class="grid g2" style="margin-top:12px"><div class="field"><label>Tanggal</label><input type="date" data-f="tanggal_mulai" value="${E(x.tanggal_mulai || '')}"></div><div class="field"><label>Tanggal Selesai</label><input type="date" data-f="tanggal_selesai" value="${E(x.tanggal_selesai || '')}"></div></div></div>
+            <div class="sum"><span>Subtotal</span><b data-out-subtotal>${M(x.subtotal)}</b></div>
+          </div>
+        </div>`;
+      }
+
       const dimHtml = type === 'rigging'
         ? `<div class="grid g2"><div class="field"><label>Panjang Rigging (m)</label><input type="number" min="0" step="0.01" data-f="panjang" value="${N(x.panjang)}"></div><div class="field"><label>Tinggi Rigging (m)</label><input type="number" min="0" step="0.01" data-f="tinggi" value="${N(x.tinggi)}"></div></div>`
         : type === 'luas'
@@ -395,62 +457,54 @@
           : type === 'level'
             ? `<div class="grid g2"><div class="field"><label>Lebar Level (meter lari)</label><input type="number" min="0" step="0.01" data-f="lebar" value="${N(x.lebar)}"></div><div class="field"><label>Tinggi Level (informasi, m)</label><input type="number" min="0" step="0.01" data-f="tinggi" value="${N(x.tinggi)}"></div></div>`
             : `<div class="field"><label>Jumlah (Qty)</label><input type="number" min="1" step="1" data-f="qty" value="${Math.max(1, N(x.qty) || 1)}"></div>`;
-      return `<div class="card pm-invoice-extra-card" data-extra-index="${i}">
-        <div class="itemhead" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px">
-          <span class="blue">ITEM #${i + 1}</span>
-          <button class="btn red sm" type="button" data-remove-extra="${i}">Hapus</button>
+
+      return `<div class="card pm-invoice-extra-card ${complete ? 'is-collapsed' : ''}" data-extra-index="${i}">
+        <div class="itemhead"><span class="blue">ITEM #${i + 1}</span><div class="pm-extra-head-actions">${complete ? '<button class="btn secondary sm" type="button" data-toggle-extra>Buka</button>' : ''}<button class="btn red sm" type="button" data-remove-extra="${i}">Hapus</button></div></div>
+        <div class="pm-extra-summary"><div><strong>${E(x.nama_item || 'Item belum dipilih')}</strong><span>${E(extraMetric(x))}</span></div><b>${M(x.subtotal)}</b></div>
+        <div class="pm-extra-body">
+          <div class="field"><label>Produk / Jasa</label><select data-f="kode" data-master-picker><option value="">-- Pilih dari Master Harga --</option>${masterOptions}</select></div>
+          <div class="grid g2"><div class="field"><label>Harga Jual</label><input data-out-price readonly value="${M(x.harga)}"></div><div class="field"><label>Tipe Perhitungan</label><input readonly value="${E(type)}"></div></div>
+          <div class="pm-extra-dims">${dimHtml}</div>
+          <div class="sched"><b>Jadwal Pemakaian</b><div class="grid g2" style="margin-top:12px"><div class="field"><label>Tanggal Mulai</label><input type="date" data-f="tanggal_mulai" value="${E(x.tanggal_mulai || '')}"></div><div class="field"><label>Tanggal Selesai</label><input type="date" data-f="tanggal_selesai" value="${E(x.tanggal_selesai || '')}"></div></div></div>
+          <div class="sum"><span>Subtotal</span><b data-out-subtotal>${M(x.subtotal)}</b></div>
         </div>
-        <div class="field">
-          <label>Produk / Jasa</label>
-          <select data-f="kode" data-master-picker>
-            <option value="">-- Pilih dari Master Harga --</option>
-            ${masterOptions}
-          </select>
-        </div>
-        <div class="grid g2">
-          <div class="field"><label>Harga Jual</label><input data-out-price readonly value="${M(x.harga)}"></div>
-          <div class="field"><label>Tipe Perhitungan</label><input readonly value="${E(type)}"></div>
-        </div>
-        <div class="pm-extra-dims">${dimHtml}</div>
-        <div class="sched"><b>Jadwal Pemakaian</b><div class="grid g2" style="margin-top:12px">
-          <div class="field"><label>Tanggal Mulai</label><input type="date" data-f="tanggal_mulai" value="${E(x.tanggal_mulai || '')}"></div>
-          <div class="field"><label>Tanggal Selesai</label><input type="date" data-f="tanggal_selesai" value="${E(x.tanggal_selesai || '')}"></div>
-        </div></div>
-        <div class="sum"><span>Subtotal</span><b data-out-subtotal>${M(x.subtotal)}</b></div>
       </div>`;
     }).join('') || '<div class="empty">Belum ada item tambahan.</div>';
 
     c.querySelectorAll('[data-extra-index]').forEach((card) => {
       const index = Number(card.dataset.extraIndex);
       const x = current.ex[index];
-      const picker = card.querySelector('[data-master-picker]');
-      picker?.addEventListener('change', () => extraPick(index, picker.value));
+      card.querySelector('[data-toggle-extra]')?.addEventListener('click', () => toggleExtra(index));
+      card.querySelector('[data-remove-extra]')?.addEventListener('click', () => invoiceRemoveItem(index));
+      card.querySelector('[data-master-picker]')?.addEventListener('change', (e) => extraPick(index, e.target.value));
 
       card.querySelectorAll('[data-f]').forEach((el) => {
         if (el.dataset.f === 'kode') return;
-        el.addEventListener('input', () => {
-          x[el.dataset.f] = el.value;
+        const update = () => {
+          x[el.dataset.f] = el.dataset.f === 'harga' ? N(el.value) : el.value;
           x.durasi = days(x.tanggal_mulai, x.tanggal_selesai);
           x.subtotal = Math.round(extraSubtotal(x));
           const out = card.querySelector('[data-out-subtotal]');
           if (out) out.textContent = M(x.subtotal);
+          const summary = card.querySelector('.pm-extra-summary');
+          if (summary) {
+            summary.querySelector('b')?.replaceChildren(document.createTextNode(M(x.subtotal)));
+            const span = summary.querySelector('span');
+            if (span) span.textContent = extraMetric(x);
+          }
           updateSummary();
+        };
+        el.addEventListener('input', update);
+        el.addEventListener('change', () => {
+          update();
+          if (extraComplete(x)) renderExtras();
         });
-        if (el.tagName === 'SELECT') {
-          el.addEventListener('change', () => {
-            x[el.dataset.f] = el.value;
-            x.durasi = days(x.tanggal_mulai, x.tanggal_selesai);
-            x.subtotal = Math.round(extraSubtotal(x));
-            const out = card.querySelector('[data-out-subtotal]');
-            if (out) out.textContent = M(x.subtotal);
-            updateSummary();
-          });
+        if (el.dataset.f === 'harga') {
+          el.addEventListener('focus', () => { el.value = String(N(el.value) || ''); });
+          el.addEventListener('blur', () => { el.value = M(el.value); });
         }
       });
     });
-    c.querySelectorAll('[data-remove-extra]').forEach((b) =>
-      b.addEventListener('click', () => invoiceRemoveItem(Number(b.dataset.removeExtra)))
-    );
   }
 
   function extraSubtotal(x) {
