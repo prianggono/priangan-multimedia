@@ -476,7 +476,7 @@
       closePaymentModal();
       const root = document.createElement('div');
       root.id = 'pmPaymentModal';
-      root.innerHTML = `<div class="pm-payment-backdrop"><div class="pm-payment-dialog" role="dialog" aria-modal="true" aria-labelledby="pmPaymentTitle"><div class="pm-payment-head"><div><strong id="pmPaymentTitle">Input Pembayaran</strong><span>Sisa tagihan ${E(M(balance))}</span></div><button type="button" class="pm-payment-close" id="pmPaymentClose">×</button></div><div class="pm-payment-body"><div class="field"><label>Nominal Pembayaran</label><input id="pmPaymentAmount" type="number" min="1" max="${Math.round(balance)}" step="1" value="${Math.round(balance)}"></div><div class="field"><label>Metode Pembayaran</label><select id="pmPaymentMethod"><option>Transfer</option><option>Tunai</option><option>QRIS</option><option>Lainnya</option></select></div></div><div class="pm-payment-actions"><button type="button" class="btn secondary" id="pmPaymentCancel">Batal</button><button type="button" class="btn green" id="pmPaymentSave">Simpan Pembayaran</button></div></div></div>`;
+      root.innerHTML = `<div class="pm-payment-backdrop"><div class="pm-payment-dialog" role="dialog" aria-modal="true" aria-labelledby="pmPaymentTitle"><div class="pm-payment-head"><div><strong id="pmPaymentTitle">Input Pembayaran</strong><span>Sisa tagihan ${E(M(balance))}</span></div><button type="button" class="pm-payment-close" id="pmPaymentClose">×</button></div><div class="pm-payment-body"><div class="field"><label>Nominal Pembayaran</label><input id="pmPaymentAmount" type="text" inputmode="numeric" autocomplete="off" value="${E(M(balance))}" aria-label="Nominal pembayaran"></div><div class="field"><label>Metode Pembayaran</label><select id="pmPaymentMethod"><option>Transfer</option><option>Tunai</option><option>QRIS</option><option>Lainnya</option></select></div></div><div class="pm-payment-actions"><button type="button" class="btn secondary" id="pmPaymentCancel">Batal</button><button type="button" class="btn green" id="pmPaymentSave">Simpan Pembayaran</button></div></div></div>`;
       document.body.appendChild(root);
       document.body.classList.add('pm-payment-modal-open');
       const save = async () => {
@@ -501,13 +501,32 @@
           msg('Gagal menyimpan pembayaran: ' + (e.message || e));
         }
       };
+      const amountInput = root.querySelector('#pmPaymentAmount');
+      const formatPaymentAmount = () => {
+        if (!amountInput) return;
+        const digits = String(amountInput.value || '').replace(/\\D/g, '');
+        amountInput.value = digits ? M(Number(digits)) : '';
+      };
+      amountInput?.addEventListener('input', () => {
+        const digits = String(amountInput.value || '').replace(/\\D/g, '');
+        amountInput.value = digits ? M(Number(digits)) : '';
+      });
+      amountInput?.addEventListener('focus', () => {
+        if (amountInput.value) {
+          const digits = String(amountInput.value).replace(/\\D/g, '');
+          amountInput.value = digits ? M(Number(digits)) : '';
+          requestAnimationFrame(() => amountInput.select());
+        }
+      });
+      amountInput?.addEventListener('blur', formatPaymentAmount);
       root.querySelector('#pmPaymentClose').onclick = closePaymentModal;
       root.querySelector('#pmPaymentCancel').onclick = closePaymentModal;
       root.querySelector('#pmPaymentSave').onclick = save;
       root.querySelector('.pm-payment-backdrop').addEventListener('click', (e) => {
         if (e.target === e.currentTarget) closePaymentModal();
       });
-      root.querySelector('#pmPaymentAmount')?.focus();
+      amountInput?.focus();
+      amountInput?.select();
     } catch (e) {
       console.error('[PM] payment modal', e);
       msg('Gagal membuka pembayaran: ' + (e.message || e));
