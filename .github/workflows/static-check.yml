@@ -61,6 +61,22 @@ jobs:
           validate('JavaScript', js_refs)
           validate('CSS', css_refs)
           PY
+      - name: Check canonical frontend filenames
+        shell: bash
+        run: |
+          set -euo pipefail
+          bad=0
+          while IFS= read -r file; do
+            base=$(basename "$file")
+            case "$base" in
+              *-fix.js|*-final.js|*-v2.js|*-canonical*.js|*-tidy*.css)
+                echo "Legacy-style runtime filename found: $file"
+                bad=1
+                ;;
+            esac
+          done < <(find js css -type f \( -name '*.js' -o -name '*.css' \) | sort)
+          if [ "$bad" -ne 0 ]; then exit 1; fi
+          echo 'Canonical frontend filenames verified.'
       - name: Check removed layers stay removed
         shell: bash
         run: |

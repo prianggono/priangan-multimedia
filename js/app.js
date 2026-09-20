@@ -48,7 +48,52 @@ async function saveTemplate(){if(!db)return msg('Supabase belum terhubung.');con
 function settingsPage(){const x=cfg();$('#content').innerHTML=`<div class="head"><div><h1>Pengaturan Database</h1><p>Koneksi Supabase ditetapkan oleh js/config.js.</p></div></div><div class="card"><div class="field"><label>URL Supabase</label><input value="${esc(x.url)}" readonly></div><div class="field"><label>Publishable / Anon Key</label><input value="${esc(x.key)}" readonly></div></div>`}
 function go(next){const target=String(next||'dashboard');const editing=!!(window.__pmEditingQuotationId||window.__PM_EDIT_QUOTATION_ID);if(target!=='quotation'&&editing){window.__pmEditingQuotationId=null;window.__PM_EDIT_QUOTATION_ID=null;window.__pmEditingQuotationNumber=null;window.__PM_EDIT_QUOTATION_NUMBER=null;window.__pmDiscountBase=0;window.__pmDiscountValue=0;window.__pmDiscountPct=0;window.__pmNetTotal=0;window.__PM_DISC_MODE='rp';window.items=[];}page=target;window.page=page;if(page==='quotation'&&!editing){window.__pmEditingQuotationNumber=null;window.__PM_EDIT_QUOTATION_NUMBER=null;window.items=[];window.__PM_DISC_MODE='rp';window.__pmDiscountBase=0;window.__pmDiscountValue=0;window.__pmDiscountPct=0;window.__pmNetTotal=0}render()}
 window.$=$;window.esc=esc;window.isActive=active;window.activeLabel=v=>active(v)?'YA':'TIDAK';window.money=money;window.msg=msg;window.go=go;window.load=load;window.render=render;window.pmSetCurrentPage=setCurrentPage;window.masterPage=masterPage;window.masterForm=masterForm;window.saveMaster=saveMaster;window.quotationPage=quotationPage;window.templatePage=templatePage;window.saveTemplate=saveTemplate;window.settingsPage=settingsPage;window.fillClient=fillClient;
-async function init(){document.querySelectorAll('.nav').forEach(button=>button.addEventListener('click',()=>go(button.dataset.p||'dashboard')));$('#menu')?.addEventListener('click',()=>{$('.sidebar')?.classList.toggle('open')});const x=cfg();if(x.url&&x.key&&window.supabase?.createClient){db=window.supabase.createClient(x.url,x.key);window.db=db;window.__PM_STABLE_DB=db;try{await load();setStatus('Supabase terhubung','ok')}catch(e){console.error('[PM] bootstrap',e);setStatus('Supabase gagal','bad');msg('Gagal membaca database: '+(e.message||e))}}else setStatus('Belum terhubung','warn');render()}
+async function init(){document.querySelectorAll('.nav').forEach(button=>button.addEventListener('click',()=>go(button.dataset.p||'dashboard')));installMobileNavigation();const x=cfg();if(x.url&&x.key&&window.supabase?.createClient){db=window.supabase.createClient(x.url,x.key);window.db=db;window.__PM_STABLE_DB=db;try{await load();setStatus('Supabase terhubung','ok')}catch(e){console.error('[PM] bootstrap',e);setStatus('Supabase gagal','bad');msg('Gagal membaca database: '+(e.message||e))}}else setStatus('Belum terhubung','warn');render()}
 function setStatus(text,type){const el=$('#status');if(el){el.textContent=text;el.className='badge '+type}}
+
+/* Mobile navigation belongs to the app shell; keep drawer behavior in one owner. */
+function installMobileNavigation(){
+  const MOBILE_MAX=900;
+  let backdrop=null;
+  const isMobile=()=>window.matchMedia(`(max-width:${MOBILE_MAX}px)`).matches;
+  const sidebar=()=>document.querySelector('.sidebar');
+  const menu=()=>document.querySelector('#menu');
+  const ensureBackdrop=()=>{
+    if(backdrop)return backdrop;
+    backdrop=document.createElement('div');
+    backdrop.id='pmMobileSidebarBackdrop';
+    backdrop.setAttribute('aria-hidden','true');
+    document.body.appendChild(backdrop);
+    backdrop.addEventListener('click',closeSidebar);
+    return backdrop;
+  };
+  const closeSidebar=()=>{
+    sidebar()?.classList.remove('open');
+    backdrop?.classList.remove('show');
+    document.body.classList.remove('pm-sidebar-open');
+    menu()?.setAttribute('aria-expanded','false');
+  };
+  const openSidebar=()=>{
+    const el=sidebar();
+    if(!el||!isMobile())return;
+    el.classList.add('open');
+    ensureBackdrop().classList.add('show');
+    document.body.classList.add('pm-sidebar-open');
+    menu()?.setAttribute('aria-expanded','true');
+  };
+  const toggleSidebar=()=>sidebar()?.classList.contains('open')?closeSidebar():openSidebar();
+  ensureBackdrop();
+  document.addEventListener('click',event=>{
+    const target=event.target;
+    if(!(target instanceof Element))return;
+    if(target.closest('#menu')){event.preventDefault();event.stopImmediatePropagation();toggleSidebar();return;}
+    if(target.closest('.sidebar .nav')){closeSidebar();return;}
+    if(isMobile()&&sidebar()?.classList.contains('open')&&!target.closest('.sidebar'))closeSidebar();
+  },true);
+  document.addEventListener('keydown',event=>{if(event.key==='Escape')closeSidebar();});
+  window.addEventListener('resize',()=>{if(!isMobile())closeSidebar();});
+  window.pmOpenSidebar=openSidebar;
+  window.pmCloseSidebar=closeSidebar;
+}
 init();
 })();

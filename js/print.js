@@ -196,6 +196,35 @@
       .pm-order-density-normal .pm-package-print-list span{font-size:5.4pt!important;line-height:.96!important;}
       #pmPrintPreview .pm-print-scroll,#pmPrintPreview .pm-a4-stage,#pmPrintPreview .pm-a4{width:210mm!important;max-width:210mm!important;}
       #pmPrintPreview .pm-a4{height:297mm!important;max-height:297mm!important;min-height:297mm!important;overflow:hidden!important;}
+    /* Document header geometry belongs to the print renderer. */
+
+    .pm-letterhead .pm-brand {
+      padding-right: 10px !important;
+    }
+    .pm-letterhead .pm-brand p {
+      white-space: normal !important;
+      line-height: 1.25 !important;
+      overflow-wrap: anywhere !important;
+    }
+    .pm-letterhead .pm-doc-tag {
+      min-width: 86px !important;
+      width: 86px !important;
+      flex: 0 0 86px !important;
+      padding-left: 8px !important;
+    }
+    .pm-letterhead .pm-doc-tag span {
+      font-size: 6.4pt !important;
+      letter-spacing: 1px !important;
+    }
+    .pm-letterhead .pm-doc-tag strong {
+      margin-top: 3px !important;
+      font-size: 6.9pt !important;
+      line-height: 1.15 !important;
+      letter-spacing: .2px !important;
+      white-space: nowrap !important;
+    }
+  
+
   `;
 
   document.head.appendChild(style);

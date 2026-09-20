@@ -1,6 +1,6 @@
 # Priangan Multimedia — Architecture & Maintenance Contract
 
-Last audited: 2026-09-17
+Last audited: 2026-09-20
 
 ## 1. Source of truth
 
@@ -16,16 +16,16 @@ Last audited: 2026-09-17
 | Domain | Authoritative owner | Responsibility |
 |---|---|---|
 | App shell/navigation | `js/app.js` | bootstrap, shared DB client, routing, global state |
-| Master Harga | `js/master-cost-fix.js` | master item CRUD, sell price, cost, package contents |
-| Quotation | `js/quotation-runtime-canonical-v2.js` | item state, calculation, picker, drawing, preview/print |
-| Quotation UI extensions | `js/quotation-ui-canonical.js` | negotiated price editor, LED set/level, per-item discount, UI enhancement |
-| Quotation persistence | `js/quotation-save-final.js` | serialization and transactional DB save |
-| Quotation history | `js/history-actions-runtime-fix.js` | quotation history/edit lifecycle |
-| Package detail UI | `js/package-detail-ui.js` | package component presentation |
+| Master Harga | `js/master.js` | master item CRUD, sell price, cost, package contents |
+| Quotation | `js/quotation-runtime.js` | item state, calculation, picker, drawing, preview/print |
+| Quotation UI extensions | `js/quotation-ui.js` | negotiated price editor, LED set/level, per-item discount, UI enhancement |
+| Quotation persistence | `js/quotation-repository.js` | serialization and transactional DB save |
+| Quotation history | `js/history.js` | quotation history/edit lifecycle |
+| Package detail UI | `js/package-details.js` | package component presentation |
 | Invoice | `js/invoice.js` | invoice list/editor, invoice extras, payment entry, complete document preview/print |
 | Finance | `js/finance.js` | financial reconciliation and operating expenses |
-| Document numbering | `js/document-numbering-final.js` | filename/title preparation only; DB owns document numbers/revision |
-| Template/TTD | `js/ttd-upload-fix.js` + `js/app.js` | template assets and signature support |
+| Document numbering | Database-owned document numbering; frontend only prepares filenames/titles | filename/title preparation only; DB owns document numbers/revision |
+| Template/TTD | `js/template-assets.js` + `js/app.js` | template assets and signature support |
 
 There is intentionally **no separate customer-document renderer**. The Quotation owner renders quotation documents; the Invoice owner renders Invoice documents. A document must not be patched after rendering by another module.
 
@@ -97,14 +97,20 @@ Before changing code:
 - Frontend code must not maintain a competing financial state in localStorage.
 - Public/anonymous CRUD policies must not be relaxed to solve an application error.
 
-## 6. Cleanup policy
+## 6. Frontend module structure
+
+The frontend uses one shell owner plus one authoritative owner per domain. Runtime files are named by responsibility rather than by the history of bug fixes. Mobile navigation belongs to `js/app.js`; document header/print CSS belongs to `js/print.js`.
+
+Small behavior extensions may remain separate when they are genuinely domain-specific (for example `js/template-assets.js`), but they must not create a competing source of truth or patch another renderer after it runs.
+
+## 7. Cleanup policy
 
 - Files are deleted only after confirming they are not referenced by `index.html` and are not required by an active domain contract.
 - Historical migration files remain immutable and are not deleted.
-- Active modules with legacy filenames remain only while they still own runtime responsibilities; filenames are not grounds for blind deletion.
+- Active runtime modules use descriptive domain names. Suffixes such as `-fix`, `-final`, `-v2`, `-canonical`, and `-tidy` are not permitted for new runtime files; behavior changes must be made in the existing domain owner.
 - Removed document patch layers must not be recreated.
 
-## 7. Current cleanup completed
+## 8. Current cleanup completed
 
 The redundant document patching layers have been removed:
 
@@ -115,9 +121,11 @@ The redundant document patching layers have been removed:
 - `css/quotation-info-invoice-match-final.css`
 - `sql/pembayaran-rls-fix.sql`
 
-`css/mobile-preview-final.css` now contains quotation-only mobile preview rules and no Invoice selectors.
+Legacy runtime filenames were also normalized so the active frontend no longer carries `fix/final/v2/canonical/tidy` suffixes.
 
-## 8. Mandatory regression gates
+`css/quotation-mobile.css` now contains quotation-only mobile preview rules and no Invoice selectors.
+
+## 9. Mandatory regression gates
 
 ### Gate A — Quotation
 
@@ -174,7 +182,7 @@ The redundant document patching layers have been removed:
 - There is exactly one renderer owner for quotation documents and exactly one renderer owner for Invoice documents.
 - RLS/auth changes are tested separately from business-logic changes.
 
-## 9. Authentication / RLS rollout
+## 10. Authentication / RLS rollout
 
 The database currently has zero Supabase Auth users. RLS is intentionally treated as a separate controlled rollout because enabling authenticated-only policies before an administrator account exists would lock the application out.
 
