@@ -343,38 +343,114 @@
     }
   }
 
+  function extraMasterType(master) {
+    const text = `${S(master?.item)} ${S(master?.kategori)}`.toLowerCase();
+    const sat = S(master?.satuan).toLowerCase().replace(/²/g, '2');
+    if (/level/.test(text)) return 'level';
+    if (/rigging|rig/.test(text)) return 'rigging';
+    if (/videotron|led\\s*(indoor|outdoor)|led\\s*p\\.?\\d/.test(text)) return 'luas';
+    if (/m2|meter2|luas/.test(sat)) return 'luas';
+    return 'qty';
+  }
+
+  function extraPick(index, kode) {
+    if (!current) return;
+    const x = current.ex[index];
+    const master = (current.masters || []).find((m) => S(m.kode) === S(kode));
+    if (!x || !master) return;
+    const type = extraMasterType(master);
+    x.master_harga_id = master.id;
+    x.kode = S(master.kode);
+    x.nama_item = S(master.item);
+    x.source = 'master_harga';
+    x.tipe_perhitungan = type;
+    x.harga = Math.max(0, N(master.harga_jual));
+    x.qty = Math.max(1, N(x.qty) || 1);
+    x.satuan = S(master.satuan || 'unit');
+    x.lebar = 0;
+    x.tinggi = 0;
+    x.panjang = 0;
+    x.tanggal_mulai = current.q.tanggal_mulai || '';
+    x.tanggal_selesai = current.q.tanggal_selesai || current.q.tanggal_mulai || '';
+    x.durasi = days(x.tanggal_mulai, x.tanggal_selesai);
+    x.subtotal = Math.round(extraSubtotal(x));
+    renderExtras();
+    updateSummary();
+  }
+
   function renderExtras() {
     if (!current) return;
     const c = document.querySelector('#invoiceExtras');
     if (!c) return;
-    c.innerHTML = current.ex.map((x, i) => `<div class="card" data-extra-index="${i}"><div class="grid g2"><div class="field"><label>Item</label><input data-f="nama_item" value="${E(x.nama_item || '')}"></div><div class="field"><label>Harga</label><input type="number" data-f="harga" value="${N(x.harga)}"></div><div class="field"><label>Qty</label><input type="number" data-f="qty" value="${N(x.qty) || 1}"></div><div class="field"><label>Satuan</label><input data-f="satuan" value="${E(x.satuan || 'unit')}"></div><div class="field"><label>Tipe</label><select data-f="tipe_perhitungan"><option value="qty">Qty</option><option value="luas">Luas</option><option value="rigging">Rigging</option><option value="overtime">Overtime</option></select></div><div class="field"><label>Subtotal</label><input data-out readonly value="${M(x.subtotal)}"></div></div><div class="actions"><button class="btn sm danger" type="button" data-remove-extra="${i}">Hapus</button></div></div>`).join('') || '<div class="empty">Belum ada item tambahan.</div>';
+    const activeMasters = (current.masters || []).filter((m) => m.aktif !== false && String(m.aktif).toUpperCase() !== 'FALSE');
+    c.innerHTML = current.ex.map((x, i) => {
+      const type = S(x.tipe_perhitungan || 'qty').toLowerCase();
+      const masterOptions = activeMasters.map((m) =>
+        `<option value="${E(m.kode)}" ${S(x.kode) === S(m.kode) ? 'selected' : ''}>[${E(m.kode)}] ${E(m.item)}</option>`
+      ).join('');
+      const dimHtml = type === 'rigging'
+        ? `<div class="grid g2"><div class="field"><label>Panjang Rigging (m)</label><input type="number" min="0" step="0.01" data-f="panjang" value="${N(x.panjang)}"></div><div class="field"><label>Tinggi Rigging (m)</label><input type="number" min="0" step="0.01" data-f="tinggi" value="${N(x.tinggi)}"></div></div>`
+        : type === 'luas'
+          ? `<div class="grid g2"><div class="field"><label>Lebar Videotron (m)</label><input type="number" min="0" step="0.01" data-f="lebar" value="${N(x.lebar)}"></div><div class="field"><label>Tinggi Videotron (m)</label><input type="number" min="0" step="0.01" data-f="tinggi" value="${N(x.tinggi)}"></div></div>`
+          : type === 'level'
+            ? `<div class="grid g2"><div class="field"><label>Lebar Level (meter lari)</label><input type="number" min="0" step="0.01" data-f="lebar" value="${N(x.lebar)}"></div><div class="field"><label>Tinggi Level (informasi, m)</label><input type="number" min="0" step="0.01" data-f="tinggi" value="${N(x.tinggi)}"></div></div>`
+            : `<div class="field"><label>Jumlah (Qty)</label><input type="number" min="1" step="1" data-f="qty" value="${Math.max(1, N(x.qty) || 1)}"></div>`;
+      return `<div class="card pm-invoice-extra-card" data-extra-index="${i}">
+        <div class="itemhead" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px">
+          <span class="blue">ITEM #${i + 1}</span>
+          <button class="btn red sm" type="button" data-remove-extra="${i}">Hapus</button>
+        </div>
+        <div class="field">
+          <label>Produk / Jasa</label>
+          <select data-f="kode" data-master-picker>
+            <option value="">-- Pilih dari Master Harga --</option>
+            ${masterOptions}
+          </select>
+        </div>
+        <div class="grid g2">
+          <div class="field"><label>Harga Jual</label><input data-out-price readonly value="${M(x.harga)}"></div>
+          <div class="field"><label>Tipe Perhitungan</label><input readonly value="${E(type)}"></div>
+        </div>
+        <div class="pm-extra-dims">${dimHtml}</div>
+        <div class="sched"><b>Jadwal Pemakaian</b><div class="grid g2" style="margin-top:12px">
+          <div class="field"><label>Tanggal Mulai</label><input type="date" data-f="tanggal_mulai" value="${E(x.tanggal_mulai || '')}"></div>
+          <div class="field"><label>Tanggal Selesai</label><input type="date" data-f="tanggal_selesai" value="${E(x.tanggal_selesai || '')}"></div>
+        </div></div>
+        <div class="sum"><span>Subtotal</span><b data-out-subtotal>${M(x.subtotal)}</b></div>
+      </div>`;
+    }).join('') || '<div class="empty">Belum ada item tambahan.</div>';
+
     c.querySelectorAll('[data-extra-index]').forEach((card) => {
-      const x = current.ex[Number(card.dataset.extraIndex)];
+      const index = Number(card.dataset.extraIndex);
+      const x = current.ex[index];
+      const picker = card.querySelector('[data-master-picker]');
+      picker?.addEventListener('change', () => extraPick(index, picker.value));
+
       card.querySelectorAll('[data-f]').forEach((el) => {
-        if (el.dataset.f === 'tipe_perhitungan') {
-          el.value = x.tipe_perhitungan || 'qty';
-        } else {
-          el.value = x[el.dataset.f] ?? el.value;
-        }
+        if (el.dataset.f === 'kode') return;
         el.addEventListener('input', () => {
           x[el.dataset.f] = el.value;
+          x.durasi = days(x.tanggal_mulai, x.tanggal_selesai);
           x.subtotal = Math.round(extraSubtotal(x));
-          const out = card.querySelector('[data-out]');
-          if (out) out.value = M(x.subtotal);
+          const out = card.querySelector('[data-out-subtotal]');
+          if (out) out.textContent = M(x.subtotal);
           updateSummary();
         });
         if (el.tagName === 'SELECT') {
           el.addEventListener('change', () => {
             x[el.dataset.f] = el.value;
+            x.durasi = days(x.tanggal_mulai, x.tanggal_selesai);
             x.subtotal = Math.round(extraSubtotal(x));
-            const out = card.querySelector('[data-out]');
-            if (out) out.value = M(x.subtotal);
+            const out = card.querySelector('[data-out-subtotal]');
+            if (out) out.textContent = M(x.subtotal);
             updateSummary();
           });
         }
       });
     });
-    c.querySelectorAll('[data-remove-extra]').forEach((b) => b.addEventListener('click', () => invoiceRemoveItem(Number(b.dataset.removeExtra))));
+    c.querySelectorAll('[data-remove-extra]').forEach((b) =>
+      b.addEventListener('click', () => invoiceRemoveItem(Number(b.dataset.removeExtra)))
+    );
   }
 
   function extraSubtotal(x) {
@@ -382,7 +458,7 @@
     const qty = Math.max(1, N(x.qty) || 1);
     const w = N(x.lebar), h = N(x.tinggi), l = N(x.panjang), p = N(x.harga);
     const dur = days(x.tanggal_mulai, x.tanggal_selesai);
-    const basis = type === 'luas' ? w * h : type === 'rigging' ? 2 * (l + h) : qty;
+    const basis = type === 'luas' ? w * h : type === 'rigging' ? 2 * (l + h) : type === 'level' ? w : qty;
     return basis * p * (type === 'overtime' ? 1 : dur);
   }
 
@@ -397,7 +473,23 @@
 
   function invoiceAddItem() {
     if (!current) return;
-    current.ex.push({ kode: 'ADD-INV', nama_item: 'Item Tambahan', source: 'manual', tipe_perhitungan: 'qty', qty: 1, satuan: 'unit', harga: 0, tanggal_mulai: current.q.tanggal_mulai, tanggal_selesai: current.q.tanggal_selesai, subtotal: 0 });
+    current.ex.push({
+      master_harga_id: null,
+      kode: '',
+      nama_item: '',
+      source: 'master_harga',
+      tipe_perhitungan: 'qty',
+      qty: 1,
+      satuan: 'unit',
+      harga: 0,
+      lebar: 0,
+      tinggi: 0,
+      panjang: 0,
+      tanggal_mulai: current.q.tanggal_mulai || '',
+      tanggal_selesai: current.q.tanggal_selesai || current.q.tanggal_mulai || '',
+      durasi: days(current.q.tanggal_mulai, current.q.tanggal_selesai || current.q.tanggal_mulai),
+      subtotal: 0
+    });
     renderExtras();
     updateSummary();
   }
