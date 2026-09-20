@@ -348,7 +348,7 @@
     const sat = S(master?.satuan).toLowerCase().replace(/²/g, '2');
     if (/level/.test(text)) return 'level';
     if (/rigging|rig/.test(text)) return 'rigging';
-    if (/videotron|led\\s*(indoor|outdoor)|led\\s*p\\.?\\d/.test(text)) return 'luas';
+    if (/videotron|led\s*(indoor|outdoor)|led\s*p\.?\d/.test(text)) return 'luas';
     if (/m2|meter2|luas/.test(sat)) return 'luas';
     return 'qty';
   }
