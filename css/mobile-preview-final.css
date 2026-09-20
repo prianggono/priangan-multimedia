@@ -222,3 +222,13 @@
 #pmPrintPreview .pm-order-density-normal .pm-items td{padding:2.8px 3.5px!important;line-height:1.03!important;}
 #pmPrintPreview .pm-order-density-normal .pm-package-print{margin-top:1px!important;padding:1.5px 2.5px 1px!important;}
 #pmPrintPreview .pm-order-density-normal .pm-package-print-list span{line-height:.98!important;}
+
+/* FINAL A4 FIT: only compact table text and vertical gaps. */
+#pmPrintPreview .pm-title-row{margin:5px 0 4px!important;}
+#pmPrintPreview .pm-info-section{padding:3.5px 6px!important;}
+#pmPrintPreview .pm-opening{margin:3px 0 3px!important;}
+#pmPrintPreview .pm-order-density-normal .pm-items{font-size:6.9pt!important;}
+#pmPrintPreview .pm-order-density-normal .pm-items th,
+#pmPrintPreview .pm-order-density-normal .pm-items td{padding:2.4px 3px!important;line-height:1.01!important;}
+#pmPrintPreview .pm-order-density-normal .pm-package-print{margin-top:.5px!important;padding:1px 2px!important;}
+#pmPrintPreview .pm-order-density-normal .pm-package-print-list span{font-size:5.4pt!important;line-height:.96!important;}
