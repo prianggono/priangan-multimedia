@@ -88,6 +88,14 @@
     .pm-footer { margin-top:9px; padding-top:7px; border-top:1px solid #e2e8f0; display:flex; justify-content:space-between; gap:15px; color:#94a3b8; font-size:6.6pt; }
     .pm-footer strong { color:#64748b; white-space:nowrap; }
 
+    /* FINAL TIGHTEN: reclaim vertical space without changing typography or geometry. */
+    .pm-title-row{margin:6px 0 5px!important;}
+    .pm-info-section{padding:4px 7px!important;}
+    .pm-opening{margin:4px 0 4px!important;}
+    .pm-order-density-normal .pm-items th,.pm-order-density-normal .pm-items td{padding:2.8px 3.5px!important;line-height:1.03!important;}
+    .pm-order-density-normal .pm-package-print{margin-top:1px!important;padding:1.5px 2.5px 1px!important;}
+    .pm-order-density-normal .pm-package-print-list span{line-height:.98!important;}
+
     /* FINAL INFO CARD: keep all client/event details visible in one A4 page. */
     .pm-info-card{overflow:visible!important;}
     .pm-info-section{padding:5px 8px!important;height:auto!important;min-height:0!important;overflow:visible!important;line-height:1.08!important;}
