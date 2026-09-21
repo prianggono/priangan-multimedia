@@ -1,4 +1,4 @@
-/* Priangan Multimedia — Master Harga Domain Core
+/* PRI_ERP — Master Harga Domain Core
  * Single authority for master price CRUD and editor.
  * Package contents are edited here and stored in master_harga.isi_paket.
  */
