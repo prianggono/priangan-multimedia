@@ -1,4 +1,4 @@
-/* Priangan Multimedia — Quotation Repository / Save
+/* PRI_ERP — Quotation Repository / Save
  * Single quotation persistence authority.
  * All quotation header, client linkage, items and schedules are committed by Supabase RPC.
  * Master Harga is only the source for defaults; saved quotation values are independent snapshots.
