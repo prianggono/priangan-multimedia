@@ -184,20 +184,18 @@
         <div class="card stat"><small>Status</small><strong class="pm-status ${statusClass(p.status)}">${esc(statusLabel(p.status))}</strong></div>
         <div class="card stat"><small>Client</small><strong style="font-size:18px">${esc(p.clients?.nama_client||'-')}</strong></div>
         <div class="card stat"><small>Periode</small><strong style="font-size:18px">${esc(fmtDate(p.tanggal_mulai))} → ${esc(fmtDate(p.tanggal_selesai))}</strong></div>
-        <div class="card stat"><small>PIC</small><strong style="font-size:18px">${esc(p.pic_project||'-')}</strong></div>
+        <div class="card stat"><small>PIC Internal</small><strong style="font-size:18px">${esc(p.pic_internal||'-')}</strong></div>
       </div>
       <div class="grid g2 pm-project-detail-grid" style="margin-top:16px">
         <div class="card"><h3>Timeline Event</h3><div class="pm-timeline-grid">
           <div><span>Load In</span><b>${esc(p.tanggal_load_in?fmtDate(p.tanggal_load_in)+' · ':'')}${esc(p.jam_load_in||'-')}</b></div><div><span>Setup</span><b>${esc(p.jam_setup||'-')}</b></div><div><span>Event</span><b>${esc(p.jam_event||'-')}</b></div><div><span>Teardown</span><b>${esc(p.jam_teardown||'-')}</b></div><div><span>Load Out</span><b>${esc(p.jam_load_out||'-')}</b></div>
         </div><hr><p><b>Venue:</b> ${esc([p.venue,p.kota_venue].filter(Boolean).join(', ')||'-')}</p><p><b>Alamat:</b> ${esc(p.alamat_venue||'-')}</p><p><b>Google Maps:</b> ${p.google_maps_url?`<a href='${esc(p.google_maps_url)}' target='_blank' rel='noopener noreferrer'>Buka Maps</a>`:'-'}</p><p><b>PIC Internal:</b> ${esc(p.pic_internal||'-')} · ${esc(p.pic_internal_phone||'-')}</p><p><b>PIC Client:</b> ${esc(p.pic_client||'-')} · ${esc(p.pic_client_phone||'-')}</p><p><b>Catatan:</b><br>${esc(p.catatan||'-').replace(/\n/g,'<br>')}</p><p><b>Dokumen:</b><br>${Array.isArray(p.dokumen)&&p.dokumen.length?p.dokumen.map((u,i)=>`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">Dokumen ${i+1}</a>`).join('<br>'):'-'}</p></div>
-        <div class="card"><div class="pm-card-head"><h3>Penawaran Terhubung</h3><select id="pmQuotePicker"><option value="">+ Hubungkan Penawaran</option>${available.map(q=>`<option value="${q.id}">${esc(q.nomor_penawaran||('#'+q.id))} · ${esc(q.nama_event||q.nama_client||'')}</option>`).join('')}</select></div>
-          ${linked.length?linked.map(q=>`<div class="pm-quote-row"><div><b>${esc(q.nomor_penawaran||'-')}</b><span>${esc(q.nama_event||q.nama_client||'-')}</span></div><div><strong>${money(q.grand_total)}</strong><button class="btn red sm" type="button" data-unlink="${q.id}">Lepas</button></div></div>`).join(''):'<p class="pm-muted">Belum ada penawaran terhubung.</p>'}
+        <div class="card"><div class="pm-card-head"><h3>Penawaran</h3></div>
+          ${linked.length?linked.map(q=>`<div class="pm-quote-row"><div><b>${esc(q.nomor_penawaran||'-')}</b><span>${esc(q.nama_event||q.nama_client||'-')}</span></div><div><strong>${money(q.grand_total)}</strong></div></div>`).join(''):'<p class="pm-muted">Penawaran akan terhubung otomatis saat dibuat.</p>'}
         </div>
       </div>`;
     document.getElementById('pmProjectBack').onclick=()=>render();
     document.getElementById('pmProjectEdit').onclick=()=>render(projects.find(x=>Number(x.id)===Number(id)));
-    document.getElementById('pmQuotePicker').onchange=e=>linkQuotation(id,e.target.value);
-    content.querySelectorAll('[data-unlink]').forEach(b=>b.onclick=()=>unlinkQuotation(id,b.dataset.unlink));
   }
 
   async function render(projectToEdit=null){
@@ -213,7 +211,7 @@
     }
     if(selectedProjectId){const p=projects.find(x=>Number(x.id)===Number(selectedProjectId));if(p)return renderDetail(selectedProjectId);selectedProjectId=null}
     content.innerHTML=`
-      <div class="head"><div><h1>Project / Event</h1><p>Pusat data operasional untuk event yang sudah / sedang diproses.</p></div><button class="btn" type="button" id="pmProjectAdd">+ Project Baru</button></div>
+      <div class="head"><div><h1>Project / Event</h1><p>Pusat data operasional untuk event yang sudah / sedang diproses.</p></div></div>
       <div class="card pm-project-list"><div class="scroll"><table class="table"><thead><tr><th>Project</th><th>Client</th><th>Venue</th><th>Periode</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
       ${projects.length?projects.map(p=>`<tr><td><b>${esc(p.kode_project||'-')}</b><br><span class="pm-muted">${esc(p.nama_project)}</span></td><td>${esc(p.clients?.nama_client||p.clients?.perusahaan||'-')}</td><td>${esc(p.venue||'-')}</td><td>${esc(fmtDate(p.tanggal_mulai))}<br>→ ${esc(fmtDate(p.tanggal_selesai))}</td><td><span class="pm-status ${statusClass(p.status)}">${esc(statusLabel(p.status))}</span></td><td><button class="btn secondary sm" data-open="${p.id}" type="button">Buka</button> <button class="btn secondary sm" data-edit="${p.id}" type="button">Edit</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">Belum ada Project / Event.</td></tr>'}
       </tbody></table></div></div>`;
