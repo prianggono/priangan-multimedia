@@ -193,5 +193,6 @@
   }
 
   window.projectPage=render;
+  window.projectsPage=render;
   window.pmProjectPage=render;
 })();
