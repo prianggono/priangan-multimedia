@@ -200,6 +200,16 @@
       content.innerHTML='<div class="head"><div><h1>Project / Event</h1><p>Kelola project operasional.</p></div></div>'+renderForm(projectToEdit);
       document.getElementById('pmProjectCancel').onclick=()=>render();
       document.getElementById('pmProjectSave').onclick=saveProject;
+      const startEl=document.getElementById('peStart'), loadDate=document.getElementById('peLoadInDate'), loadTime=document.getElementById('peLoadIn');
+      const syncLoadIn=()=>{
+        if(!loadDate||!startEl||!startEl.value)return;
+        const d=new Date(startEl.value+'T00:00:00'); d.setDate(d.getDate()-1);
+        const iso=d.toISOString().slice(0,10);
+        if(!loadDate.value)loadDate.value=iso;
+        if(loadTime&&!loadTime.value)loadTime.value='22:00';
+      };
+      startEl?.addEventListener('change',syncLoadIn);
+      syncLoadIn();
       return;
     }
     if(selectedProjectId){const p=projects.find(x=>Number(x.id)===Number(selectedProjectId));if(p)return renderDetail(selectedProjectId);selectedProjectId=null}
