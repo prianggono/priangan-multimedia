@@ -151,7 +151,7 @@
       #content .pm-collapse-btn{min-width:90px}
       #content .pm-save-bar{position:sticky;bottom:12px;z-index:20;box-shadow:0 10px 30px rgba(0,0,0,.3);backdrop-filter:blur(10px)}
       #content .pm-save-bar .actions{margin-top:0!important}
-      #content .pm-venue-line{font-size:11px;color:#52627d;margin-top:4px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      #content .pm-venue-line{font-size:6.1pt;color:#52627d;margin-top:2px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.1px}
       @media(max-width:700px){
         #content .pm-item-summary{align-items:flex-start}
         #content .pm-save-bar .actions{flex-direction:column}
