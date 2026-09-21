@@ -215,7 +215,6 @@
       <div class="card pm-project-list"><div class="scroll"><table class="table"><thead><tr><th>Project</th><th>Client</th><th>Venue</th><th>Periode</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
       ${projects.length?projects.map(p=>`<tr><td><b>${esc(p.kode_project||'-')}</b><br><span class="pm-muted">${esc(p.nama_project)}</span></td><td>${esc(p.clients?.nama_client||p.clients?.perusahaan||'-')}</td><td>${esc(p.venue||'-')}</td><td>${esc(fmtDate(p.tanggal_mulai))}<br>→ ${esc(fmtDate(p.tanggal_selesai))}</td><td><span class="pm-status ${statusClass(p.status)}">${esc(statusLabel(p.status))}</span></td><td><button class="btn secondary sm" data-open="${p.id}" type="button">Buka</button> <button class="btn secondary sm" data-edit="${p.id}" type="button">Edit</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">Belum ada Project / Event.</td></tr>'}
       </tbody></table></div></div>`;
-    document.getElementById('pmProjectAdd').onclick=()=>render({});
     content.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{selectedProjectId=Number(b.dataset.open);renderDetail(selectedProjectId)});
     content.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>render(projects.find(x=>Number(x.id)===Number(b.dataset.edit))));
   }
