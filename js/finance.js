@@ -1,4 +1,4 @@
-/* Priangan Multimedia — Finance Domain Core
+/* PRI_ERP — Finance Domain Core
  * Single authority for financial reconciliation and operating expenses.
  * Supabase is the source of truth; no financial value is sourced from localStorage.
  */
