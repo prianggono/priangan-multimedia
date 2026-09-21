@@ -43,7 +43,7 @@
       tanggal_mulai:q.tanggal_mulai||null,
       tanggal_selesai:q.tanggal_selesai||null,
       status:'DRAFT',
-      catatan:'Project dibuat otomatis dari Penawaran '+S(q.nomor_penawaran||quoteId)
+      catatan:null
     };
     const ins=await d.from('project_events').insert([project]).select('id').single();
     if(ins.error)throw ins.error;
