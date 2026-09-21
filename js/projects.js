@@ -50,10 +50,13 @@
       venue:v('peVenue'),
       kota_venue:v('peCity'),
       alamat_venue:v('peAddress'),
+      google_maps_url:v('peMaps'),
       pic_project:v('pePic'),
       pic_telepon:v('pePicPhone'),
+      pic_type:v('pePicType')||'INTERNAL',
       tanggal_mulai:v('peStart')||null,
       tanggal_selesai:v('peEnd')||null,
+      tanggal_load_in:v('peLoadInDate')||null,
       jam_load_in:v('peLoadIn')||null,
       jam_setup:v('peSetup')||null,
       jam_event:v('peEventTime')||null,
@@ -80,11 +83,16 @@
           <div class="field"><label>Venue</label><input id="peVenue" value="${esc(p.venue||'')}" placeholder="Nama venue"></div>
           <div class="field"><label>Kota</label><input id="peCity" value="${esc(p.kota_venue||'')}" placeholder="Contoh: Bandung"></div>
           <div class="field"><label>Alamat Venue</label><input id="peAddress" value="${esc(p.alamat_venue||'')}" placeholder="Alamat lokasi"></div>
-          <div class="field"><label>PIC Project</label><input id="pePic" value="${esc(p.pic_project||'')}" placeholder="PIC internal"></div>
-          <div class="field"><label>Telepon PIC</label><input id="pePicPhone" value="${esc(p.pic_telepon||'')}" inputmode="tel"></div>
+          <div class="field"><label>Google Maps</label><input id="peMaps" value="${esc(p.google_maps_url||'')}" placeholder="Tempel link Google Maps"></div>
+          <div class="pm-project-pic-row">
+            <div class="field"><label>Nama PIC</label><input id="pePic" value="${esc(p.pic_project||'')}" placeholder="Nama PIC"></div>
+            <div class="field"><label>No. Telepon</label><input id="pePicPhone" value="${esc(p.pic_telepon||'')}" inputmode="tel" placeholder="085xxxxxxxxxx"></div>
+            <div class="field"><label>Sumber</label><select id="pePicType"><option value="INTERNAL" ${String(p.pic_type||'INTERNAL')==='INTERNAL'?'selected':''}>Internal</option><option value="CLIENT" ${String(p.pic_type||'INTERNAL')==='CLIENT'?'selected':''}>Client</option></select></div>
+          </div>
           <div class="field"><label>Tanggal Mulai</label><input id="peStart" type="date" value="${esc(p.tanggal_mulai||'')}"></div>
           <div class="field"><label>Tanggal Selesai</label><input id="peEnd" type="date" value="${esc(p.tanggal_selesai||'')}"></div>
-          <div class="field"><label>Load In</label><input id="peLoadIn" type="time" value="${esc(p.jam_load_in||'')}"></div>
+          <div class="field"><label>Load In — Tanggal</label><input id="peLoadInDate" type="date" value="${esc(p.tanggal_load_in||'')}"></div>
+          <div class="field"><label>Load In — Jam</label><input id="peLoadIn" type="time" value="${esc(p.jam_load_in||'')}"></div>
           <div class="field"><label>Setup</label><input id="peSetup" type="time" value="${esc(p.jam_setup||'')}"></div>
           <div class="field"><label>Jam Event</label><input id="peEventTime" type="time" value="${esc(p.jam_event||'')}"></div>
           <div class="field"><label>Teardown</label><input id="peTeardown" type="time" value="${esc(p.jam_teardown||'')}"></div>
@@ -172,8 +180,8 @@
       </div>
       <div class="grid g2 pm-project-detail-grid" style="margin-top:16px">
         <div class="card"><h3>Timeline Event</h3><div class="pm-timeline-grid">
-          <div><span>Load In</span><b>${esc(p.jam_load_in||'-')}</b></div><div><span>Setup</span><b>${esc(p.jam_setup||'-')}</b></div><div><span>Event</span><b>${esc(p.jam_event||'-')}</b></div><div><span>Teardown</span><b>${esc(p.jam_teardown||'-')}</b></div><div><span>Load Out</span><b>${esc(p.jam_load_out||'-')}</b></div>
-        </div><hr><p><b>Venue:</b> ${esc([p.venue,p.kota_venue].filter(Boolean).join(', ')||'-')}</p><p><b>Alamat:</b> ${esc(p.alamat_venue||'-')}</p><p><b>Telepon PIC:</b> ${esc(p.pic_telepon||'-')}</p><p><b>Catatan:</b><br>${esc(p.catatan||'-').replace(/\n/g,'<br>')}</p><p><b>Dokumen:</b><br>${Array.isArray(p.dokumen)&&p.dokumen.length?p.dokumen.map((u,i)=>`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">Dokumen ${i+1}</a>`).join('<br>'):'-'}</p></div>
+          <div><span>Load In</span><b>${esc(p.tanggal_load_in?fmtDate(p.tanggal_load_in)+' · ':'')}${esc(p.jam_load_in||'-')}</b></div><div><span>Setup</span><b>${esc(p.jam_setup||'-')}</b></div><div><span>Event</span><b>${esc(p.jam_event||'-')}</b></div><div><span>Teardown</span><b>${esc(p.jam_teardown||'-')}</b></div><div><span>Load Out</span><b>${esc(p.jam_load_out||'-')}</b></div>
+        </div><hr><p><b>Venue:</b> ${esc([p.venue,p.kota_venue].filter(Boolean).join(', ')||'-')}</p><p><b>Alamat:</b> ${esc(p.alamat_venue||'-')}</p><p><b>Google Maps:</b> ${p.google_maps_url?`<a href='${esc(p.google_maps_url)}' target='_blank' rel='noopener noreferrer'>Buka Maps</a>`:'-'}</p><p><b>PIC:</b> ${esc(p.pic_project||'-')} · ${esc(p.pic_telepon||'-')} · ${esc(String(p.pic_type||'INTERNAL')==='CLIENT'?'Client':'Internal')}</p><p><b>Catatan:</b><br>${esc(p.catatan||'-').replace(/\n/g,'<br>')}</p><p><b>Dokumen:</b><br>${Array.isArray(p.dokumen)&&p.dokumen.length?p.dokumen.map((u,i)=>`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">Dokumen ${i+1}</a>`).join('<br>'):'-'}</p></div>
         <div class="card"><div class="pm-card-head"><h3>Penawaran Terhubung</h3><select id="pmQuotePicker"><option value="">+ Hubungkan Penawaran</option>${available.map(q=>`<option value="${q.id}">${esc(q.nomor_penawaran||('#'+q.id))} · ${esc(q.nama_event||q.nama_client||'')}</option>`).join('')}</select></div>
           ${linked.length?linked.map(q=>`<div class="pm-quote-row"><div><b>${esc(q.nomor_penawaran||'-')}</b><span>${esc(q.nama_event||q.nama_client||'-')}</span></div><div><strong>${money(q.grand_total)}</strong><button class="btn red sm" type="button" data-unlink="${q.id}">Lepas</button></div></div>`).join(''):'<p class="pm-muted">Belum ada penawaran terhubung.</p>'}
         </div>
