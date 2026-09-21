@@ -86,7 +86,7 @@
           <div class="field"><label>Alamat Venue</label><input id="peAddress" value="${esc(p.alamat_venue||'')}" placeholder="Alamat lokasi"></div>
           <div class="field"><label>Google Maps</label><input id="peMaps" value="${esc(p.google_maps_url||'')}" placeholder="Tempel link Google Maps"></div>
           <div class="pm-project-pic-block">
-            <div class="pm-project-pic-title">PIC INTERNAL — PRIANGAN MULTIMEDIA</div>
+            <div class="pm-project-pic-title">PIC INTERNAL</div>
             <div class="pm-project-pic-row">
               <div class="field"><label>Nama PIC</label><input id="pePicInternal" value="${esc(p.pic_internal||'')}" placeholder="Nama PIC internal"></div>
               <div class="field"><label>No. Telepon</label><input id="pePicInternalPhone" value="${esc(p.pic_internal_phone||'')}" inputmode="tel" placeholder="085xxxxxxxxxx"></div>
