@@ -155,7 +155,7 @@
           ${linked.length?linked.map(q=>`<div class="pm-quote-row"><div><b>${esc(q.nomor_penawaran||'-')}</b><span>${esc(q.nama_event||q.nama_client||'-')}</span></div><div><strong>${money(q.grand_total)}</strong></div></div>`).join(''):'<p class="pm-muted">Penawaran akan terhubung otomatis saat dibuat.</p>'}
         </div>
       </div>`;
-    document.getElementById('pmProjectBack').onclick=()=>render();
+    document.getElementById('pmProjectBack').onclick=()=>{selectedProjectId=null;render();};
     document.getElementById('pmProjectEdit').onclick=()=>render(projects.find(x=>Number(x.id)===Number(id)));
   }
 
