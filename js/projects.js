@@ -60,7 +60,7 @@
       jam_load_out:v('peLoadOut')||null,
       status:v('peStatus')||'DRAFT',
       catatan:v('peNotes'),
-      dokumen:v('peDocs').split('\\n').map(x=>x.trim()).filter(Boolean)
+      dokumen:v('peDocs').split('\n').map(x=>x.trim()).filter(Boolean)
     };
   }
 
@@ -90,7 +90,7 @@
           <div class="field"><label>Status</label><select id="peStatus">${['DRAFT','CONFIRMED','PREPARATION','ON SITE','COMPLETED','CANCELLED'].map(s=>`<option value="${s}" ${String(p.status||'DRAFT')===s?'selected':''}>${statusLabel(s)}</option>`).join('')}</select></div>
         </div>
         <div class="field"><label>Catatan</label><textarea id="peNotes" rows="4" placeholder="Catatan operasional project">${esc(p.catatan||'')}</textarea></div>
-        <div class="field"><label>Dokumen / Link</label><textarea id="peDocs" rows="3" placeholder="Satu URL per baris">${esc(Array.isArray(p.dokumen)?p.dokumen.join('\\n'):'')}</textarea></div>
+        <div class="field"><label>Dokumen / Link</label><textarea id="peDocs" rows="3" placeholder="Satu URL per baris">${esc(Array.isArray(p.dokumen)?p.dokumen.join('\n'):'')}</textarea></div>
         <div class="actions"><button class="btn secondary" type="button" id="pmProjectCancel">Batal</button><button class="btn green" type="button" id="pmProjectSave">Simpan Project</button></div>
       </div>`;
   }
