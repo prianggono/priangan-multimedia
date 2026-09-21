@@ -1,4 +1,4 @@
-/* Priangan Multimedia — Dashboard
+/* PRI_ERP — Dashboard
  * Reporting renderer only. Uses the same transaction definitions as Finance.
  * Do not add dashboard patch/fix files; extend this module instead.
  */
@@ -37,7 +37,7 @@
 
   function shell(){
     const c=document.querySelector('#content');if(!c)return null;css();c.className='pmcy';
-    c.innerHTML=`<section class="cyhero"><div class="cykick">PRIANGAN MULTIMEDIA · MANAGEMENT CONTROL</div><h1>Dashboard Analisis Penjualan</h1><p>Penjualan · Profit · Margin · Kas · Piutang · Pipeline</p><div class="cybtns"><button type="button" onclick="go('quotation')">＋ Buat Penawaran</button><button type="button" onclick="go('invoice')">▣ Invoice</button><button type="button" onclick="go('finance')">◈ Laporan Keuangan</button></div></section><div id="cybody"><div class="cycard cypanel" style="text-align:center;padding:35px;color:#8ea6ca">MEMUAT DATA ANALISIS...</div></div>`;return c
+    c.innerHTML=`<section class="cyhero"><div class="cykick">PRI_ERP · MANAGEMENT CONTROL</div><h1>Dashboard Analisis Penjualan</h1><p>Penjualan · Profit · Margin · Kas · Piutang · Pipeline</p><div class="cybtns"><button type="button" onclick="go('quotation')">＋ Buat Penawaran</button><button type="button" onclick="go('invoice')">▣ Invoice</button><button type="button" onclick="go('finance')">◈ Laporan Keuangan</button></div></section><div id="cybody"><div class="cycard cypanel" style="text-align:center;padding:35px;color:#8ea6ca">MEMUAT DATA ANALISIS...</div></div>`;return c
   }
 
   function invoiceFallback(){try{return JSON.parse(localStorage.getItem('PM_INVOICE_FALLBACK')||'{}')||{}}catch(_){return{}}}
