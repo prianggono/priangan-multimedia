@@ -48,6 +48,7 @@
       nama_project:v('peName'),
       nama_event:v('peEvent'),
       venue:v('peVenue'),
+      kota_venue:v('peCity'),
       alamat_venue:v('peAddress'),
       pic_project:v('pePic'),
       pic_telepon:v('pePicPhone'),
@@ -77,6 +78,7 @@
           <div class="field"><label>Nama Project *</label><input id="peName" value="${esc(p.nama_project||'')}" placeholder="Contoh: Event ABC 2026"></div>
           <div class="field"><label>Nama Event</label><input id="peEvent" value="${esc(p.nama_event||'')}" placeholder="Nama acara"></div>
           <div class="field"><label>Venue</label><input id="peVenue" value="${esc(p.venue||'')}" placeholder="Nama venue"></div>
+          <div class="field"><label>Kota</label><input id="peCity" value="${esc(p.kota_venue||'')}" placeholder="Contoh: Bandung"></div>
           <div class="field"><label>Alamat Venue</label><input id="peAddress" value="${esc(p.alamat_venue||'')}" placeholder="Alamat lokasi"></div>
           <div class="field"><label>PIC Project</label><input id="pePic" value="${esc(p.pic_project||'')}" placeholder="PIC internal"></div>
           <div class="field"><label>Telepon PIC</label><input id="pePicPhone" value="${esc(p.pic_telepon||'')}" inputmode="tel"></div>
@@ -122,10 +124,21 @@
   async function linkQuotation(projectId,quotationId){
     const d=dbx();if(!d)return;
     if(!quotationId)return msg('Pilih penawaran.');
+    const q=quotations.find(x=>Number(x.id)===Number(quotationId));
+    const current=projects.find(x=>Number(x.id)===Number(projectId));
+    if(q&&current){
+      const patch={};
+      if(!current.venue&&q.venue)patch.venue=q.venue;
+      if(!current.kota_venue&&q.kota_venue)patch.kota_venue=q.kota_venue;
+      if(!current.tanggal_mulai&&q.tanggal_mulai)patch.tanggal_mulai=q.tanggal_mulai;
+      if(!current.tanggal_selesai&&q.tanggal_selesai)patch.tanggal_selesai=q.tanggal_selesai;
+      if(!current.nama_event&&q.nama_event)patch.nama_event=q.nama_event;
+      if(Object.keys(patch).length){const u=await d.from('project_events').update(patch).eq('id',projectId);if(u.error)return msg('Penawaran terhubung, tetapi data venue/tanggal gagal disalin: '+u.error.message);}
+    }
     const r=await d.from('project_penawaran').insert([{project_id:projectId,penawaran_id:Number(quotationId)}]);
     if(r.error){if(r.error.code==='23505')return msg('Penawaran sudah terhubung ke project ini.');return msg('Gagal menghubungkan penawaran: '+r.error.message)}
     msg('Penawaran terhubung ke project.');
-    await renderDetail(projectId);
+    await render();
   }
 
   async function unlinkQuotation(projectId,quotationId){
@@ -160,7 +173,7 @@
       <div class="grid g2 pm-project-detail-grid" style="margin-top:16px">
         <div class="card"><h3>Timeline Event</h3><div class="pm-timeline-grid">
           <div><span>Load In</span><b>${esc(p.jam_load_in||'-')}</b></div><div><span>Setup</span><b>${esc(p.jam_setup||'-')}</b></div><div><span>Event</span><b>${esc(p.jam_event||'-')}</b></div><div><span>Teardown</span><b>${esc(p.jam_teardown||'-')}</b></div><div><span>Load Out</span><b>${esc(p.jam_load_out||'-')}</b></div>
-        </div><hr><p><b>Venue:</b> ${esc(p.venue||'-')}</p><p><b>Alamat:</b> ${esc(p.alamat_venue||'-')}</p><p><b>Telepon PIC:</b> ${esc(p.pic_telepon||'-')}</p><p><b>Catatan:</b><br>${esc(p.catatan||'-').replace(/\n/g,'<br>')}</p><p><b>Dokumen:</b><br>${Array.isArray(p.dokumen)&&p.dokumen.length?p.dokumen.map((u,i)=>`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">Dokumen ${i+1}</a>`).join('<br>'):'-'}</p></div>
+        </div><hr><p><b>Venue:</b> ${esc([p.venue,p.kota_venue].filter(Boolean).join(', ')||'-')}</p><p><b>Alamat:</b> ${esc(p.alamat_venue||'-')}</p><p><b>Telepon PIC:</b> ${esc(p.pic_telepon||'-')}</p><p><b>Catatan:</b><br>${esc(p.catatan||'-').replace(/\n/g,'<br>')}</p><p><b>Dokumen:</b><br>${Array.isArray(p.dokumen)&&p.dokumen.length?p.dokumen.map((u,i)=>`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">Dokumen ${i+1}</a>`).join('<br>'):'-'}</p></div>
         <div class="card"><div class="pm-card-head"><h3>Penawaran Terhubung</h3><select id="pmQuotePicker"><option value="">+ Hubungkan Penawaran</option>${available.map(q=>`<option value="${q.id}">${esc(q.nomor_penawaran||('#'+q.id))} · ${esc(q.nama_event||q.nama_client||'')}</option>`).join('')}</select></div>
           ${linked.length?linked.map(q=>`<div class="pm-quote-row"><div><b>${esc(q.nomor_penawaran||'-')}</b><span>${esc(q.nama_event||q.nama_client||'-')}</span></div><div><strong>${money(q.grand_total)}</strong><button class="btn red sm" type="button" data-unlink="${q.id}">Lepas</button></div></div>`).join(''):'<p class="pm-muted">Belum ada penawaran terhubung.</p>'}
         </div>
