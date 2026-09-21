@@ -31,7 +31,7 @@
 #pmPrintPreview .pm-items th:nth-child(6),#pmPrintPreview .pm-items td:nth-child(6){width:34mm!important}
 #pmPrintPreview .pm-items td.right{white-space:nowrap!important}
 #pmPrintPreview .pm-terms-signature-row{
-  margin-top:auto!important;
+  margin-top:12px!important;
   grid-template-columns:minmax(0,1.9fr) minmax(0,.7fr)!important;
   gap:5mm!important;
   align-items:end!important;
