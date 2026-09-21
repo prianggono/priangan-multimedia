@@ -42,8 +42,6 @@
       kota_venue:S(q.kota_venue)||null,
       tanggal_mulai:q.tanggal_mulai||null,
       tanggal_selesai:q.tanggal_selesai||null,
-      tanggal_load_in:q.tanggal_mulai?new Date(q.tanggal_mulai+'T00:00:00').toISOString().slice(0,10):null,
-      jam_load_in:q.tanggal_mulai?'22:00':null,
       status:'DRAFT',
       catatan:'Project dibuat otomatis dari Penawaran '+S(q.nomor_penawaran||quoteId)
     };
