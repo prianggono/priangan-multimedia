@@ -16,21 +16,15 @@
   const statusClass=s=>String(s||'DRAFT').toLowerCase().replace(/\s+/g,'-');
 
   let projects=[];
-  let quotations=[];
   let selectedProjectId=null;
 
   async function loadData(){
     const d=dbx(); if(!d)throw Error('Supabase belum terhubung.');
-    const [pr,qt]=await Promise.all([
-      d.from('project_events').select('*,clients(nama_client,perusahaan)').order('id',{ascending:false}),
-      d.from('penawaran').select('id,nomor_penawaran,nama_client,perusahaan,nama_event,venue,kota_venue,tanggal_mulai,tanggal_selesai,status,grand_total').order('id',{ascending:false})
-    ]);
+    const pr=await d.from('project_events').select('*,clients(nama_client,perusahaan)').order('id',{ascending:false});
     if(pr.error)throw pr.error;
-    if(qt.error)throw qt.error;
     projects=pr.data||[];
-    quotations=qt.data||[];
     window.pmProjects=projects;
-    return {projects,quotations};
+    return {projects};
   }
 
   function nav(){
@@ -137,46 +131,13 @@
     }catch(e){console.error('[PRI_ERP] project save',e);msg('Gagal menyimpan project: '+(e.message||e))}
   }
 
-  async function linkQuotation(projectId,quotationId){
-    const d=dbx();if(!d)return;
-    if(!quotationId)return msg('Pilih penawaran.');
-    const q=quotations.find(x=>Number(x.id)===Number(quotationId));
-    const current=projects.find(x=>Number(x.id)===Number(projectId));
-    if(q&&current){
-      const patch={};
-      if(!current.venue&&q.venue)patch.venue=q.venue;
-      if(!current.kota_venue&&q.kota_venue)patch.kota_venue=q.kota_venue;
-      if(!current.tanggal_mulai&&q.tanggal_mulai)patch.tanggal_mulai=q.tanggal_mulai;
-      if(!current.tanggal_selesai&&q.tanggal_selesai)patch.tanggal_selesai=q.tanggal_selesai;
-      if(!current.nama_event&&q.nama_event)patch.nama_event=q.nama_event;
-      if(Object.keys(patch).length){const u=await d.from('project_events').update(patch).eq('id',projectId);if(u.error)return msg('Penawaran terhubung, tetapi data venue/tanggal gagal disalin: '+u.error.message);}
-    }
-    const r=await d.from('project_penawaran').insert([{project_id:projectId,penawaran_id:Number(quotationId)}]);
-    if(r.error){if(r.error.code==='23505')return msg('Penawaran sudah terhubung ke project ini.');return msg('Gagal menghubungkan penawaran: '+r.error.message)}
-    msg('Penawaran terhubung ke project.');
-    await render();
-  }
-
-  async function unlinkQuotation(projectId,quotationId){
-    const d=dbx();if(!d)return;
-    const r=await d.from('project_penawaran').delete().eq('project_id',projectId).eq('penawaran_id',quotationId);
-    if(r.error)return msg('Gagal melepas penawaran: '+r.error.message);
-    msg('Penawaran dilepas dari project.');
-    await renderDetail(projectId);
-  }
-
   async function renderDetail(id){
     const d=dbx();if(!d)return;
     const p=projects.find(x=>Number(x.id)===Number(id));
     if(!p)return render();
-    const [links,docs]=await Promise.all([
-      d.from('project_penawaran').select('penawaran_id,penawaran:penawaran_id(id,nomor_penawaran,nama_client,nama_event,status,grand_total)').eq('project_id',id).order('created_at'),
-      d.from('project_events').select('id,kode_project').eq('id',id).single()
-    ]);
+    const links=await d.from('project_penawaran').select('penawaran_id,penawaran:penawaran_id(id,nomor_penawaran,nama_client,nama_event,status,grand_total)').eq('project_id',id).order('created_at');
     if(links.error)return msg('Gagal membaca relasi penawaran: '+links.error.message);
     const linked=(links.data||[]).map(x=>x.penawaran).filter(Boolean);
-    const linkedIds=new Set(linked.map(x=>String(x.id)));
-    const available=quotations.filter(q=>!linkedIds.has(String(q.id)));
     const content=document.getElementById('content');if(!content)return;
     content.innerHTML=`
       <div class="head"><div><button class="btn secondary sm" type="button" id="pmProjectBack">← Kembali</button><h1 style="margin-top:12px">${esc(p.nama_project)}</h1><p>${esc(p.kode_project||'')} · ${esc(p.venue||'-')}</p></div><div class="pm-project-actions"><button class="btn secondary" type="button" id="pmProjectEdit">Edit Project</button></div></div>
