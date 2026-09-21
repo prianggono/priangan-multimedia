@@ -59,7 +59,8 @@
       jam_teardown:v('peTeardown')||null,
       jam_load_out:v('peLoadOut')||null,
       status:v('peStatus')||'DRAFT',
-      catatan:v('peNotes')
+      catatan:v('peNotes'),
+      dokumen:v('peDocs').split('\\n').map(x=>x.trim()).filter(Boolean)
     };
   }
 
@@ -89,6 +90,7 @@
           <div class="field"><label>Status</label><select id="peStatus">${['DRAFT','CONFIRMED','PREPARATION','ON SITE','COMPLETED','CANCELLED'].map(s=>`<option value="${s}" ${String(p.status||'DRAFT')===s?'selected':''}>${statusLabel(s)}</option>`).join('')}</select></div>
         </div>
         <div class="field"><label>Catatan</label><textarea id="peNotes" rows="4" placeholder="Catatan operasional project">${esc(p.catatan||'')}</textarea></div>
+        <div class="field"><label>Dokumen / Link</label><textarea id="peDocs" rows="3" placeholder="Satu URL per baris">${esc(Array.isArray(p.dokumen)?p.dokumen.join('\\n'):'')}</textarea></div>
         <div class="actions"><button class="btn secondary" type="button" id="pmProjectCancel">Batal</button><button class="btn green" type="button" id="pmProjectSave">Simpan Project</button></div>
       </div>`;
   }
@@ -158,7 +160,7 @@
       <div class="grid g2 pm-project-detail-grid" style="margin-top:16px">
         <div class="card"><h3>Timeline Event</h3><div class="pm-timeline-grid">
           <div><span>Load In</span><b>${esc(p.jam_load_in||'-')}</b></div><div><span>Setup</span><b>${esc(p.jam_setup||'-')}</b></div><div><span>Event</span><b>${esc(p.jam_event||'-')}</b></div><div><span>Teardown</span><b>${esc(p.jam_teardown||'-')}</b></div><div><span>Load Out</span><b>${esc(p.jam_load_out||'-')}</b></div>
-        </div><hr><p><b>Venue:</b> ${esc(p.venue||'-')}</p><p><b>Alamat:</b> ${esc(p.alamat_venue||'-')}</p><p><b>Telepon PIC:</b> ${esc(p.pic_telepon||'-')}</p><p><b>Catatan:</b><br>${esc(p.catatan||'-').replace(/\n/g,'<br>')}</p></div>
+        </div><hr><p><b>Venue:</b> ${esc(p.venue||'-')}</p><p><b>Alamat:</b> ${esc(p.alamat_venue||'-')}</p><p><b>Telepon PIC:</b> ${esc(p.pic_telepon||'-')}</p><p><b>Catatan:</b><br>${esc(p.catatan||'-').replace(/\n/g,'<br>')}</p><p><b>Dokumen:</b><br>${Array.isArray(p.dokumen)&&p.dokumen.length?p.dokumen.map((u,i)=>`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">Dokumen ${i+1}</a>`).join('<br>'):'-'}</p></div>
         <div class="card"><div class="pm-card-head"><h3>Penawaran Terhubung</h3><select id="pmQuotePicker"><option value="">+ Hubungkan Penawaran</option>${available.map(q=>`<option value="${q.id}">${esc(q.nomor_penawaran||('#'+q.id))} · ${esc(q.nama_event||q.nama_client||'')}</option>`).join('')}</select></div>
           ${linked.length?linked.map(q=>`<div class="pm-quote-row"><div><b>${esc(q.nomor_penawaran||'-')}</b><span>${esc(q.nama_event||q.nama_client||'-')}</span></div><div><strong>${money(q.grand_total)}</strong><button class="btn red sm" type="button" data-unlink="${q.id}">Lepas</button></div></div>`).join(''):'<p class="pm-muted">Belum ada penawaran terhubung.</p>'}
         </div>
