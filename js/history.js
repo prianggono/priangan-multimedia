@@ -53,6 +53,8 @@
     set('qw',q.telepon_wa||q.telepon||q.whatsapp||q.no_telepon||q.phone||'');
     set('qe',q.email||'');
     set('qeve',q.nama_event||q.event_name||q.event||q.project_name||'');
+    set('qvenue',q.venue||'');
+    set('qkota',q.kota_venue||'');
     set('qs',q.tanggal_mulai||q.tanggal_mulai_event||'');
     set('qe2',q.tanggal_selesai||q.tanggal_selesai_event||'');
   }
