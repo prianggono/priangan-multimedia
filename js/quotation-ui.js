@@ -1,4 +1,4 @@
-/* Priangan Multimedia — Unified Quotation UI
+/* PRI_ERP — Unified Quotation UI
  * Single UI authority for negotiated price, LED Set, optional LED Level,
  * per-item discount and quotation totals.
  * Level belongs to the LED item itself; no global/first-LED lookup.
