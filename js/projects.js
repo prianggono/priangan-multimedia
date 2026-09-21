@@ -23,7 +23,7 @@
     const d=dbx(); if(!d)throw Error('Supabase belum terhubung.');
     const [pr,qt]=await Promise.all([
       d.from('project_events').select('*,clients(nama_client,perusahaan)').order('id',{ascending:false}),
-      d.from('penawaran').select('id,nomor_penawaran,nama_client,perusahaan,nama_event,tanggal_mulai,tanggal_selesai,status,grand_total').order('id',{ascending:false})
+      d.from('penawaran').select('id,nomor_penawaran,nama_client,perusahaan,nama_event,venue,kota_venue,tanggal_mulai,tanggal_selesai,status,grand_total').order('id',{ascending:false})
     ]);
     if(pr.error)throw pr.error;
     if(qt.error)throw qt.error;
