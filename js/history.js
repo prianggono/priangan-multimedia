@@ -1,4 +1,4 @@
-/* Priangan Multimedia — History Domain Core */
+/* PRI_ERP — History Domain Core */
 (function(){
   'use strict';
   if(window.__PM_HISTORY_DOMAIN_CORE) return;
